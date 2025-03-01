@@ -1,3 +1,4 @@
+package com.sec.app;
 import java.util.Scanner;
 
 public class Main {

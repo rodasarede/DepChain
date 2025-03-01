@@ -1,3 +1,4 @@
+package com.sec.app;
 import java.net.*;
 
 public class FairLossLinks {

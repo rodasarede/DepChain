@@ -13,7 +13,7 @@
 
 3. **Run the application:**
     ```sh
-    mvn exec:java -Dexec.mainClass="com.sec.app.BlockchainMember" -Dexec.args="args"
-    mvn exec:java -Dexec.mainClass="com.sec.app.ClientApplication" -Dexec.args="args"
+    mvn exec:java -Dexec.mainClass="com.sec.app.BlockchainMember" -Dexec.args="id"
+    mvn exec:java -Dexec.mainClass="com.sec.app.ClientApplication" 
     ```
 

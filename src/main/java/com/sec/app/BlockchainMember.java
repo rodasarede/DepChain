@@ -6,11 +6,31 @@ import java.util.List;
 
 
 public class BlockchainMember {
-    private static final int PORT = 5000;
+    private static int id ;
+    private static boolean isLeader;
+    private static SystemMembership systemMembership;
+    private static int PORT;
     private static List<String> blockchain = new ArrayList<>();
     private static PerfectLinks perfectLinks;
+    
 
     public static void main(String[] args) throws Exception {
+
+
+        if (args.length != 1) {
+            System.out.println("Usage: <id>");
+            return;
+        }
+        id = Integer.parseInt(args[0]);
+    
+        systemMembership = new SystemMembership("src/main/java/com/sec/resources/system_membership.properties");
+        
+        if(id == systemMembership.getLeaderId()){
+            System.out.println("I am the leader with id: " + id);
+            isLeader = true;
+        }
+
+        PORT = systemMembership.getMembershipList().get(id).port;
         perfectLinks = new PerfectLinks(PORT);
         perfectLinks.setDeliverCallback(BlockchainMember::handleRequest);
 

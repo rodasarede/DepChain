@@ -42,7 +42,7 @@ public class PerfectLinks {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }
+            }// wait for ACK //exponential backoff mandar uma vez e esperar. se o ack n chegar passado 1 segundo volto a mandar mensagem e depois espero exponecialmente. Message ids
         }).start();
     }
 

@@ -9,7 +9,7 @@ public class ClientLibrary {
 
     public ClientLibrary(int clientPort) throws Exception {
         systemMembership = new SystemMembership("src/main/java/com/sec/resources/system_membership.properties");
-        this.perfectLinks = new PerfectLinks(clientPort); // Listen for responses
+        this.perfectLinks = new PerfectLinks(clientPort); // Listen for responses //TODO what node ID?
         this.perfectLinks.setDeliverCallback(this::onMessageReceived);
 
     }

@@ -36,10 +36,10 @@ public class PerfectLinks {
         // Start listening for messages
         this.fairLossLinks.deliver();
 
-        int nodeID = port - 5000 + 1;   //TODO sure this is ok
+        int nodeID = port - 5000 + 1; // TODO sure this is ok
         this._privateKey = KeyLoader.loadPrivateKey("keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
-                                                                                          // the
-                                                                                          // node
+                                                                                            // the
+                                                                                            // node
         this.publicKeys = KeyLoader.loadPublicKeys("keys/all_public_keys.pem");
     }
 
@@ -57,6 +57,7 @@ public class PerfectLinks {
 
         // generate mac
         try {
+
             PublicKey destPublicKey = publicKeys.get(Integer.parseInt(destIP.split("\\.")[3]) - 1); // TODO Extract node
                                                                                                     // ID from
             // IP
@@ -97,9 +98,13 @@ public class PerfectLinks {
         String originalMsg = parts[0];
 
         String receivedMac = parts[1];
+        // TODO
 
-        PublicKey destPublicKey = publicKeys.get(Integer.parseInt(srcIP.split("\\.")[3]) - 1); // TODO Extract node ID
-                                                                                               // from
+        // um unico teste
+        int nodeID = srcPort - 5000  + 1;
+        System.out.println(nodeID - 1);
+        PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
+                                                              // from
         // IP
         try {
             if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, originalMsg, receivedMac)) {

@@ -36,7 +36,8 @@ public class PerfectLinks {
         // Start listening for messages
         this.fairLossLinks.deliver();
 
-        this._privateKey = KeyLoader.loadPrivateKey("keys/private_key_" + port + ".pem"); // TODO here with the id of
+        int nodeID = port - 5000 + 1;   //TODO sure this is ok
+        this._privateKey = KeyLoader.loadPrivateKey("keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
                                                                                           // the
                                                                                           // node
         this.publicKeys = KeyLoader.loadPublicKeys("keys/all_public_keys.pem");

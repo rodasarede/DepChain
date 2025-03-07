@@ -1,5 +1,12 @@
 package com.sec.app.util;
 
+
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
+
+
+import java.io.File;
+import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
@@ -8,24 +15,22 @@ import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+
 public class KeyLoader {
-    public static PrivateKey loadPrivateKey(String filename) throws Exception {
-        // Read the private key file
-        byte[] keyBytes = Files.readAllBytes(Paths.get(filename));
+    public static PrivateKey loadPrivateKey(String filePath) throws Exception {
+        PemReader pemReader = new PemReader(new FileReader(new File(filePath)));
+        PemObject pemObject = pemReader.readPemObject();
+        byte[] keyBytes = pemObject.getContent();
+        pemReader.close();
 
-        // Remove PEM headers/footers and decode the base64 content
-        String pem = new String(keyBytes);
-        pem = pem.replace("-----BEGIN EC PRIVATE KEY-----", "")
-                 .replace("-----END EC PRIVATE KEY-----", "")
-                 .replaceAll("\\s", ""); // Remove whitespace
-        byte[] decodedKey = java.util.Base64.getDecoder().decode(pem);
-
-        // Create a PrivateKey object
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decodedKey);
-        KeyFactory kf = KeyFactory.getInstance("EC");
-        return kf.generatePrivate(spec);
+        // Convert the key to Java's PrivateKey format
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+        
+        return keyFactory.generatePrivate(keySpec);
     }
 
     public static List<PublicKey> loadPublicKeys(String filename) throws Exception {

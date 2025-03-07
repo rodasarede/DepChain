@@ -13,7 +13,7 @@ public class Main {
         }
 
         int port = Integer.parseInt(args[0]);
-        PerfectLinks sl = new PerfectLinks(port);
+        PerfectLinks sl = new PerfectLinks(port); //TODO I start with port 5000 so this is NODE ID 1 etc.
 
         sl.setDeliverCallback(Main::onPerfectLinksDelivery);
 

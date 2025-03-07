@@ -2,8 +2,8 @@
 
 ## Run Instructions
 
-1. **Clone the repository:**
-    ```
+1. **Run the key script:**
+    ```./generate_key_pair.sh
     ```
 
 2. **Build the project:**

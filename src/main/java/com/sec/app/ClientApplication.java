@@ -22,7 +22,7 @@ public class ClientApplication {
 
         // Set the callback to handle responses from ClientLibrary
         clientLibrary.setCallback(message -> {
-            System.out.println("ClientApplication Received from client Library: " + message);
+            System.out.println("ClientApplication Received from clientLibrary: " + message);
         });
 
         // User input loop

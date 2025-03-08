@@ -82,6 +82,16 @@ public class PerfectLinks {
 
             // IP
             String mac = CryptoUtils.generateMAC(_privateKey, destPublicKey, message);
+
+            // tampering mac
+            /*
+            String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
+            System.out.println("original mac: " + mac);
+            System.out.println("tampered mac: " + tamperedMac);
+            mac = tamperedMac;
+
+             */
+
             String authenticatedMsg = message + "|" + mac; // append mac
             new Thread(() -> {
                 int retriesLeft = retries;

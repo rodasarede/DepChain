@@ -14,6 +14,6 @@
 3. **Run the application:**
     ```sh
     mvn exec:java -Dexec.mainClass="com.sec.app.BlockchainMember" -Dexec.args="id"
-    mvn exec:java -Dexec.mainClass="com.sec.app.ClientApplication" 
+    mvn exec:java -Dexec.mainClass="com.sec.app.ClientApplication" -Dexec.args="<client_id>"
     ```
 

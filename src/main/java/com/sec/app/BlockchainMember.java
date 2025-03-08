@@ -48,8 +48,8 @@ public class BlockchainMember {
             System.out.println(success ? "Transaction confirmed and appended." : "Transaction failed.");
 
             // Send confirmation response back to client
-            //String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
-            //perfectLinks.send(srcIP, srcPort, responseMessage);
+            String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
+            perfectLinks.send(srcIP, srcPort, responseMessage);
         }
     }
 

@@ -1,32 +1,45 @@
 package com.sec.app;
 
-
 public class ClientLibrary {
     private final PerfectLinks perfectLinks;
-    
     private final SystemMembership systemMembership;
+    private static int seqNumber = 1;
+    private MessageCallback callback; // Callback function
 
-
-    public ClientLibrary(int clientPort) throws Exception {
+    public ClientLibrary(int clientId) throws Exception {
         systemMembership = new SystemMembership("src/main/java/com/sec/resources/system_membership.properties");
-        this.perfectLinks = new PerfectLinks(clientPort); // Listen for responses //TODO what node ID?
+        int clientPort = 5001;
+        this.perfectLinks = new PerfectLinks(clientPort); // Listen for responses
         this.perfectLinks.setDeliverCallback(this::onMessageReceived);
-
     }
 
-    public void sendRequest(String message, int seqNumber) {
-        String formattedMessage = "<append, " + message + ">";
+    // Setter for the callback
+    public void setCallback(MessageCallback callback) {
+        this.callback = callback;
+    }
 
-        // Send the request
-        // Currently only sends to a single blockchain node (working as a centralized server the leader)
-        perfectLinks.send(systemMembership.getMembershipList().get(systemMembership.getLeaderId()).address, systemMembership.getMembershipList().get(systemMembership.getLeaderId()).port, formattedMessage);
+    public void sendAppendRequest(String string) {
+        String formattedMessage = "<append, " + string + ">";
 
-
+        // Send the request to the leader
+        String leader_ip = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).address;
+        int leader_port = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).port;
+        perfectLinks.send(leader_ip, leader_port, formattedMessage);
     }
 
     private void onMessageReceived(String srcIP, int srcPort, String message) {
-        System.out.println("Perfect Deliver from " + srcIP + ":" + srcPort + " -> " + message);
+        System.out.println("Client Library received from " + srcIP + ":" + srcPort + " -> " + message);
+        System.out.println("Sending confirmation to Client Application");
+        String formattedMessage = "Your stirng <string> was appended to the blockchain: " + message;
+        if (callback != null) {
+            callback.onMessage(formattedMessage); // Invoke the callback
+        } else {
+            System.out.println("No callback set: " + formattedMessage);
+        }
+    }
+
+    // Functional interface for the callback
+    public interface MessageCallback {
+        void onMessage(String message);
     }
 }
-
-

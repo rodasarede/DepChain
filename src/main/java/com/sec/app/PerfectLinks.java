@@ -66,6 +66,7 @@ public class PerfectLinks {
             new Thread(() -> {
                 int retriesLeft = retries;
                 while (sentMessages.containsKey(messageKey)) {
+                    printSentMessages();
                     try {
                         if (retriesLeft == 0) {
                             System.out.println("Message not delivered after 5 retries");
@@ -107,9 +108,13 @@ public class PerfectLinks {
                                                               // from
         // IP
         try {
+
             if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, originalMsg, receivedMac)) {
                 System.out.println("MAC verification failed for message: " + originalMsg);
                 return;
+
+
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -121,12 +126,21 @@ public class PerfectLinks {
             delivered.put(messageKey, true); // Mark message as delivered
 
             if (originalMsg.startsWith("ACK:")) {
-                // remove ACK: from message
+                // Remove "ACK:" from the message
                 originalMsg = originalMsg.substring(4);
-                System.out.println("stop resending message: " + message);
-                stopResending(srcIP, srcPort, message);
+
+                // Remove everything after the ">" (including the MAC part after it)
+                int endOfMessage = originalMsg.indexOf('>');
+                if (endOfMessage != -1) {
+                    originalMsg = originalMsg.substring(0, endOfMessage + 1); // Keep everything up to and including the ">"
+                }
+
+                System.out.println("stop resending message: " + originalMsg);
+                stopResending(srcIP, srcPort, originalMsg);
                 return;
             }
+
+
             // Send ACK back to the sender via a single message using fairloss
             try {
                 String ackMessage = "ACK:" + originalMsg;
@@ -145,7 +159,12 @@ public class PerfectLinks {
     // Stop resending a message (if needed)
     public void stopResending(String destIP, int destPort, String message) {
         String messageKey = destIP + ":" + destPort + ":" + message;
+        System.out.println("Message key: " + messageKey);
+        System.out.println("Before");
+        printSentMessages();
         sentMessages.remove(messageKey);
+        System.out.println("After");
+        printSentMessages();
     }
 
     // debug

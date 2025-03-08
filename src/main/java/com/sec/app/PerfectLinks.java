@@ -1,9 +1,12 @@
 package com.sec.app;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 import com.sec.app.util.KeyLoader;
@@ -19,7 +22,7 @@ public class PerfectLinks {
 
     private final PrivateKey _privateKey;
 
-    private final List<PublicKey> publicKeys;
+    private final Map<Integer, PublicKey> publicKeys;
 
     public interface DeliverCallback {
         void deliverReceivedMessage(String srcIP, int srcPort, String message);
@@ -40,7 +43,24 @@ public class PerfectLinks {
         this._privateKey = KeyLoader.loadPrivateKey("keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
                                                                                             // the
                                                                                             // node
-        this.publicKeys = KeyLoader.loadPublicKeys("keys/all_public_keys.pem");
+        //TODO here we can change
+        this.publicKeys = KeyLoader.loadPublicKeys("keys");
+        /*PrivateKey KrA = KeyLoader.loadPrivateKey("keys/private_key_1.pem");
+        //PublicKey KuA = KeyLoader.loadPublicKey("keys/public_key_1.pem");
+        //PublicKey KuB = KeyLoader.loadPublicKey("keys/public_key_2.pem");
+        PrivateKey KrB = KeyLoader.loadPrivateKey("keys/private_key_2.pem");
+
+        PublicKey KuA = publicKeys.get(1);
+        PublicKey KuB = publicKeys.get(2);
+        // Generate shared secret from Party A's perspective
+        //byte[] sharedSecretA = CryptoUtils.deriveSharedSecret(KrA, KuB);
+
+        // Generate shared secret from Party B's perspective
+        //byte[] sharedSecretB = CryptoUtils.deriveSharedSecret(KrB, KuA);
+
+        // Compare the shared secrets
+        System.out.println("Shared Secret A: " + Base64.getEncoder().encodeToString(sharedSecretA));
+        System.out.println("Shared Secret B: " + Base64.getEncoder().encodeToString(sharedSecretB));*/
     }
 
     // Set the callback to notify when a message is delivered
@@ -52,14 +72,14 @@ public class PerfectLinks {
     public void send(String destIP, int destPort, String message) {
         String messageKey = destIP + ":" + destPort + ":" + message;
         sentMessages.put(messageKey, true);
-
         // Resend indefinitely (until process crashes)
+        int nodeID = destPort - 5000 + 1;
+        PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
 
+        System.out.println(nodeID);
         // generate mac
         try {
 
-            PublicKey destPublicKey = publicKeys.get(Integer.parseInt(destIP.split("\\.")[3]) - 1); // TODO Extract node
-                                                                                                    // ID from
             // IP
             String mac = CryptoUtils.generateMAC(_privateKey, destPublicKey, message);
             String authenticatedMsg = message + "|" + mac; // append mac
@@ -101,11 +121,12 @@ public class PerfectLinks {
         String receivedMac = parts[1];
         // TODO
 
+        System.out.println(receivedMac);
         // um unico teste
-        int nodeID = srcPort - 5000  + 1;
-        System.out.println(nodeID - 1);
+        int nodeID = srcPort - 5000 + 1;
+
         PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
-                                                              // from
+        // from
         // IP
         try {
 

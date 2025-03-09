@@ -1,4 +1,7 @@
-package com.sec.app;
+package com.sec.depchain.client;
+
+import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.PerfectLinks;
 
 public class ClientLibrary {
     private final PerfectLinks perfectLinks;
@@ -7,7 +10,7 @@ public class ClientLibrary {
     private MessageCallback callback; // Callback function
 
     public ClientLibrary(int clientId) throws Exception {
-        systemMembership = new SystemMembership("src/main/java/com/sec/resources/system_membership.properties");
+        systemMembership = new SystemMembership("../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
         int clientPort = 5001;
         this.perfectLinks = new PerfectLinks(clientPort); // Listen for responses
         this.perfectLinks.setDeliverCallback(this::onMessageReceived);
@@ -22,8 +25,8 @@ public class ClientLibrary {
         String formattedMessage = "<append, " + string + ">";
 
         // Send the request to the leader
-        String leader_ip = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).address;
-        int leader_port = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).port;
+        String leader_ip = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).getAddress();
+        int leader_port = systemMembership.getMembershipList().get(systemMembership.getLeaderId()).getPort();
         perfectLinks.send(leader_ip, leader_port, formattedMessage);
     }
 

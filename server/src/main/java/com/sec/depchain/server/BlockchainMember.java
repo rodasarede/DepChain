@@ -1,12 +1,13 @@
-package com.sec.app;
-
+package com.sec.depchain.server;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.PerfectLinks;
 
 
 public class BlockchainMember {
-    private static int id ;
+    private static int id;
     private static boolean isLeader;
     private static SystemMembership systemMembership;
     private static int PORT;
@@ -23,14 +24,14 @@ public class BlockchainMember {
         }
         id = Integer.parseInt(args[0]);
     
-        systemMembership = new SystemMembership("src/main/java/com/sec/resources/system_membership.properties");
+        systemMembership = new SystemMembership("../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
         
         if(id == systemMembership.getLeaderId()){
             System.out.println("I am the leader with id: " + id);
             isLeader = true;
         }
 
-        PORT = systemMembership.getMembershipList().get(id).port;
+        PORT = systemMembership.getMembershipList().get(id).getPort();
         perfectLinks = new PerfectLinks(PORT);
         perfectLinks.setDeliverCallback(BlockchainMember::handleRequest);
 

@@ -1,4 +1,4 @@
-package com.sec.app.util;
+package com.sec.depchain.common;
 
 import java.security.PublicKey;
 import java.util.HashMap;

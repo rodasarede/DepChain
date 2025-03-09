@@ -1,4 +1,4 @@
-package com.sec.app;
+package com.sec.depchain.common;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-import com.sec.app.util.KeyLoader;
-import com.sec.app.util.CryptoUtils;
+//import com.sec.app.util.KeyLoader;
+//import com.sec.app.util.CryptoUtils;
 
 public class PerfectLinks {
     private final FairLossLinks fairLossLinks;
@@ -40,11 +40,15 @@ public class PerfectLinks {
         this.fairLossLinks.deliver();
 
         int nodeID = port - 5000 + 1; // TODO sure this is ok
-        this._privateKey = KeyLoader.loadPrivateKey("keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
+
+
+
+        System.out.println("Loading private key from: " + "../keys/private_key_" + nodeID + ".pem");
+        this._privateKey = KeyLoader.loadPrivateKey("../keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
                                                                                             // the
                                                                                             // node
         //TODO here we can change
-        this.publicKeys = KeyLoader.loadPublicKeys("keys");
+        this.publicKeys = KeyLoader.loadPublicKeys("../keys");
         /*PrivateKey KrA = KeyLoader.loadPrivateKey("keys/private_key_1.pem");
         //PublicKey KuA = KeyLoader.loadPublicKey("keys/public_key_1.pem");
         //PublicKey KuB = KeyLoader.loadPublicKey("keys/public_key_2.pem");
@@ -76,7 +80,7 @@ public class PerfectLinks {
         int nodeID = destPort - 5000 + 1;
         PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
 
-        System.out.println(nodeID);
+        System.out.println("node id: " + nodeID);
         // generate mac
         try {
 
@@ -96,7 +100,6 @@ public class PerfectLinks {
             new Thread(() -> {
                 int retriesLeft = retries;
                 while (sentMessages.containsKey(messageKey)) {
-                    printSentMessages();
                     try {
                         if (retriesLeft == 0) {
                             System.out.println("Message not delivered after 5 retries");
@@ -190,12 +193,7 @@ public class PerfectLinks {
     // Stop resending a message (if needed)
     public void stopResending(String destIP, int destPort, String message) {
         String messageKey = destIP + ":" + destPort + ":" + message;
-        System.out.println("Message key: " + messageKey);
-        System.out.println("Before");
-        printSentMessages();
         sentMessages.remove(messageKey);
-        System.out.println("After");
-        printSentMessages();
     }
 
     // debug

@@ -1,4 +1,4 @@
-package com.sec.app;
+package com.sec.depchain.common;
 import java.net.*;
 
 public class FairLossLinks {

@@ -1,4 +1,4 @@
-package com.sec.app;
+package com.sec.depchain.client;
 
 import java.util.Scanner;
 

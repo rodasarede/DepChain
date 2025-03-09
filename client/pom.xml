@@ -36,6 +36,14 @@
                     <target>1.8</target> <!-- Use the version of Java that suits your project -->
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>com.sec.depchain.client.ClientApplication</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

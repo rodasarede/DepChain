@@ -15,11 +15,11 @@
 3. **Run a server node:**
    ```sh
    cd server
-   mvn exec:java -Dexec.mainClass="com.sec.depchain.server.BlockChainMember" -Dexec.args="<server_id>"   
+   mvn exec:java -Dexec.args="<server_id>"   
    ```
    
 4. **Run a client node:**
    ```sh
    cd client
-   mvn exec:java -Dexec.mainClass="com.sec.depchain.client.ClientApplication" -Dexec.args="<client_id>"    
+   mvn exec:java -Dexec.args="<client_id>"    
    ```

@@ -3,17 +3,23 @@
 ## Run Instructions
 
 1. **Run the key script:**
-    ```./generate_key_pair.sh
-    ```
+   ```sh
+   ./generate_key_pair.sh
+   ```
 
 2. **Build the project:**
-    ```sh
-    mvn clean install
-    ```
+   ```sh
+   mvn clean install
+   ```
 
-3. **Run the application:**
-    ```sh
-    mvn exec:java -Dexec.mainClass="com.sec.app.BlockchainMember" -Dexec.args="id"
-    mvn exec:java -Dexec.mainClass="com.sec.app.ClientApplication" -Dexec.args="<client_id>"
-    ```
-
+3. **Run a server node:**
+   ```sh
+   cd server
+   mvn exec:java -Dexec.mainClass="com.sec.depchain.server.BlockChainMember" -Dexec.args="<server_id>"   
+   ```
+   
+4. **Run a client node:**
+   ```sh
+   cd client
+   mvn exec:java -Dexec.mainClass="com.sec.depchain.client.ClientApplication" -Dexec.args="<client_id>"    
+   ```

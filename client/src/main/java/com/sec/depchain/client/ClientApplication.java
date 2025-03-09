@@ -38,7 +38,7 @@ public class ClientApplication {
                 break;
             }
 
-            clientLibrary.sendAppendRequest(input);
+            clientLibrary.sendAppendRequest(clientId, input);
             System.out.println("String sent to clientLibrary: " + input);
         }
 

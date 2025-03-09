@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ public class PerfectLinks {
     private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
     private DeliverCallback deliverCallback; // Callback to notify the main class
+    private final int nodeId;
 
     private static final int retries = 5; // Number of retries before considering failure
 
@@ -28,10 +30,11 @@ public class PerfectLinks {
         void deliverReceivedMessage(String srcIP, int srcPort, String message);
     }
 
-    public PerfectLinks(int port) throws Exception {
+    public PerfectLinks(int port, int nodeId) throws Exception {
         this.fairLossLinks = new FairLossLinks(port);
         this.sentMessages = new ConcurrentHashMap<>();
         this.delivered = new ConcurrentHashMap<>(); // Initialize delivered set
+        this.nodeId = nodeId;
 
         // Register callback to receive messages from FairLossLinks
         this.fairLossLinks.setDeliverCallback(this::onFairLossDeliver);
@@ -39,12 +42,9 @@ public class PerfectLinks {
         // Start listening for messages
         this.fairLossLinks.deliver();
 
-        int nodeID = port - 5000 + 1; // TODO sure this is ok
 
-
-
-        System.out.println("Loading private key from: " + "../keys/private_key_" + nodeID + ".pem");
-        this._privateKey = KeyLoader.loadPrivateKey("../keys/private_key_" + nodeID + ".pem"); // TODO here with the id of
+        System.out.println("Loading private key from: " + "../keys/private_key_" + this.nodeId + ".pem");
+        this._privateKey = KeyLoader.loadPrivateKey("../keys/private_key_" + this.nodeId + ".pem"); // TODO here with the id of
                                                                                             // the
                                                                                             // node
         //TODO here we can change
@@ -73,19 +73,21 @@ public class PerfectLinks {
     }
 
     // Send a message Perfectly (keep resending)
-    public void send(String destIP, int destPort, String message) {
-        String messageKey = destIP + ":" + destPort + ":" + message;
+    public void send(String destIP, int destPort, int destId, String message, int seqNumber) {
+        String messageKey = destId + ":" + message;
         sentMessages.put(messageKey, true);
-        // Resend indefinitely (until process crashes)
-        int nodeID = destPort - 5000 + 1;
-        PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
+        System.out.println("Message Key: " + messageKey);
 
-        System.out.println("node id: " + nodeID);
+        String messageWithId = nodeId + "|"+ message;
+        // Resend indefinitely (until process crashes)
+        
+        System.out.println("Destination Node Id: " + destId);
+        PublicKey destPublicKey = publicKeys.get(destId); 
         // generate mac
         try {
 
             // IP
-            String mac = CryptoUtils.generateMAC(_privateKey, destPublicKey, message);
+            String mac = CryptoUtils.generateMAC(_privateKey, destPublicKey, messageWithId);
 
             // tampering mac
             /*
@@ -96,7 +98,7 @@ public class PerfectLinks {
 
              */
 
-            String authenticatedMsg = message + "|" + mac; // append mac
+            String authenticatedMsg = messageWithId + "|" + mac; // append mac
             new Thread(() -> {
                 int retriesLeft = retries;
                 while (sentMessages.containsKey(messageKey)) {
@@ -120,31 +122,39 @@ public class PerfectLinks {
 
     // Handle received messages from FairLossLinks
     private void onFairLossDeliver(String srcIP, int srcPort, String message) {
-        String messageKey = srcIP + ":" + srcPort + ":" + message;
+        
 
         String[] parts = message.split("\\|");
-        if (parts.length != 2) {
+        if (parts.length != 3) {
             System.out.println("Invalid message format: " + message);
             return;
 
         }
+        String messageWithId = parts[0] + "|" + parts[1];
+        
 
-        String originalMsg = parts[0];
+        String originalMsg = parts[1];
+        
+        // String[] elements = getMessageElements(originalMsg);
+        
 
-        String receivedMac = parts[1];
+        String receivedMac = parts[2];
         // TODO
-
-        System.out.println(receivedMac);
         // um unico teste
-        int nodeID = srcPort - 5000 + 1;
+        System.out.println(receivedMac);
+        
+        int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0]) : Integer.parseInt(parts[0].substring(3));
+        System.out.println("Sender Node ID: " + senderNodeId);
+        String messageKey =  senderNodeId + ":" + parts[1];
+        System.out.println("Message Key: " + messageKey);
+        
+        
 
-        PublicKey destPublicKey = publicKeys.get(nodeID); // TODO Extract node ID
-        // from
-        // IP
+        PublicKey destPublicKey = publicKeys.get(senderNodeId); 
         try {
 
-            if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, originalMsg, receivedMac)) {
-                System.out.println("MAC verification failed for message: " + originalMsg);
+            if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, messageWithId, receivedMac)) {
+                System.out.println("MAC verification failed for message: " + messageWithId);
                 return;
 
 
@@ -159,25 +169,17 @@ public class PerfectLinks {
             System.out.println("Fair loss Deliver from " + srcIP + ":" + srcPort + " -> " + message);
             delivered.put(messageKey, true); // Mark message as delivered
 
-            if (originalMsg.startsWith("ACK:")) {
-                // Remove "ACK:" from the message
-                originalMsg = originalMsg.substring(4);
-
-                // Remove everything after the ">" (including the MAC part after it)
-                int endOfMessage = originalMsg.indexOf('>');
-                if (endOfMessage != -1) {
-                    originalMsg = originalMsg.substring(0, endOfMessage + 1); // Keep everything up to and including the ">"
-                }
-
-                System.out.println("stop resending message: " + originalMsg);
-                stopResending(srcIP, srcPort, originalMsg);
+            if (message.startsWith("ACK")) {
+                 
+                System.out.println("stop resending message: " + messageKey);
+                stopResending(messageKey);
                 return;
             }
 
 
             // Send ACK back to the sender via a single message using fairloss
             try {
-                String ackMessage = "ACK:" + originalMsg;
+                String ackMessage = "ACK" + nodeId + "|" + originalMsg;
                 String ackMAC = CryptoUtils.generateMAC(_privateKey, destPublicKey, ackMessage);
                 fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
 
@@ -191,8 +193,7 @@ public class PerfectLinks {
     }
 
     // Stop resending a message (if needed)
-    public void stopResending(String destIP, int destPort, String message) {
-        String messageKey = destIP + ":" + destPort + ":" + message;
+    public void stopResending(String messageKey) {
         sentMessages.remove(messageKey);
     }
 
@@ -203,5 +204,24 @@ public class PerfectLinks {
             System.out.println(key);
         }
     }
+
+    public static String[] getMessageElements(String message) {
+        // Extract between "<" and ">"
+        int start = message.indexOf('<');
+        int end = message.indexOf('>');
+        if (start != -1 && end != -1 && start < end) {
+            
+            String extractedPart = message.substring(start + 1, end);
+            String[] elements = extractedPart.split(":");
+            System.out.println("Extracted parts: " + Arrays.toString(elements));
+            return elements;
+        } else {
+            System.out.println("Invalid format in message: " + message);
+            return null;
+        }
+    }
+
+
+
 
 }

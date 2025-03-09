@@ -7,12 +7,13 @@ import com.sec.depchain.common.PerfectLinks;
 
 
 public class BlockchainMember {
-    private static int id;
+    private static int Id;
     private static boolean isLeader;
     private static SystemMembership systemMembership;
     private static int PORT;
     private static List<String> blockchain = new ArrayList<>();
     private static PerfectLinks perfectLinks;
+    private static int seqNumber = 1;
     
 
     public static void main(String[] args) throws Exception {
@@ -22,17 +23,17 @@ public class BlockchainMember {
             System.out.println("Usage: <id>");
             return;
         }
-        id = Integer.parseInt(args[0]);
+        Id = Integer.parseInt(args[0]);
     
         systemMembership = new SystemMembership("../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
         
-        if(id == systemMembership.getLeaderId()){
-            System.out.println("I am the leader with id: " + id);
+        if(Id == systemMembership.getLeaderId()){
+            System.out.println("I am the leader with id: " + Id);
             isLeader = true;
         }
 
-        PORT = systemMembership.getMembershipList().get(id).getPort();
-        perfectLinks = new PerfectLinks(PORT);
+        PORT = systemMembership.getMembershipList().get(Id).getPort();
+        perfectLinks = new PerfectLinks(PORT, Id );
         perfectLinks.setDeliverCallback(BlockchainMember::handleRequest);
 
         System.out.println("Blockchain Member listening on port " + PORT + "...");
@@ -40,17 +41,22 @@ public class BlockchainMember {
 
     private static void handleRequest(String srcIP, int srcPort, String message) {
         System.out.println("Received request: " + message + "from " + srcIP + ":" + srcPort);
-
-        if (message.startsWith("<append, ")) {
-            String transaction = message.substring(9, message.length() - 1);
+        String[] messageElements = PerfectLinks.getMessageElements(message);
+        if (messageElements[0].equals("append")) {
+            String transaction = messageElements[2];
             
             // Run consensus
             boolean success = runConsensus(transaction);
-            System.out.println(success ? "Transaction confirmed and appended." : "Transaction failed.");
+            String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
+            String formattedMessage = "<" + Id + ":append:" + seqNumber + ":" + responseMessage + ">";
+            System.out.println(formattedMessage);
+            
+        
 
             // Send confirmation response back to client
-            String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
-            perfectLinks.send(srcIP, srcPort, responseMessage);
+            int destId = Integer.parseInt(message.split("\\|")[0]);
+            perfectLinks.send(srcIP, srcPort, destId, formattedMessage, seqNumber);
+            seqNumber++;
         }
     }
 

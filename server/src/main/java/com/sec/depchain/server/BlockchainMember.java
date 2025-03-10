@@ -7,12 +7,14 @@ import com.sec.depchain.common.PerfectLinks;
 
 public class BlockchainMember {
     private static int Id;
-    private static boolean isLeader;
+    private static boolean isLeader =  false; //should start as false
     private static SystemMembership systemMembership;
     private static int PORT;
     private static List<String> blockchain = new ArrayList<>();
     private static PerfectLinks perfectLinks;
     private static int seqNumber = 1;
+
+    private EpochSate state;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -55,8 +57,8 @@ public class BlockchainMember {
             seqNumber++;
         }
     }
-
-    private static boolean runConsensus(String transaction) {
+    //why static
+    private boolean runConsensus(String transaction) {
         System.out.println("Running consensus: INIT -> PROPOSE -> DECIDE");
 
         if (!initConsensus())
@@ -65,13 +67,37 @@ public class BlockchainMember {
             return false;
         return decideConsensus(transaction);
     }
-
-    private static boolean initConsensus() {
+    //why static
+    private boolean initConsensus() {
+        //initialize 
+        setState(new EpochSate(systemMembership.getNumberOfNodes()));
         System.out.println("INIT phase successful.");
         return true;
     }
+    //why static?
+    private boolean proposeConsensus(String transaction) {
+        //Only the leader
 
-    private static boolean proposeConsensus(String transaction) {
+        if(isLeader())
+        {
+            if(this.getState().getVal() == null) // val == null
+            {
+                this.getState().setVal(transaction); // val:=v;
+                for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+                {
+                    // For each process q , it triggers a Send event to send a [READ] msg doing AuthPerfectLinks
+                    //TODO
+                    // Processes reply with STATE message containing its local state <valts, val, writeset>:
+                    // Leader sends READ to all processes
+                    //how to create message???
+                    //String message = "<READ|" + getEpochId() + "|" + Id + ">";
+                    //perfectLinks.send(nodeId, message, seq_number);
+                    //seq_number ++;
+                }
+        
+            }
+        }
+
         System.out.println("PROPOSE phase: " + transaction);
         return true;
     }
@@ -81,4 +107,14 @@ public class BlockchainMember {
         blockchain.add(transaction);
         return true;
     }
+    public static boolean isLeader() {
+        return isLeader;
+    }
+    public EpochSate getState() {
+        return state;
+    }
+    public void setState(EpochSate state) {
+        this.state = state;
+    }
+
 }

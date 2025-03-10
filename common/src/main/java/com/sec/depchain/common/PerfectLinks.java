@@ -22,8 +22,6 @@ public class PerfectLinks {
 
     private final PrivateKey _privateKey;
 
-    // private final Map<Integer, PublicKey> publicKeys;
-
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
     }
@@ -80,7 +78,6 @@ public class PerfectLinks {
         // Resend indefinitely (until process crashes)
 
         System.out.println("Destination Node Id: " + destId);
-        // PublicKey destPublicKey = publicKeys.get(destId);
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
         // generate mac
         try {
@@ -132,18 +129,14 @@ public class PerfectLinks {
 
         String originalMsg = parts[1];
 
-        // String[] elements = getMessageElements(originalMsg);
 
         String receivedMac = parts[2];
         // TODO
-        // um unico teste
         System.out.println(receivedMac);
 
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
                 : Integer.parseInt(parts[0].substring(3));
-        // System.out.println("Sender Node ID: " + senderNodeId);
         String messageKey = senderNodeId + ":" + parts[1];
-        // System.out.println("Message Key: " + messageKey);
 
         PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); // Not sure is nodeID
 
@@ -206,7 +199,6 @@ public class PerfectLinks {
 
             String extractedPart = message.substring(start + 1, end);
             String[] elements = extractedPart.split(":");
-            // System.out.println("Extracted parts: " + Arrays.toString(elements));
             return elements;
         } else {
             System.out.println("Invalid format in message: " + message);

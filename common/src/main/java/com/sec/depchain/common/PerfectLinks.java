@@ -1,12 +1,8 @@
 package com.sec.depchain.common;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -49,24 +45,8 @@ public class PerfectLinks {
         this._privateKey = KeyLoader.loadPrivateKey("../keys/private_key_" + this.nodeId + ".pem"); // TODO here with the id of
                                                                                             // the
                                                                                             // node
-        //TODO here we can change
+        //TODO here we can change to load all the public keys from a cat file
         this.publicKeys = KeyLoader.loadPublicKeys("../keys");
-        /*PrivateKey KrA = KeyLoader.loadPrivateKey("keys/private_key_1.pem");
-        //PublicKey KuA = KeyLoader.loadPublicKey("keys/public_key_1.pem");
-        //PublicKey KuB = KeyLoader.loadPublicKey("keys/public_key_2.pem");
-        PrivateKey KrB = KeyLoader.loadPrivateKey("keys/private_key_2.pem");
-
-        PublicKey KuA = publicKeys.get(1);
-        PublicKey KuB = publicKeys.get(2);
-        // Generate shared secret from Party A's perspective
-        //byte[] sharedSecretA = CryptoUtils.deriveSharedSecret(KrA, KuB);
-
-        // Generate shared secret from Party B's perspective
-        //byte[] sharedSecretB = CryptoUtils.deriveSharedSecret(KrB, KuA);
-
-        // Compare the shared secrets
-        System.out.println("Shared Secret A: " + Base64.getEncoder().encodeToString(sharedSecretA));
-        System.out.println("Shared Secret B: " + Base64.getEncoder().encodeToString(sharedSecretB));*/
     }
 
     // Set the callback to notify when a message is delivered

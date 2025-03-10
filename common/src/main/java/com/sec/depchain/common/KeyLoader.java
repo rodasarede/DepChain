@@ -1,58 +1,53 @@
 package com.sec.depchain.common;
 
-
-
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
-import org.bouncycastle.openssl.PEMParser;
-
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.text.NumberFormat.Style;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 
 public class KeyLoader {
         static {
-        // Add BouncyCastle as a security provider
-        Security.addProvider(new BouncyCastleProvider());
+       
     }
 
-    public static PrivateKey loadPrivateKey(String filePath) throws Exception {
-        PemReader pemReader = new PemReader(new FileReader(new File(filePath)));
-        PemObject pemObject = pemReader.readPemObject();
-        byte[] keyBytes = pemObject.getContent();
-        pemReader.close();
+    public static PrivateKey loadPrivateKey(String filePath) throws Exception
+     {
+         try {
+             // Read the entire file content as a string
+             String pemContent = new String(Files.readAllBytes(Paths.get(filePath)));
+ 
+             // Remove the PEM headers and footers
+             pemContent = pemContent.replace("-----BEGIN PRIVATE KEY-----", "")
+             .replace("-----END PRIVATE KEY-----", "")
+             .replaceAll("\\s", ""); // Remove all whitespace
 
-        // Convert the key to Java's PrivateKey format
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("EC");
-        
-        return keyFactory.generatePrivate(keySpec);
-    }
+ 
+             // Decode the Base64-encoded key content
+             byte[] encodedKey = Base64.getDecoder().decode(pemContent);
+ 
+             return parsePrivateKey(encodedKey);
+         } catch (IOException e) {
+             System.err.println("Error reading file: " + filePath);
+             e.printStackTrace();
+         } catch (NoSuchAlgorithmException e) {
+             System.err.println("EC algorithm not supported.");
+             e.printStackTrace();
+         } catch (InvalidKeySpecException e) {
+             System.err.println("Invalid key specification.");
+             e.printStackTrace();
+         }
+         return null;
+     }
 
     public static Map <Integer,PublicKey> loadPublicKeys(String keyDir) throws IOException {
         //TODO read all public keys from all_public_keys.pem. I tried to implement this way but didn´t work
@@ -65,7 +60,7 @@ public class KeyLoader {
         return publicKeys;
     }
     
-    public static PublicKey loadPublicKey(String filename) {
+    public static PublicKey loadPublicKey(String filename) throws Exception {
         try {
             // Read the entire file content as a string
             String pemContent = new String(Files.readAllBytes(Paths.get(filename)));
@@ -79,13 +74,7 @@ public class KeyLoader {
             byte[] encodedKey = Base64.getDecoder().decode(pemContent);
 
             // Create a KeyFactory for the EC algorithm
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-
-            // Create an X509EncodedKeySpec from the encoded key
-            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encodedKey);
-
-            // Generate the PublicKey object
-            return keyFactory.generatePublic(keySpec);
+            return parsePublicKey(encodedKey);
         } catch (IOException e) {
             System.err.println("Error reading file: " + filename);
             e.printStackTrace();
@@ -97,6 +86,55 @@ public class KeyLoader {
             e.printStackTrace();
         }
         return null;
+    }
+    public static Map <Integer,PublicKey> loadAllPublicKeys(String filePath) throws IOException {
+        Map<Integer, PublicKey> publicKeyMap = new HashMap<>();
+            //TODO needs to be tested; This here is for loading from the cat file
+        try {
+            // Read the file content as a single string
+            String combinedKeys = new String(Files.readAllBytes(Paths.get(filePath)));
+
+            // Remove headers and newlines
+            String cleanedKeys = combinedKeys
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace("\n", "")
+                .replace("\r", "");
+
+            // Split into fixed-size chunks (88 characters for uncompressed keys)
+            int keyLength = 88;
+            int index = 0;
+            for (int i = 0; i < cleanedKeys.length(); i += keyLength) {
+                String base64Key = cleanedKeys.substring(i, Math.min(i + keyLength, cleanedKeys.length()));
+
+                // Decode the base64-encoded key
+                byte[] binaryKey = Base64.getDecoder().decode(base64Key);
+
+                // Parse the binary key into a PublicKey object
+                PublicKey publicKey = parsePublicKey(binaryKey);
+
+                // Add the PublicKey to the map with an integer key
+                publicKeyMap.put(index++, publicKey);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return publicKeyMap;
+    }
+    private static PublicKey parsePublicKey(byte[] binaryKey) throws Exception {
+        // Use KeyFactory to parse the binary key
+        KeyFactory keyFactory = KeyFactory.getInstance("EC"); // Use "EC" for elliptic curve keys
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(binaryKey);
+        return keyFactory.generatePublic(keySpec);
+    }
+    private static PrivateKey parsePrivateKey(byte[] binaryKey) throws Exception {
+        // Use KeyFactory to parse the binary key
+        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+
+        // Create an PKCS8EncodedKeySpec from the encoded key
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(binaryKey);
+        return keyFactory.generatePrivate(keySpec);
     }
 
 }

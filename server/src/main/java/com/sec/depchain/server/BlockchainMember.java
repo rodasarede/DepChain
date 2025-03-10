@@ -1,7 +1,11 @@
 package com.sec.depchain.server;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.PerfectLinks;
 
@@ -14,7 +18,7 @@ public class BlockchainMember {
     private static PerfectLinks perfectLinks;
 
     private static EpochSate state;
-    
+    private static Map<Integer, String> states; //TODO how can I save the states for the collected
         public static void main(String[] args) throws Exception {
             if (args.length != 1) {
                 System.out.println("Usage: <id>");
@@ -91,6 +95,7 @@ public class BlockchainMember {
         //why static
         private static boolean initConsensus() {
             //initialize 
+            states = new HashMap<>();
             setState(new EpochSate(systemMembership.getNumberOfNodes()));
             System.out.println("INIT phase successful.");
             return true;
@@ -98,7 +103,6 @@ public class BlockchainMember {
         //why static?
         private static boolean proposeConsensus(String transaction) {
             //Only the leader
-    
             if(isLeader())
             {
                 if(getState().getVal() == null) // val == null
@@ -119,11 +123,69 @@ public class BlockchainMember {
             
                 }
             }
-    
             System.out.println("PROPOSE phase: " + transaction);
             return true;
         }
-    
+        private static boolean handleReadMessage(int senderId)
+        {
+            if(senderId == systemMembership.getLeaderId()) //Only the leader can send READ msg
+            {
+                String message = "STATE|" + state.getValts() + "|" + state.getVal() + "|" + state.getWriteSet(); //TODO verify this
+                //containing local state <valts, val, writeset>:
+                //(valts, val) - a timestamp/value pair with the value that the process received most recently in a Byzantine quorum of WRITE messages
+                //writeset - a set of timestamp/value pairs with one entry for every value that this process has ever written (where timestamp == most recent epoch where the value was written).
+                perfectLinks.send(senderId, message, seqNumber); //reply
+            }
+            return true;
+        }
+        private static boolean onDeliver(int SenderId, String message){
+            String[] parts = message.split("\\|");
+            switch(parts[1]){
+                case "READ":
+                    handleReadMessage(SenderId); //TODO
+                    break;
+                case "STATE":
+                    //handleStateMessage();
+                    break;
+                default: 
+                    break;
+            }
+            return true;
+        }
+        private static boolean collected(){
+            //State in form [State,ts,v,ws] or undefined
+            String tmpval = null; //tmpval:=⊥;
+            for (Map.Entry<Integer, String> entry : states.entrySet()) {
+                String[] split = entry.getValue().split("\\|");
+                int ts = Integer.parseInt(split[1]);
+                String val = split[2];
+                if(ts >= 0 && val!= null) //ts≥0 , v diff null //TODO binds(ts, v, states)
+                {
+                    tmpval = val;
+                }
+                
+            }
+            //else if 
+            if(tmpval != null) //tmp value diff null
+            {
+                for (Iterator<Map.Entry<Integer, String>> it = state.getWriteSet().entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Integer, String> entry = it.next();
+                     //if exits ts such that (ts,tmpvalue) pertence ao writeset
+                    if(entry.getValue().equals(tmpval)){
+                        it.remove(); //remove old entry
+                        state.getWriteSet().put(state.getValts(), tmpval); //add new entry ets: current epoch timestamp
+                        break;
+                    }
+            }
+        }
+            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+            {
+                //trigger a send WRITE message containing tmpval
+                String message = "WRITE|" + state.getValts() + "|" + tmpval; //TODO
+                seqNumber++;
+            }
+            return true;
+        }
         private static boolean decideConsensus(String transaction) {
             System.out.println("DECIDE phase: Committing transaction.");
             blockchain.add(transaction);

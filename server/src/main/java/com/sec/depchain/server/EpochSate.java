@@ -15,7 +15,7 @@ public class EpochSate {
     public EpochSate(int numberOfNodes) {
         this.valts = 0;
         this.val = null;
-        this.writeSet = new HashMap<String, Integer>(); //TODO change to a set?
+        this.writeSet = new HashMap<Integer, String>(); //TODO change to a set?
         this.written = new boolean[numberOfNodes];
         this.accepted = new boolean[numberOfNodes];
 
@@ -29,7 +29,7 @@ public class EpochSate {
     public Integer getValts() {
         return valts;
     }
-    public HashMap<String, Integer> getWriteSet() {
+    public HashMap<Integer, String> getWriteSet() {
         return writeSet;
     }
     public boolean[] getWritten() {
@@ -44,7 +44,7 @@ public class EpochSate {
     public void setValts(Integer valts) {
         this.valts = valts;
     }
-    public void setWriteSet(HashMap<String, Integer> writeSet) {
+    public void setWriteSet(HashMap<Integer, String> writeSet) {
         this.writeSet = writeSet;
     }
     public void setWritten(boolean[] written) {

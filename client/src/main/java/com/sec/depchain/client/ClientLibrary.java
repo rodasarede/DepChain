@@ -17,8 +17,6 @@ public class ClientLibrary {
         this.perfectLinks.setDeliverCallback(this::onPerfectLinksDeliver);
     }
 
-   
-
     public void sendAppendRequest(String string) {
         String formattedMessage = "<append:" + seqNumber + ":" + string + ">";
         // TODO: Decide do which blockchain nodes to send the request
@@ -38,8 +36,9 @@ public class ClientLibrary {
             System.out.println("No callback set: could not deliver AppendResponse");
         }
     }
-     // Setter for the callback
-     public void setDeliverCallback(DeliverCallback callback) {
+
+    // Setter for the callback
+    public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
     }
 }

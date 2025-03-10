@@ -22,14 +22,15 @@ public class PerfectLinks {
 
     private final PrivateKey _privateKey;
 
-    //private final Map<Integer, PublicKey> publicKeys;
+    // private final Map<Integer, PublicKey> publicKeys;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
     }
 
     public PerfectLinks(int nodeId) throws Exception {
-        systemMembership = new SystemMembership("../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
+        systemMembership = new SystemMembership(
+                "../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
         this.port = getPort(nodeId);
         System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
@@ -43,13 +44,19 @@ public class PerfectLinks {
         // Start listening for messages
         this.fairLossLinks.deliver();
 
-
-        System.out.println("Loading private key from: " + "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
-        this._privateKey = KeyLoader.loadPrivateKey("../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem"); // TODO here with the id of
-                                                                                            // the
-                                                                                            // node
-        //TODO here we can change to load all the public keys from a cat file
-        //this.publicKeys = KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
+        System.out.println("Loading private key from: "
+                + "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
+        this._privateKey = KeyLoader.loadPrivateKey(
+                "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem"); // TODO
+                                                                                                                // here
+                                                                                                                // with
+                                                                                                                // the
+                                                                                                                // id of
+        // the
+        // node
+        // TODO here we can change to load all the public keys from a cat file
+        // this.publicKeys =
+        // KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
     }
 
     // Set the callback to notify when a message is delivered
@@ -59,7 +66,8 @@ public class PerfectLinks {
 
     // Send a message Perfectly (keep resending)
     public void send(int destId, String message, int seqNumber) {
-        // TODO if destId == -1 -> its a client: send to all servers but for now set to 1
+        // TODO if destId == -1 -> its a client: send to all servers but for now set to
+        // 1
         if (destId == -1)
             destId = 1;
         String destIP = getIP(destId);
@@ -68,11 +76,11 @@ public class PerfectLinks {
         sentMessages.put(messageKey, true);
         System.out.println("Message Key: " + messageKey);
 
-        String messageWithId = nodeId + "|"+ message;
+        String messageWithId = nodeId + "|" + message;
         // Resend indefinitely (until process crashes)
-        
+
         System.out.println("Destination Node Id: " + destId);
-        //PublicKey destPublicKey = publicKeys.get(destId); 
+        // PublicKey destPublicKey = publicKeys.get(destId);
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
         // generate mac
         try {
@@ -82,11 +90,11 @@ public class PerfectLinks {
 
             // tampering mac
             /*
-            String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
-            System.out.println("original mac: " + mac);
-            System.out.println("tampered mac: " + tamperedMac);
-            mac = tamperedMac;
-
+             * String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
+             * System.out.println("original mac: " + mac);
+             * System.out.println("tampered mac: " + tamperedMac);
+             * mac = tamperedMac;
+             * 
              */
 
             String authenticatedMsg = messageWithId + "|" + mac; // append mac
@@ -121,33 +129,29 @@ public class PerfectLinks {
 
         }
         String messageWithId = parts[0] + "|" + parts[1];
-        
 
         String originalMsg = parts[1];
-        
+
         // String[] elements = getMessageElements(originalMsg);
-        
 
         String receivedMac = parts[2];
         // TODO
         // um unico teste
         System.out.println(receivedMac);
-        
-        int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0]) : Integer.parseInt(parts[0].substring(3));
+
+        int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
+                : Integer.parseInt(parts[0].substring(3));
         // System.out.println("Sender Node ID: " + senderNodeId);
-        String messageKey =  senderNodeId + ":" + parts[1];
+        String messageKey = senderNodeId + ":" + parts[1];
         // System.out.println("Message Key: " + messageKey);
-        
-        
-        PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); //Not sure is nodeID
+
+        PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); // Not sure is nodeID
 
         try {
 
             if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, messageWithId, receivedMac)) {
                 System.out.println("MAC verification failed for message: " + messageWithId);
                 return;
-
-
 
             }
         } catch (Exception e) {
@@ -160,12 +164,11 @@ public class PerfectLinks {
             delivered.put(messageKey, true); // Mark message as delivered
 
             if (message.startsWith("ACK")) {
-                 
+
                 System.out.println("stop resending message: " + messageKey);
                 stopResending(messageKey);
                 return;
             }
-
 
             // Send ACK back to the sender via a single message using fairloss
             try {
@@ -200,7 +203,7 @@ public class PerfectLinks {
         int start = message.indexOf('<');
         int end = message.indexOf('>');
         if (start != -1 && end != -1 && start < end) {
-            
+
             String extractedPart = message.substring(start + 1, end);
             String[] elements = extractedPart.split(":");
             // System.out.println("Extracted parts: " + Arrays.toString(elements));
@@ -211,17 +214,16 @@ public class PerfectLinks {
         }
     }
 
-
     private int getPort(int nodeId) {
-        if(systemMembership.getMembershipList().get(nodeId) == null){
-            return 6000+nodeId;
+        if (systemMembership.getMembershipList().get(nodeId) == null) {
+            return 6000 + nodeId;
         }
         int port = systemMembership.getMembershipList().get(nodeId).getPort();
         return port;
     }
 
     private String getIP(int nodeId) {
-        if(systemMembership.getMembershipList().get(nodeId) == null){
+        if (systemMembership.getMembershipList().get(nodeId) == null) {
             return "127.0.0.1";
         }
         String leaderIP = systemMembership.getMembershipList().get(nodeId).getAddress();

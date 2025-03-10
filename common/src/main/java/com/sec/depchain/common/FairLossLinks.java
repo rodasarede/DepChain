@@ -1,4 +1,5 @@
 package com.sec.depchain.common;
+
 import java.net.*;
 
 public class FairLossLinks {
@@ -43,7 +44,8 @@ public class FairLossLinks {
                     String srcIP = packet.getAddress().getHostAddress();
                     int srcPort = packet.getPort();
 
-                    //System.out.println("\nReceived from " + srcIP + ":" + srcPort + " -> " + message);
+                    // System.out.println("\nReceived from " + srcIP + ":" + srcPort + " -> " +
+                    // message);
                     System.out.print("> "); // Mostrar prompt novamente após receber
 
                     // Se a callback foi definida, chamá-la

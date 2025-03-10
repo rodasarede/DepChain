@@ -10,15 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-//import com.sec.app.util.KeyLoader;
-//import com.sec.app.util.CryptoUtils;
-
 public class PerfectLinks {
+    private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
     private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
-    private DeliverCallback deliverCallback; // Callback to notify the main class
     private final int nodeId;
+    private final int port;
 
     private static final int retries = 5; // Number of retries before considering failure
 
@@ -27,11 +25,13 @@ public class PerfectLinks {
     private final Map<Integer, PublicKey> publicKeys;
 
     public interface DeliverCallback {
-        void deliverReceivedMessage(String srcIP, int srcPort, String message);
+        void deliver(int NodeId, String message);
     }
 
-    public PerfectLinks(int port, int nodeId) throws Exception {
-        this.fairLossLinks = new FairLossLinks(port);
+    public PerfectLinks(int nodeId) throws Exception {
+        this.port = getPort(nodeId);
+        System.out.println("I'm on port " + this.port);
+        this.fairLossLinks = new FairLossLinks(this.port);
         this.sentMessages = new ConcurrentHashMap<>();
         this.delivered = new ConcurrentHashMap<>(); // Initialize delivered set
         this.nodeId = nodeId;
@@ -73,7 +73,12 @@ public class PerfectLinks {
     }
 
     // Send a message Perfectly (keep resending)
-    public void send(String destIP, int destPort, int destId, String message, int seqNumber) {
+    public void send(int destId, String message, int seqNumber) {
+        // TODO if destId == -1 -> its a client: send to all servers but for now set to 1
+        if (destId == -1)
+            destId = 1;
+        String destIP = getIP(destId);
+        int destPort = getPort(destId);
         String messageKey = destId + ":" + message;
         sentMessages.put(messageKey, true);
         System.out.println("Message Key: " + messageKey);
@@ -122,7 +127,6 @@ public class PerfectLinks {
 
     // Handle received messages from FairLossLinks
     private void onFairLossDeliver(String srcIP, int srcPort, String message) {
-        
 
         String[] parts = message.split("\\|");
         if (parts.length != 3) {
@@ -187,7 +191,7 @@ public class PerfectLinks {
                 e.printStackTrace();
             }
             if (deliverCallback != null) {
-                deliverCallback.deliverReceivedMessage(srcIP, srcPort, message);
+                deliverCallback.deliver(senderNodeId, message);
             }
         }
     }
@@ -222,6 +226,12 @@ public class PerfectLinks {
     }
 
 
+    private int getPort(int nodeId) {
+        return nodeId + 5000;
+    }
 
+    private String getIP(int nodeId) {
+        return "localhost";
+    }
 
 }

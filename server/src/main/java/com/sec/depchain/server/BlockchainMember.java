@@ -32,15 +32,16 @@ public class BlockchainMember {
             isLeader = true;
         }
 
-        PORT = systemMembership.getMembershipList().get(Id).getPort();
-        perfectLinks = new PerfectLinks(PORT, Id );
-        perfectLinks.setDeliverCallback(BlockchainMember::handleRequest);
+        //PORT = systemMembership.getMembershipList().get(Id).getPort();
+        //PORT = getPort(Id);
+        perfectLinks = new PerfectLinks(Id);
+        perfectLinks.setDeliverCallback(BlockchainMember::onPerfectLinksDeliver);
 
-        System.out.println("Blockchain Member listening on port " + PORT + "...");
+        //System.out.println("Blockchain Member listening on port " + PORT + "...");
     }
 
-    private static void handleRequest(String srcIP, int srcPort, String message) {
-        System.out.println("Received request: " + message + "from " + srcIP + ":" + srcPort);
+    private static void onPerfectLinksDeliver(int senderId, String message) {
+        System.out.println("Received request: " + message + "from " + senderId);
         String[] messageElements = PerfectLinks.getMessageElements(message);
         if (messageElements[0].equals("append")) {
             String transaction = messageElements[2];
@@ -55,7 +56,7 @@ public class BlockchainMember {
 
             // Send confirmation response back to client
             int destId = Integer.parseInt(message.split("\\|")[0]);
-            perfectLinks.send(srcIP, srcPort, destId, formattedMessage, seqNumber);
+            perfectLinks.send(destId, formattedMessage, seqNumber);
             seqNumber++;
         }
     }

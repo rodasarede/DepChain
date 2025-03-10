@@ -41,12 +41,12 @@ public class PerfectLinks {
         this.fairLossLinks.deliver();
 
 
-        System.out.println("Loading private key from: " + "../keys/private_key_" + this.nodeId + ".pem");
-        this._privateKey = KeyLoader.loadPrivateKey("../keys/private_key_" + this.nodeId + ".pem"); // TODO here with the id of
+        System.out.println("Loading private key from: " + "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
+        this._privateKey = KeyLoader.loadPrivateKey("../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem"); // TODO here with the id of
                                                                                             // the
                                                                                             // node
         //TODO here we can change to load all the public keys from a cat file
-        this.publicKeys = KeyLoader.loadPublicKeys("resources/keys");
+        this.publicKeys = KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
     }
 
     // Set the callback to notify when a message is delivered

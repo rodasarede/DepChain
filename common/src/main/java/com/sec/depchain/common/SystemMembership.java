@@ -11,7 +11,7 @@ import java.util.Properties;
 
 
 public class SystemMembership {
-    public static final String KEY_DIR = "resources/keys";
+    public static final String KEY_DIR = "../common/src/main/java/com/sec/depchain/resources/keys";
 
     private int leaderId;
     private HashMap<Integer, Member> membershipList = new HashMap<>();

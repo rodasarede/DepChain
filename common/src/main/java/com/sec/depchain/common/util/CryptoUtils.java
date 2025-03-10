@@ -1,4 +1,4 @@
-package com.sec.depchain.common;
+package com.sec.depchain.common.util;
 
 import java.security.MessageDigest;
 import java.security.PrivateKey;

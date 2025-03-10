@@ -1,4 +1,4 @@
-package com.sec.depchain.common;
+package com.sec.depchain.common.util;
 
 import java.io.IOException;
 import java.nio.file.Files;

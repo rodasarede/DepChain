@@ -16,10 +16,10 @@ import java.util.Map;
 
 
 public class KeyLoader {
-        static {
-       
-    }
-
+    private KeyLoader()
+    {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    } 
     public static PrivateKey loadPrivateKey(String filePath) throws Exception
      {
          try {

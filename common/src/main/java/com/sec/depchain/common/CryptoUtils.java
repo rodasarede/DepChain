@@ -11,6 +11,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 
 public class CryptoUtils {
+    private CryptoUtils()
+    {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
     public static byte[] deriveSymmetricKey(byte[] sharedSecret) throws Exception {
         byte[] salt = new byte[32]; // Could be a fixed or dynamically generated salt
         Mac mac = Mac.getInstance("HmacSHA256");

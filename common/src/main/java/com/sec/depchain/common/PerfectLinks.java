@@ -46,7 +46,7 @@ public class PerfectLinks {
                                                                                             // the
                                                                                             // node
         //TODO here we can change to load all the public keys from a cat file
-        this.publicKeys = KeyLoader.loadPublicKeys("../keys");
+        this.publicKeys = KeyLoader.loadPublicKeys("resources/keys");
     }
 
     // Set the callback to notify when a message is delivered

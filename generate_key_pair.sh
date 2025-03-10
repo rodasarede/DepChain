@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory to store the keys
-KEY_DIR="keys"
+KEY_DIR="common/src/main/java/com/sec/depchain/resources/keys"
 mkdir -p $KEY_DIR
 
 # Generate 100 key pairs

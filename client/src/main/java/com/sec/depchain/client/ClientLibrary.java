@@ -17,10 +17,7 @@ public class ClientLibrary {
         this.perfectLinks.setDeliverCallback(this::onPerfectLinksDeliver);
     }
 
-    // Setter for the callback
-    public void setDeliverCallback(DeliverCallback callback) {
-        this.deliverCallback = callback;
-    }
+   
 
     public void sendAppendRequest(String string) {
         String formattedMessage = "<append:" + seqNumber + ":" + string + ">";
@@ -40,5 +37,9 @@ public class ClientLibrary {
         } else {
             System.out.println("No callback set: could not deliver AppendResponse");
         }
+    }
+     // Setter for the callback
+     public void setDeliverCallback(DeliverCallback callback) {
+        this.deliverCallback = callback;
     }
 }

@@ -114,7 +114,7 @@ public class PerfectLinks {
 
 
         String receivedMac = parts[2];
-        // TODO
+        
         System.out.println(receivedMac);
 
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])

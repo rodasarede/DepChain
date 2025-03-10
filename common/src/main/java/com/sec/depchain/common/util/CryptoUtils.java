@@ -42,7 +42,6 @@ public class CryptoUtils {
 
     public static String generateMAC(PrivateKey privateKey, PublicKey publicKey, String message) throws Exception {
         // Derive shared secret using ECDH
-        // TODO here with the IP and index...
 
         byte[] sharedSecret = CryptoUtils.deriveSharedSecret(privateKey, publicKey); // IP
         // Derive symmetric key using HKDF

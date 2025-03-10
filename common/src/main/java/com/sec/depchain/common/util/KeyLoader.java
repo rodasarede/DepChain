@@ -47,8 +47,6 @@ public class KeyLoader {
     }
 
     public static Map<Integer, PublicKey> loadPublicKeys(String keyDir) throws Exception {
-        // TODO read all public keys from all_public_keys.pem. I tried to implement this
-        // way but didn´t work
         Map<Integer, PublicKey> publicKeys = new HashMap<>();
         for (int i = 1; i <= 100; i++) {
             String filename = keyDir + "/public_key_" + i + ".pem";

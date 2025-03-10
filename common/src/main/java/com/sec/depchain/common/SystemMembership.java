@@ -32,7 +32,6 @@ public class SystemMembership {
             for (int i = 1; i <= numberOfNodes; i++) {
                 String address = properties.getProperty(i + "_Address");
                 int port = Integer.parseInt(properties.getProperty(i + "_Port"));
-                // TODO Should I save the private key?
                 membershipList.put(i, new Member(address, port));
                 // System.out.println("Member" + i + " Address: " + address + " Port: " + port);
             }

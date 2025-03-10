@@ -24,6 +24,7 @@ public class ClientLibrary {
 
     public void sendAppendRequest(String string) {
         String formattedMessage = "<append:" + seqNumber + ":" + string + ">";
+        // TODO: Decide do which blockchain nodes to send the request
         perfectLinks.send(-1, formattedMessage, seqNumber);
         seqNumber++;
     }

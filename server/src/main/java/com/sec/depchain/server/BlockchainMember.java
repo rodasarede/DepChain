@@ -41,7 +41,7 @@ public class BlockchainMember {
     }
 
     private static void onPerfectLinksDeliver(int senderId, String message) {
-        System.out.println("Received request: " + message + "from " + senderId);
+        System.out.println("Received request: " + message + " from Id: " + senderId);
         String[] messageElements = PerfectLinks.getMessageElements(message);
         if (messageElements[0].equals("append")) {
             String transaction = messageElements[2];
@@ -49,11 +49,10 @@ public class BlockchainMember {
             // Run consensus
             boolean success = runConsensus(transaction);
             String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
-            String formattedMessage = "<" + Id + ":append:" + seqNumber + ":" + responseMessage + ">";
-            System.out.println(formattedMessage);
+            String formattedMessage = "<append:" + messageElements[1] + ":" + responseMessage + ">";
+            //System.out.println(formattedMessage);
             
         
-
             // Send confirmation response back to client
             int destId = Integer.parseInt(message.split("\\|")[0]);
             perfectLinks.send(destId, formattedMessage, seqNumber);

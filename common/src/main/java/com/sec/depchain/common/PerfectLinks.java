@@ -15,6 +15,7 @@ public class PerfectLinks {
     private final FairLossLinks fairLossLinks;
     private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
+    private static SystemMembership systemMembership;
     private final int nodeId;
     private final int port;
 
@@ -29,6 +30,7 @@ public class PerfectLinks {
     }
 
     public PerfectLinks(int nodeId) throws Exception {
+        systemMembership = new SystemMembership("../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
         this.port = getPort(nodeId);
         System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
@@ -148,9 +150,9 @@ public class PerfectLinks {
         System.out.println(receivedMac);
         
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0]) : Integer.parseInt(parts[0].substring(3));
-        System.out.println("Sender Node ID: " + senderNodeId);
+        // System.out.println("Sender Node ID: " + senderNodeId);
         String messageKey =  senderNodeId + ":" + parts[1];
-        System.out.println("Message Key: " + messageKey);
+        // System.out.println("Message Key: " + messageKey);
         
         
 
@@ -217,7 +219,7 @@ public class PerfectLinks {
             
             String extractedPart = message.substring(start + 1, end);
             String[] elements = extractedPart.split(":");
-            System.out.println("Extracted parts: " + Arrays.toString(elements));
+            // System.out.println("Extracted parts: " + Arrays.toString(elements));
             return elements;
         } else {
             System.out.println("Invalid format in message: " + message);
@@ -227,11 +229,19 @@ public class PerfectLinks {
 
 
     private int getPort(int nodeId) {
-        return nodeId + 5000;
+        if(systemMembership.getMembershipList().get(nodeId) == null){
+            return 6000+nodeId;
+        }
+        int port = systemMembership.getMembershipList().get(nodeId).getPort();
+        return port;
     }
 
     private String getIP(int nodeId) {
-        return "localhost";
+        if(systemMembership.getMembershipList().get(nodeId) == null){
+            return "127.0.0.1";
+        }
+        String leaderIP = systemMembership.getMembershipList().get(nodeId).getAddress();
+        return leaderIP;
     }
 
 }

@@ -16,27 +16,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
-        <!-- Example of adding dependencies -->
-        <!-- Add any necessary dependencies here if the common module needs them -->
-        <!--
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.77</version>
-        </dependency>
-        -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.77</version>
-        </dependency>
-        <!--
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.70</version>
-        </dependency>
-         -->
+
     </dependencies>
 
     <build>

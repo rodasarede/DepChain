@@ -3,17 +3,12 @@ package com.sec.depchain.common;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.util.test.FixedSecureRandom.BigInteger;
+
 
 public class CryptoUtils {
     public static byte[] deriveSymmetricKey(byte[] sharedSecret) throws Exception {

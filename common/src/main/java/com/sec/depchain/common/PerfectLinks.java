@@ -5,6 +5,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
@@ -18,9 +19,7 @@ public class PerfectLinks {
     private final int nodeId;
     private final int port;
 
-    private static final int retries = 5; // Number of retries before considering failure
-
-    private final PrivateKey _privateKey;
+    private final PrivateKey privateKey;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
@@ -42,19 +41,8 @@ public class PerfectLinks {
         // Start listening for messages
         this.fairLossLinks.deliver();
 
-        System.out.println("Loading private key from: "
-                + "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
-        this._privateKey = KeyLoader.loadPrivateKey(
-                "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem"); // TODO
-                                                                                                                // here
-                                                                                                                // with
-                                                                                                                // the
-                                                                                                                // id of
-        // the
-        // node
-        // TODO here we can change to load all the public keys from a cat file
-        // this.publicKeys =
-        // KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
+        this.privateKey = KeyLoader.loadPrivateKey(
+                "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
     }
 
     // Set the callback to notify when a message is delivered
@@ -81,9 +69,8 @@ public class PerfectLinks {
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
         // generate mac
         try {
-
             // IP
-            String mac = CryptoUtils.generateMAC(_privateKey, destPublicKey, messageWithId);
+            String mac = CryptoUtils.generateMAC(privateKey, destPublicKey, messageWithId);
 
             // tampering mac
             /*
@@ -93,19 +80,15 @@ public class PerfectLinks {
              * mac = tamperedMac;
              * 
              */
-
+            AtomicLong timeout = new AtomicLong(1000);
             String authenticatedMsg = messageWithId + "|" + mac; // append mac
             new Thread(() -> {
-                int retriesLeft = retries;
                 while (sentMessages.containsKey(messageKey)) {
                     try {
-                        if (retriesLeft == 0) {
-                            System.out.println("Message not delivered after 5 retries"); //TODO mandar para sempre nunca parar
-                            break;
-                        }
                         fairLossLinks.send(destIP, destPort, authenticatedMsg); // send authenticated msg
-                        retriesLeft--;
-                        Thread.sleep(1000); // Resend every second (adjust as needed) //TODO Resend exponencialmente
+                        
+                        Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
+                        timeout.set((long)(1.5 * timeout.get())); //flexible
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -142,7 +125,7 @@ public class PerfectLinks {
 
         try {
 
-            if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, messageWithId, receivedMac)) {
+            if (!CryptoUtils.verifyMAC(privateKey, destPublicKey, messageWithId, receivedMac)) {
                 System.out.println("MAC verification failed for message: " + messageWithId);
                 return;
 
@@ -166,7 +149,7 @@ public class PerfectLinks {
             // Send ACK back to the sender via a single message using fairloss
             try {
                 String ackMessage = "ACK" + nodeId + "|" + originalMsg;
-                String ackMAC = CryptoUtils.generateMAC(_privateKey, destPublicKey, ackMessage);
+                String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
                 fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
 
             } catch (Exception e) {

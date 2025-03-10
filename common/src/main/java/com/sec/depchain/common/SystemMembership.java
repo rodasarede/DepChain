@@ -81,5 +81,8 @@ public class SystemMembership {
     public void setPublicKeys(Map<Integer, PublicKey> publicKeys) {
         this.publicKeys = publicKeys;
     }
-    
+    public PublicKey getPublicKey(Integer id)
+    {
+        return this.publicKeys.get(id);
+    }
 }

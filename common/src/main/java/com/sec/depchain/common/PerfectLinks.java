@@ -22,7 +22,7 @@ public class PerfectLinks {
 
     private final PrivateKey _privateKey;
 
-    private final Map<Integer, PublicKey> publicKeys;
+    //private final Map<Integer, PublicKey> publicKeys;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
@@ -49,7 +49,7 @@ public class PerfectLinks {
                                                                                             // the
                                                                                             // node
         //TODO here we can change to load all the public keys from a cat file
-        this.publicKeys = KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
+        //this.publicKeys = KeyLoader.loadPublicKeys("../common/src/main/java/com/sec/depchain/resources/keys");
     }
 
     // Set the callback to notify when a message is delivered
@@ -72,7 +72,8 @@ public class PerfectLinks {
         // Resend indefinitely (until process crashes)
         
         System.out.println("Destination Node Id: " + destId);
-        PublicKey destPublicKey = publicKeys.get(destId); 
+        //PublicKey destPublicKey = publicKeys.get(destId); 
+        PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
         // generate mac
         try {
 
@@ -138,8 +139,8 @@ public class PerfectLinks {
         // System.out.println("Message Key: " + messageKey);
         
         
+        PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); //Not sure is nodeID
 
-        PublicKey destPublicKey = publicKeys.get(senderNodeId); 
         try {
 
             if (!CryptoUtils.verifyMAC(_privateKey, destPublicKey, messageWithId, receivedMac)) {

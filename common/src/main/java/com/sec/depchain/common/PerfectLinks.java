@@ -12,9 +12,9 @@ import com.sec.depchain.common.util.KeyLoader;
 public class PerfectLinks {
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
-    private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend
+    private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend //TODO nao podemos guardar mensagens infinitamente -> mudar para sequence number 
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
-    private static SystemMembership systemMembership;
+    private static SystemMembership systemMembership; 
     private final int nodeId;
     private final int port;
 
@@ -25,7 +25,7 @@ public class PerfectLinks {
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
     }
-
+    //TODO sequence number in order to make in-order delivery
     public PerfectLinks(int nodeId) throws Exception {
         systemMembership = new SystemMembership(
                 "../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
@@ -100,12 +100,12 @@ public class PerfectLinks {
                 while (sentMessages.containsKey(messageKey)) {
                     try {
                         if (retriesLeft == 0) {
-                            System.out.println("Message not delivered after 5 retries");
+                            System.out.println("Message not delivered after 5 retries"); //TODO mandar para sempre nunca parar
                             break;
                         }
                         fairLossLinks.send(destIP, destPort, authenticatedMsg); // send authenticated msg
                         retriesLeft--;
-                        Thread.sleep(1000); // Resend every second (adjust as needed)
+                        Thread.sleep(1000); // Resend every second (adjust as needed) //TODO Resend exponencialmente
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

@@ -91,6 +91,7 @@ public class BlockchainMember {
                         // Leader sends READ to all processes
                         //how to create message???
                         //String message = "<READ|" + getEpochId() + "|" + Id + ">";
+                        //estado atual
                         //perfectLinks.send(nodeId, message, seq_number);
                         //seq_number ++;
                     }

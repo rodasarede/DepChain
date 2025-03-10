@@ -22,7 +22,7 @@ public class FairLossLinks {
         this.deliverCallback = callback;
     }
 
-    // Envia uma mensagem para um destino específico
+    // Envia uma mensagem para um destino específico 
     public void send(String destIP, int destPort, String message) throws Exception {
         InetAddress destAddress = InetAddress.getByName(destIP);
         byte[] data = message.getBytes();

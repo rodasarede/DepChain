@@ -143,7 +143,7 @@ public class BlockchainMember {
                 //containing local state <valts, val, writeset>:
                 //(valts, val) - a timestamp/value pair with the value that the process received most recently in a Byzantine quorum of WRITE messages
                 //writeset - a set of timestamp/value pairs with one entry for every value that this process has ever written (where timestamp == most recent epoch where the value was written).
-                //perfectLinks.send(senderId, message, seqNumber); //reply
+                perfectLinks.send(senderId, message); //reply
             }
             return true;
         }
@@ -226,7 +226,6 @@ public class BlockchainMember {
                 //trigger a send WRITE message containing tmpval
                 String message =  formatWriteMessage(state.getValts(), tmpval);
                 
-                //seqNumber++;
             }
             return true;
         }
@@ -246,20 +245,20 @@ public class BlockchainMember {
     }
     private static String formatReadMessage(Integer epochId, Integer id)
     {
-        return "READ|" + epochId + "|" + id + ">";
+        return "<READ:" + epochId + ":" + id + ">";
     }
     private static String formatStateMessage(Integer valts, String val, HashMap<Integer, String> writeSet)
     {
         //TODO how to write the writeset into the message
-        return "STATE|" + valts + "|" + val + "|" + writeSet;
+        return "<STATE:" + valts + ":" + val + ":" + writeSet+">";
     }
     private static String formatWriteMessage(Integer valts, String tmpval)
     {
-        return "WRITE|" + valts + "|" + tmpval;
+        return "<WRITE:" + valts + ":" + tmpval + ">";
     }
     private static String formatAcceptMessage()
     {
-        return "ACCEPT";
+        return "<ACCEPT>";
     }
 
 }

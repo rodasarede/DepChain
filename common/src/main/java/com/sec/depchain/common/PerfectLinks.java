@@ -68,6 +68,7 @@ public class PerfectLinks {
         sentMessages.put(messageKey, true);
         //System.out.println("Message Key: " + messageKey);
 
+        seqNumber++;
         String messageWithId = nodeId + "|"+ seqNumber +"|"+ message;
         // Resend indefinitely (until process crashes)
 
@@ -86,7 +87,7 @@ public class PerfectLinks {
              * mac = tamperedMac;
              * 
              */
-            seqNumber++;
+            
             AtomicLong timeout = new AtomicLong(1000);
             String authenticatedMsg = messageWithId + "|" + mac; // append mac
             new Thread(() -> {

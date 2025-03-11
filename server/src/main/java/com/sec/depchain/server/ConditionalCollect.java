@@ -30,8 +30,17 @@ public class ConditionalCollect {
             throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;
-        this.perfectLinks.setDeliverCallbackCollect(this::onPerfectLinksDeliver);
-
+        //this.perfectLinks.setDeliverCallbackCollect(this::onPerfectLinksDeliver);
+        
+        //TODO changed this in order to compile
+        this.perfectLinks.setDeliverCallbackCollect((NodeId, message) -> {
+            try {
+                onPerfectLinksDeliver(NodeId, message);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        });
         this.messages = new ConcurrentHashMap<>();
         this.signatures = new ConcurrentHashMap<>();
 

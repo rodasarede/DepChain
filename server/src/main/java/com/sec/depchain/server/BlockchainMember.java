@@ -143,7 +143,7 @@ public class BlockchainMember {
                 //containing local state <valts, val, writeset>:
                 //(valts, val) - a timestamp/value pair with the value that the process received most recently in a Byzantine quorum of WRITE messages
                 //writeset - a set of timestamp/value pairs with one entry for every value that this process has ever written (where timestamp == most recent epoch where the value was written).
-                perfectLinks.send(senderId, message, seqNumber); //reply
+                //perfectLinks.send(senderId, message, seqNumber); //reply
             }
             return true;
         }
@@ -226,7 +226,7 @@ public class BlockchainMember {
                 //trigger a send WRITE message containing tmpval
                 String message =  formatWriteMessage(state.getValts(), tmpval);
                 
-                seqNumber++;
+                //seqNumber++;
             }
             return true;
         }

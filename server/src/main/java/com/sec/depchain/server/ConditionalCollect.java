@@ -52,8 +52,7 @@ public class ConditionalCollect {
         String signature = signMessage(message);
         String formatted_message = "<SEND:" + message + ":" + signature + ">";
         int leaderId = systemMembership.getLeaderId();
-        int seq_number = 0; // TODO: get the sequence number
-        perfectLinks.send(leaderId, formatted_message, seq_number);
+        perfectLinks.send(leaderId, formatted_message);
     }
 
     // todo: real verification
@@ -113,8 +112,7 @@ public class ConditionalCollect {
             String formattedMessage = "<COLLECTED:" + formattedMessages + ":" + formattedSignatures + ">";
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 System.out.println("Process ID: " + processId);
-                int seq_number = 0; // TODO: get the sequence number
-                perfectLinks.send(processId, formattedMessage, seq_number);
+                perfectLinks.send(processId, formattedMessage);
             }
         }
     }

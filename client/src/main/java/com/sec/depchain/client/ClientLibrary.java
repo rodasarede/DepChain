@@ -5,7 +5,6 @@ import com.sec.depchain.common.PerfectLinks;
 public class ClientLibrary {
     private DeliverCallback deliverCallback; // Callback function
     private final PerfectLinks perfectLinks;
-    private static int seqNumber = 1;
 
     // Functional interface for the callback
     public interface DeliverCallback {
@@ -18,10 +17,9 @@ public class ClientLibrary {
     }
 
     public void sendAppendRequest(String string) {
-        String formattedMessage = "<append:" + seqNumber + ":" + string + ">";
+        String formattedMessage = "<append:" + string + ">";
         // TODO: Decide do which blockchain nodes to send the request
-        perfectLinks.send(-1, formattedMessage, seqNumber);
-        seqNumber++;
+        perfectLinks.send(-1, formattedMessage);
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {

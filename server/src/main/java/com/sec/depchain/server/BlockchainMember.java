@@ -85,7 +85,8 @@ public class BlockchainMember {
         //why static
         private static boolean runConsensus(String transaction) {
             System.out.println("Running consensus: INIT -> PROPOSE -> DECIDE");
-    
+            //Clear? at a new round?
+            states.clear();
             if (!initConsensus())
                 return false;
             if (!proposeConsensus(transaction))
@@ -95,6 +96,7 @@ public class BlockchainMember {
         //why static
         private static boolean initConsensus() {
             //initialize 
+   
             states = new HashMap<>();
             setState(new EpochSate(systemMembership.getNumberOfNodes()));
             System.out.println("INIT phase successful.");
@@ -136,7 +138,9 @@ public class BlockchainMember {
             {
                 //STATE|valts|val|writeset:
                 String message = formatStateMessage(state.getValts(), state.getVal(), state.getWriteSet());
-
+                
+                
+                //conditionalCollect.input(state)
 
                 //TODO (valts, val) - a timestamp/value pair with the value that the process received most recently in a Byzantine quorum of WRITE messages w
 
@@ -183,7 +187,7 @@ public class BlockchainMember {
             }
             return true;
         }
-        private static boolean collected(){
+        private static boolean handleCollectedStates(){
             //State in form [State,ts,v,ws] or undefined
             String tmpval = null; //tmpval:=⊥;
             for (Map.Entry<Integer, String> entry : states.entrySet()) {
@@ -200,10 +204,10 @@ public class BlockchainMember {
             //on bounded value?
             if (tmpval == null) {
                 String leaderState = states.get(systemMembership.getLeaderId());
-                if (leaderState != null) {
+                if (leaderState != null && !leaderState.equals("UNDEFINED")) {
                     String[] leaderStateParts = leaderState.split("\\|");
                     String v = leaderStateParts[2];
-                    if (v != null && !v.equals("null")) {
+                    if (v != null ) {
                         tmpval = v; // Unbound value from leader's state
                     }
                 }
@@ -221,6 +225,7 @@ public class BlockchainMember {
                     }
             }
         }
+            //BRODCAST WRITE message to all nodes
             for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
             {
                 //trigger a send WRITE message containing tmpval

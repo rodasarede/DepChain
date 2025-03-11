@@ -12,13 +12,15 @@ public class EpochSate {
     private boolean[] written;
     private boolean[] accepted;
 
-    public EpochSate(int numberOfNodes) {
+    private int epochNumber;
+
+    public EpochSate(int numberOfNodes, int epochNumber) {
         this.valts = 0;
         this.val = null;
         this.writeSet = new HashMap<Integer, String>(); //TODO change to a set?
         this.written = new boolean[numberOfNodes];
         this.accepted = new boolean[numberOfNodes];
-
+        this.epochNumber = epochNumber;
     }
     public boolean[] getAccepted() {
         return accepted;
@@ -50,4 +52,11 @@ public class EpochSate {
     public void setWritten(boolean[] written) {
         this.written = written;
     }
+    public void setEpochNumber(int epochNumber) {
+        this.epochNumber = epochNumber;
+    }
+    public int getEpochNumber() {
+        return epochNumber;
+    }
+
 }

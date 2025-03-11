@@ -53,11 +53,6 @@ public class ConditionalCollect {
         }
     }
 
-    // todo: real signature
-    private static String signMessage(String message) {
-        return "signature." + message + ".";
-    }
-
     // DONE
     public void input(String message) throws Exception {
         PrivateKey privateKey = this.perfectLinks.getPrivateKey();
@@ -70,20 +65,13 @@ public class ConditionalCollect {
         perfectLinks.send(leaderId, formatted_message);
     }
 
-    // todo: real verification
-    private static boolean verifySignature(int senderId, String message, String signature) {
-        System.out.println("Verifying Message: " + message + "; Signature: " + signature);
-        return true;
-    }
 
     private static String[] getMessageArgs(String message) {
         if (message.startsWith("<") && message.endsWith(">")) {
             String content = message.substring(1, message.length() - 1);
 
-            // Split the content by ":"
             String[] parts = content.split(":");
 
-            // Return the parts, including the type and arguments
             return parts;
         }
         return new String[] { "UNKNOWN" };
@@ -119,21 +107,6 @@ public class ConditionalCollect {
             signatures.put(senderId, signature);
         }
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
-        /*
-         * int N = systemMembership.getNumberOfNodes();
-         * int f = systemMembership.getMaximumNumberOfByzantineNodes();
-         * if(getNumberOfMessages() >= N - f) { // where is C(messages)
-         * String formattedMessages = getFormattedArray(messages);
-         * String formattedSignatures = getFormattedArray(signatures);
-         * String formattedMessage = "<COLLECTED:" + formattedMessages + ":" +
-         * formattedSignatures + ">";
-         * for (Integer processId : systemMembership.getMembershipList().keySet()) {
-         * System.out.println("Process ID: " + processId);
-         * int seq_number = 0; // TODO: get the sequence number
-         * perfectLinks.send(processId, formattedMessage, seq_number);
-         * }
-         * }
-         */
     }
 
     public void checkAndBrodcastCollectedMessages(String sendMessage, int senderId) {

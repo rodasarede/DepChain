@@ -8,7 +8,7 @@ import java.util.Set;
 public class EpochSate {
     private Integer valts; //value TS
     private String val; //proposed or decided value 
-    private HashMap<String, Integer> writeSet; //set with (TS,val)
+    private HashMap<Integer, String> writeSet; //set with (TS,val)
     private boolean[] written;
     private boolean[] accepted;
 

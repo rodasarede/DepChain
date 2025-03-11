@@ -3,6 +3,8 @@ package com.sec.depchain.common.util;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.util.Base64;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -65,5 +67,29 @@ public class CryptoUtils {
         byte[] expectedMAC = CryptoUtils.generateHMAC(symmetricKey, message.getBytes());
 
         return java.util.Arrays.equals(expectedMAC, java.util.Base64.getDecoder().decode(receivedMAC));
+    }
+    public static String signMessage(PrivateKey privateKey, String message) throws Exception
+    {
+        Signature signature = Signature.getInstance("SHA256withECDSA");
+
+        signature.initSign(privateKey);
+
+        signature.update(message.getBytes());
+
+        byte[] digitalSignature = signature.sign();
+
+        return Base64.getEncoder().encodeToString(digitalSignature);
+    }
+    public static boolean verifySignature(PublicKey publicKey, String messsage, String receivedSignature) throws Exception{
+
+        Signature signature = Signature.getInstance("SHA256withECDSA");
+
+        signature.initVerify(publicKey);
+
+        signature.update(messsage.getBytes());
+
+        byte[] signatureBytes = Base64.getDecoder().decode(receivedSignature);
+
+        return signature.verify(signatureBytes);
     }
 }

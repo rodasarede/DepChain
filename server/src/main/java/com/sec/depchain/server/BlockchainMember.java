@@ -51,7 +51,7 @@ public class BlockchainMember {
         // Conditional Collect will be used by byzantine read write epoch
         System.out.println("Starting test of Conditional Collect...");
 
-        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks); // Pass the necessary Id
+        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership); // Pass the necessary Id
 
         cc.setDeliverCallback((messagesFromCC) -> {
             System.out.println("Received Collected from CC:");

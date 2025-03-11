@@ -240,6 +240,9 @@ public class PerfectLinks {
         String leaderIP = systemMembership.getMembershipList().get(nodeId).getAddress();
         return leaderIP;
     }
+public PrivateKey getPrivateKey() {
+    return privateKey;
+}
 
     private String getMessageType(String message) {
         if (message.startsWith("<") && message.endsWith(">")) {

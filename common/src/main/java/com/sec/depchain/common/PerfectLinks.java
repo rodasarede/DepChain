@@ -60,12 +60,12 @@ public class PerfectLinks {
         int destPort = getPort(destId);
         String messageKey = destId + ":" + message;
         sentMessages.put(messageKey, true);
-        System.out.println("Message Key: " + messageKey);
+        //System.out.println("Message Key: " + messageKey);
 
         String messageWithId = nodeId + "|" + message;
         // Resend indefinitely (until process crashes)
 
-        System.out.println("Destination Node Id: " + destId);
+        //System.out.println("Destination Node Id: " + destId);
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
         // generate mac
         try {
@@ -115,7 +115,7 @@ public class PerfectLinks {
 
         String receivedMac = parts[2];
         
-        System.out.println(receivedMac);
+        //System.out.println(receivedMac);
 
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
                 : Integer.parseInt(parts[0].substring(3));
@@ -136,12 +136,12 @@ public class PerfectLinks {
         }
         // Deliver only if the message has not been delivered before
         if (!delivered.containsKey(messageKey)) {
-            System.out.println("Fair loss Deliver from " + srcIP + ":" + srcPort + " -> " + message);
+            //System.out.println("Fair loss Deliver from " + srcIP + ":" + srcPort + " -> " + message);
             delivered.put(messageKey, true); // Mark message as delivered
 
             if (message.startsWith("ACK")) {
 
-                System.out.println("stop resending message: " + messageKey);
+                //System.out.println("stop resending message: " + messageKey);
                 stopResending(messageKey);
                 return;
             }
@@ -156,10 +156,31 @@ public class PerfectLinks {
                 e.printStackTrace();
             }
             if (deliverCallback != null) {
+                System.out.println("PerfectLinks delivering message up: " + message);
+                System.out.println("Stripping message...");
+                message = stripMessageToBeDelivered(message);
                 deliverCallback.deliver(senderNodeId, message);
             }
         }
     }
+
+    public String stripMessageToBeDelivered(String message) {
+        int firstSeparatorIndex = message.indexOf("|");
+
+        if (firstSeparatorIndex != -1) {
+            message = message.substring(firstSeparatorIndex + 1); // Skip past "<number>|"
+        }
+
+        int separatorIndex = message.lastIndexOf("|");
+        if (separatorIndex != -1) {
+            return message.substring(0, separatorIndex);
+        }
+
+        return message;
+    }
+
+
+
 
     // Stop resending a message (if needed)
     public void stopResending(String messageKey) {

@@ -15,6 +15,7 @@ public class SystemMembership {
     private int leaderId;
     private HashMap<Integer, Member> membershipList = new HashMap<>();
     private int numberOfNodes;
+    private int maximumNumberOfByzantineNodes;
     private Map<Integer, PublicKey> publicKeys; // TODO initialize ?
 
     public SystemMembership(String filename) {
@@ -26,6 +27,7 @@ public class SystemMembership {
 
             setLeaderId(Integer.parseInt(properties.getProperty("LeaderId")));
             setNumberOfNodes(Integer.parseInt(properties.getProperty("NumberOfNodes")));
+            setMaximumNumberOfByzantineNodes(Integer.parseInt(properties.getProperty("MaximumNumberOfByzantineNodes")));
             setPublicKeys(KeyLoader.loadPublicKeys(KEY_DIR));
             // System.out.println("Leader ID: " + this.leaderId);
 
@@ -54,8 +56,16 @@ public class SystemMembership {
         this.numberOfNodes = numberOfNodes;
     }
 
+    public void setMaximumNumberOfByzantineNodes(int maximumNumberOfByzantineNodes) {
+        this.maximumNumberOfByzantineNodes = maximumNumberOfByzantineNodes;
+    }
+
     public int getNumberOfNodes() {
         return numberOfNodes;
+    }
+
+    public int getMaximumNumberOfByzantineNodes() {
+        return maximumNumberOfByzantineNodes;
     }
 
     public HashMap<Integer, Member> getMembershipList() {

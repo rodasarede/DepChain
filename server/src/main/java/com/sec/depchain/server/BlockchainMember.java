@@ -37,9 +37,31 @@ public class BlockchainMember {
             perfectLinks.setDeliverCallback(BlockchainMember::onPerfectLinksDeliver);
     
             // System.out.println("Blockchain Member listening on port " + PORT + "...");
+
+
+
+            testConditionalCollect();
         }
-    
-        private static void onPerfectLinksDeliver(int senderId, String message) {
+
+    public static void testConditionalCollect() throws Exception {
+        // Conditional Collect will be used by byzantine read write epoch
+        System.out.println("Starting test of Conditional Collect...");
+
+        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks); // Pass the necessary Id
+
+        cc.setDeliverCallback((messagesFromCC) -> {
+            System.out.println("Received Collected from CC:");
+            for (Integer processId : systemMembership.getMembershipList().keySet()) {
+                System.out.println("Message of nodeId " + processId);
+                System.out.println("Message of nodeId " + messagesFromCC[processId - 1] + "\n");
+            }
+            });
+
+        cc.input("hellofrom" + Id);
+    }
+
+
+    private static void onPerfectLinksDeliver(int senderId, String message) {
             System.out.println("Received request: " + message + " from Id: " + senderId);
             String[] messageElements = PerfectLinks.getMessageElements(message);
             if (messageElements[0].equals("append")) {

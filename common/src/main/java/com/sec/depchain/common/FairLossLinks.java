@@ -28,7 +28,6 @@ public class FairLossLinks {
         byte[] data = message.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, destAddress, destPort);
         socket.send(packet);
-        System.out.println("Sent: '" + message + "' to " + destIP + ":" + destPort);
     }
 
     // Método para receber mensagens e chamar a callback
@@ -43,10 +42,6 @@ public class FairLossLinks {
                     String message = new String(packet.getData(), 0, packet.getLength());
                     String srcIP = packet.getAddress().getHostAddress();
                     int srcPort = packet.getPort();
-
-                    // System.out.println("\nReceived from " + srcIP + ":" + srcPort + " -> " +
-                    // message);
-                    System.out.print("> "); // Mostrar prompt novamente após receber
 
                     // Se a callback foi definida, chamá-la
                     if (deliverCallback != null) {

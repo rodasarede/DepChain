@@ -11,6 +11,7 @@ import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 
 public class PerfectLinks {
+    private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
     private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend //TODO nao podemos guardar mensagens infinitamente -> mudar para sequence number 
@@ -46,6 +47,10 @@ public class PerfectLinks {
     }
 
     // Set the callback to notify when a message is delivered
+    public void setDeliverCallbackCollect(DeliverCallback callback) {
+        this.deliverCallbackCollect = callback;
+    }
+
     public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
     }
@@ -155,11 +160,16 @@ public class PerfectLinks {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if (deliverCallback != null) {
+            if (deliverCallbackCollect != null || deliverCallback != null) {
                 System.out.println("PerfectLinks delivering message up: " + message);
+                
                 System.out.println("Stripping message...");
-                message = stripMessageToBeDelivered(message);
-                deliverCallback.deliver(senderNodeId, message);
+                String messageStriped = stripMessageToBeDelivered(message);
+                if (getMessageType(messageStriped).equals("append")) {
+                    deliverCallback.deliver(senderNodeId, message);
+                }else{
+                    deliverCallbackCollect.deliver(senderNodeId, messageStriped);
+                }
             }
         }
     }
@@ -224,6 +234,17 @@ public class PerfectLinks {
         }
         String leaderIP = systemMembership.getMembershipList().get(nodeId).getAddress();
         return leaderIP;
+    }
+
+    private String getMessageType(String message) {
+        if (message.startsWith("<") && message.endsWith(">")) {
+            String content = message.substring(1, message.length() - 1);
+
+            String[] parts = content.split(":");
+
+            return parts[0];
+        }
+        return "UNKNOWN";
     }
 
 }

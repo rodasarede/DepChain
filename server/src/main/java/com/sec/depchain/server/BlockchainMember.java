@@ -34,6 +34,7 @@ public class BlockchainMember {
             // PORT = systemMembership.getMembershipList().get(Id).getPort();
             // PORT = getPort(Id);
             perfectLinks = new PerfectLinks(Id);
+            perfectLinks.setDeliverCallbackCollect(BlockchainMember::onPerfectLinksDeliver);
             perfectLinks.setDeliverCallback(BlockchainMember::onPerfectLinksDeliver);
     
             // System.out.println("Blockchain Member listening on port " + PORT + "...");

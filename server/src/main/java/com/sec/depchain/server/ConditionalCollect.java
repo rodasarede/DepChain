@@ -28,7 +28,7 @@ public class ConditionalCollect {
     public ConditionalCollect(int nodeId, PerfectLinks perfectLinks) throws Exception {
         this.nodeId = nodeId;
         this.perfectLinks = perfectLinks;
-        this.perfectLinks.setDeliverCallback(this::onPerfectLinksDeliver);
+        this.perfectLinks.setDeliverCallbackCollect(this::onPerfectLinksDeliver);
 
         this.messages = new ConcurrentHashMap<>();
         this.signatures = new ConcurrentHashMap<>();
@@ -191,6 +191,10 @@ public class ConditionalCollect {
                 break;
             case "COLLECTED":
                 processCollected(senderId, message);
+                break;
+            case "append":
+                // not supose to happen only for debug purposes
+                System.out.println("Received request in collect: " + message + " from Id: " + senderId);
                 break;
             default:
                 System.err.println("Error: Unknown message type received from " + senderId + " -> " + message);

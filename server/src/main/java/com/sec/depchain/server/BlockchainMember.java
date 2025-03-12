@@ -1,10 +1,12 @@
 package com.sec.depchain.server;
 
+import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.PerfectLinks;
@@ -84,7 +86,7 @@ public class BlockchainMember {
         private static boolean runConsensus(String transaction) {
             System.out.println("Running consensus: INIT -> PROPOSE -> DECIDE");
             //Clear? at a new round?
-            states.clear();
+            //states.clear();   
             if (!initConsensus())
                 return false;
             if (!proposeConsensus(transaction))
@@ -94,7 +96,8 @@ public class BlockchainMember {
 
         private static boolean initConsensus() {
             //initialize 
-            int epochNumber = state.getEpochNumber() + 1;
+            //initialized with a value state, output by the Byzantine epoch consensus instance that the process ran previously
+            int epochNumber = state == null ? 1 : state.getEpochNumber() + 1; // Increment epoch number
             states = new HashMap<>();
             setState(new EpochSate(systemMembership.getNumberOfNodes(), epochNumber));
             System.out.println("INIT phase successful.");
@@ -109,7 +112,8 @@ public class BlockchainMember {
                     getState().setVal(transaction); // val:=v;
                     for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
                     { 
-                        String message = formatReadMessage(systemMembership.getLeaderId(),null);
+                        String message = formatReadMessage(state.getEpochNumber(),systemMembership.getLeaderId()); //TODO confirm this
+                        System.out.println("Message sent from propose "+ message);
                         perfectLinks.send(nodeId, message);
                     }
             
@@ -123,9 +127,9 @@ public class BlockchainMember {
             if(senderId == systemMembership.getLeaderId()) //Only the leader can send READ msg
             {
                 //STATE|valts|val|writeset:
-                String message = formatStateMessage(state.getEpochNumber(), state.getValts(), state.getVal(), state.getWriteSet());
+                String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
                 try {
-                    cc.input(message);
+                    cc.input(message); //maybe we should pass the leader
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -149,10 +153,10 @@ public class BlockchainMember {
                     handleReadMessage(SenderId); //TODO
                     break;
                 case "STATE":
-                    //handleStateMessage();
+                    handleCollectedStates();
                     break;
                 case "WRITE":
-                    //handeWriteMessage();      
+                    handeWriteMessage();      
                     break;
                 case "ACCEPT":
                     //handleAcceptMessage();
@@ -163,6 +167,8 @@ public class BlockchainMember {
             return true;
         }
         private static boolean handleCollectedStates(){
+            //TODO we need to receive the collected messages as a vector!
+
             //State in form [State,ts,v,ws] or undefined
             String tmpval = null; //tmpval:=⊥;
             for (Map.Entry<Integer, String> entry : states.entrySet()) {
@@ -208,11 +214,64 @@ public class BlockchainMember {
             }
             return true;
         }
+        private static boolean quoromHighest(long ts, String v, List <String> S)
+        {
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            int count = 0;
+            for(String entry: S)
+            {
+                if(entry != null)
+               {
+                //TODO //is the second or about the write set?
+                if(entry.ts < ts || entry.ts)
+               }
+            }
+            return count > (N + f) / 2;
+        }
+
+        private static boolean certifiedValue(long ts, String v, List <String> S)
+        {
+            return true;
+        }
         private static boolean decideConsensus(String transaction) {
             System.out.println("DECIDE phase: Committing transaction.");
             blockchain.add(transaction);
             return true;
         }
+        /*upon event ⟨ al, Deliver | p, [WRITE, v] ⟩ do
+                written[p] := v; */
+        private static boolean handeWriteMessage(int SenderId){
+            return true;
+        }
+
+        /*upon event ⟨ al, Deliver | p, [ACCEPT, v] ⟩ do
+                accepted[p] := v; */
+        private static boolean handleAcceptMessage(int SenderId, String val){
+            
+            return true;
+        }
+/*upon exists v such that #{p | written[p] = v} > N + f do
+    (valts, val) := (ets, v); written := [⊥]N ; forall q ∈ Π do
+    trigger ⟨ al, Send | q, [ACCEPT, val] ⟩ */
+        private static boolean processWrittenValues()
+    {
+        int N = systemMembership.getNumberOfNodes();
+        int f = systemMembership.getMaximumNumberOfByzantineNodes(); 
+        for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+        {
+            //trigger a send WRITE message containing tmpval
+            String message =  formatAcceptMessage();
+            
+        }
+
+        return true
+    }
+    private static boolean processWrittenValues(){
+        int N = systemMembership.getNumberOfNodes();
+        int f = systemMembership.getMaximumNumberOfByzantineNodes(); 
+    }
+
         public static boolean isLeader() {
             return isLeader;
         }
@@ -226,18 +285,18 @@ public class BlockchainMember {
     {
         return "<READ:" + epochNumber + ":" + id + ">";
     }
-    private static String formatStateMessage(int epochNumber,Integer valts, String val, HashMap<Integer, String> writeSet)
+    private static String formatStateMessage(TSvaluePair valtsVAl, Set<TSvaluePair> writeSet)
     {
         //TODO how to write the writeset into the message
-        return "<STATE:" + epochNumber + ":" + valts + ":" + val + ":" + writeSet+">";
+        return "<STATE:" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet + ">";
     }
     private static String formatWriteMessage(int epochNumber, Integer valts, String tmpval)
     {
         return "<WRITE:" + epochNumber + ":" + valts + ":" + tmpval + ">";
     }
-    private static String formatAcceptMessage()
+    private static String formatAcceptMessage(int val)
     {
-        return "<ACCEPT>";
+        return "<ACCEPT:" + val + ">";
     }
 
 }

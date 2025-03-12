@@ -6,6 +6,7 @@ import java.security.PrivateKey;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 
 public class ConditionalCollect {
@@ -26,10 +27,17 @@ public class ConditionalCollect {
         this.deliverCallback = callback;
     }
 
+    //DONE
+
+    /*upon event ⟨ cc, Init ⟩ do
+    messages := [UNDEFINED]^N;
+    Σ := [⊥]^N;
+    collected := FALSE; */
     public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership)
             throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;
+        setSystemMembership(systemMembership);
         //this.perfectLinks.setDeliverCallbackCollect(this::onPerfectLinksDeliver);
         
         //TODO changed this in order to compile
@@ -43,24 +51,32 @@ public class ConditionalCollect {
         });
         this.messages = new ConcurrentHashMap<>();
         this.signatures = new ConcurrentHashMap<>();
+        this.collected = false; 
 
-        setSystemMembership(systemMembership);
-
-        this.collected = false;
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            messages.put(processId, "UNDEFINED");
-            signatures.put(processId, "UNDEFINED");
+            messages.put(processId, Constants.UNDEFINED);
+            signatures.put(processId, null); // signatures should start with null not UNDEFINED
         }
     }
 
     // DONE
+    /*upon event ⟨ cc, Input | m ⟩ do
+    σ := sign(self, cc || self || INPUT || m);
+    String signingData = "cc||" + this.nodeId + "||INPUT||" + message;
+    String signature = CryptoUtils.signMessage(privateKey, signingData);
+    String metadata = nodeId + "|ConditionalCollect|INPUT|" + message;
+    trigger ⟨ al, Send | ℓ, [SEND, m, σ] ⟩; */
     public void input(String message) throws Exception {
+        //TODO what should be instead of cc //ROUND?
+        String message_to_sign = "<cc|" + nodeId + ":INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
+
         PrivateKey privateKey = this.perfectLinks.getPrivateKey();
-        String signature = CryptoUtils.signMessage(privateKey, message); // TODO sign message how can I get the private
+
+        String signature = CryptoUtils.signMessage(privateKey, message_to_sign); // TODO sign message how can I get the private
                                                                          // key in a safe way?
+        //String signature = CryptoUtils.signWithPrivateKey(message, nodeId);
 
         String formatted_message = "<SEND:" + message + ":" + signature + ">";
-
         int leaderId = systemMembership.getLeaderId();
         perfectLinks.send(leaderId, formatted_message);
     }
@@ -93,6 +109,11 @@ public class ConditionalCollect {
     }
 
     // TODO
+    //(only for the leader)
+    /*upon event ⟨ al, Deliver | p, [SEND, m, σ] ⟩ do
+    if verifysig(p, cc || p || INPUT || m, σ) then //p processID; cc->; INPUT; m -> message; sign
+        messages[p] := m;
+        Σ[p] := σ; */
     private void processSend(int senderId, String sendMessage) throws Exception {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
@@ -100,8 +121,8 @@ public class ConditionalCollect {
             return;
         }
         String[] args = getMessageArgs(sendMessage);
-        String message = args[1];
-        String signature = args[2];
+        String message = args[3];
+        String signature = args[4];
         if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
             messages.put(senderId, message);
             signatures.put(senderId, signature);
@@ -109,6 +130,12 @@ public class ConditionalCollect {
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 
+
+    /*upon #(messages) ≥ N − f ∧ C(messages) do
+    forall q ∈ Π do
+        trigger ⟨ al, Send | q, [COLLECTED, messages, Σ] ⟩;
+    messages := [UNDEFINED]^N;
+    Σ := [⊥]^N; */
     public void checkAndBrodcastCollectedMessages(String sendMessage, int senderId) {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
@@ -126,10 +153,20 @@ public class ConditionalCollect {
                 perfectLinks.send(processId, formattedMessage);
             }
         }
-    }
+        //reset the state
+        messages.clear();
+        signatures.clear();
+        for (Integer processId : systemMembership.getMembershipList().keySet()) {
+            messages.put(processId, "UNDEFINED");
+            signatures.put(processId, null);
+        }
+        }
 
     // TODO
-    private boolean satisfiesConditionC() {
+    private boolean outputPredicate() { 
+        // predicate that determines whether the collected messages satisfy certain requirements before the protocol proceeds.
+        //A quorum agrees on the same value (Byzantine fault tolerance)?
+        // Majority Agreement?
         return true;
     }
 
@@ -141,16 +178,28 @@ public class ConditionalCollect {
         return input.isEmpty() ? new String[0] : input.split("\\s*,\\s*");
     }
 
-    private static boolean verifyAllSignatures(String[] messages, String[] signatures) throws Exception {
-        for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(processId), messages[processId - 1],
-                    signatures[processId - 1]))
+    private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures) throws Exception {
+        for (int i = 0; i < collectedMessages.length; i++) {
+            if (collectedMessages[i].equals(Constants.UNDEFINED)) continue;
+            String message = collectedMessages[i];
+            String signature = collectedSignatures[i];
+            String signingData = "cc||" + i + "||INPUT||" + message;
+            if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), signingData, signature)) {
                 return false;
+            }
         }
         return true;
     }
 
     // TODO
+
+    /*upon event ⟨ al, Deliver | ℓ, [COLLECTED, M, Σ] ⟩ do
+    if collected = FALSE ∧ #(M) ≥ N - f ∧ C(M) ∧
+       (forall p ∈ Π such that M[p] ≠ UNDEFINED, it holds
+        verifysig(p, cc || p || INPUT || M[p], Σ[p])) then
+        collected := TRUE;
+        trigger ⟨ cc, Collected | M ⟩;
+ */
     private void processCollected(int senderId, String collectedMessage) throws Exception {
         System.out.println("Received COLLECTED message: " + collectedMessage);
 

@@ -168,7 +168,7 @@ public class PerfectLinks {
                 
                 System.out.println("Stripping message...");
                 // String messageStriped = stripMessageToBeDelivered(message);
-                if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ") /*|| getMessageType(originalMsg).equals("COLLECTED")*/) {
+                if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ")) {
                     deliverCallback.deliver(senderNodeId, message);
                 }else{
                     deliverCallbackCollect.deliver(senderNodeId, originalMsg); //TODO null point error

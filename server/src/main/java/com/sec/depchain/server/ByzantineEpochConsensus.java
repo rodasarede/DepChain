@@ -84,18 +84,12 @@ public class ByzantineEpochConsensus {
             //cc = new ConditionalCollect(nodeId, perfectLinks, systemMembership);
 
             cc.onInit();
-            cc.setDeliverCallback((messagesFromCC) -> {
-                System.out.println("Received Collected from CC:");
-                for (Integer processId : systemMembership.getMembershipList().keySet()) {
-                    System.out.println("Message from nodeId " + processId + ": " + messagesFromCC[processId - 1]);
-                }
-            });
 
             cc.input(message);
         }
     }
 
-    public void Collected(String[] states) {
+    public void collected(String[] states) {
         String tmpval = null;
         // List<String> CollectedMessages = CollectedMessageSeparator(states);
         List<String> CollectedMessages = new ArrayList<>();
@@ -366,7 +360,7 @@ public class ByzantineEpochConsensus {
         for (int i = 0; i < collectedMessages.length; i++) {
             System.out.println("Message from node " + i + ": " + collectedMessages[i]);
         }
-        Collected( collectedMessages);
+        collected( collectedMessages);
 
     }
 

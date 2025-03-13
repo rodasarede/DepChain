@@ -162,9 +162,9 @@ public class ConditionalCollect {
 
     private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures) throws Exception {
         for (int i = 1; i <= collectedMessages.length ; i++) {
-            if (collectedMessages[i-1].equals(Constants.UNDEFINED)) continue;
-            String message = collectedMessages[i-1];
-            String signature = collectedSignatures[i-1];
+            if (collectedMessages[i - 1].equals(Constants.UNDEFINED)) continue;
+            String message = collectedMessages[i - 1];
+            String signature = collectedSignatures[i - 1];
             // String signingData = "cc||" + i + "||INPUT||" + message;
             System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
             if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
@@ -204,6 +204,7 @@ public class ConditionalCollect {
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
 
         List<String> messageList = new ArrayList<>(Arrays.asList(collectedMessages));
+
 
         if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
                 && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate.test(messageList)) {

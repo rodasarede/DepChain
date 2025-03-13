@@ -55,7 +55,7 @@ public class ConditionalCollect {
 
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
             messages.put(processId, Constants.UNDEFINED);
-            signatures.put(processId, "⊥"); // signatures should start with //TODO null not UNDEFINED
+            signatures.put(processId, ""); // signatures should start with //TODO null not UNDEFINED
         }
     }
 

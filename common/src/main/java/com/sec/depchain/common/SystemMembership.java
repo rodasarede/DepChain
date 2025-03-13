@@ -16,7 +16,7 @@ public class SystemMembership {
     private HashMap<Integer, Member> membershipList = new HashMap<>();
     private int numberOfNodes;
     private int maximumNumberOfByzantineNodes; 
-    private Map<Integer, PublicKey> publicKeys; // TODO initialize ?
+    private Map<Integer, PublicKey> publicKeys; 
 
     public SystemMembership(String filename) {
         FileInputStream fis = null;

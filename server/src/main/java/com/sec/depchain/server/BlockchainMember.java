@@ -126,8 +126,9 @@ public class BlockchainMember {
                     System.out.println("Received READ message from " + senderId + " with message: " + message);
                     bep.deliverRead(senderId);
                     break;
-                case "STATE":
-                    //handleCollectedStates(message); //TODO
+                case "COLLECTED":
+                    System.out.print(message);
+                    bep.collected(messageElements[1]);
                     break;
                 case "WRITE":
                     //handleWriteMessage(message);      

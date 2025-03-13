@@ -23,7 +23,7 @@ public class ByzantineEpochConsensus {
     private EpochSate state;
     private long ets;
     private String written[];
-    private static String[] accepted; // Array to store ACCEPT messages
+    private String[] accepted; // Array to store ACCEPT messages
     private ConditionalCollect cc;
 
     private PerfectLinks perfectLinks;
@@ -82,12 +82,18 @@ public class ByzantineEpochConsensus {
             //cc = new ConditionalCollect(nodeId, perfectLinks, systemMembership);
 
             cc.onInit();
+            cc.setDeliverCallback((messagesFromCC) -> {
+                System.out.println("Received Collected from CC:");
+                for (Integer processId : systemMembership.getMembershipList().keySet()) {
+                    System.out.println("Message from nodeId " + processId + ": " + messagesFromCC[processId - 1]);
+                }
+            });
 
             cc.input(message);
         }
     }
 
-    public void Collected(String states) {
+    public void collected(String states) {
         String tmpval = null;
         List<String> CollectedMessages = CollectedMessageSeparator(states);
 

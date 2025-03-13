@@ -31,7 +31,7 @@ public class EpochSate {
     private Set<TSvaluePair> writeSet; //set with (TS,val)
 
 
-    public EpochSate(TSvaluePair valtsVal, Set<TSvaluePair> writSet) {
+    public EpochSate(TSvaluePair valtsVal, Set<TSvaluePair> writeSet) {
         this.valtsVal = valtsVal;
         this.writeSet = writeSet;
     }

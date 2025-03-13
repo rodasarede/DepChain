@@ -97,7 +97,7 @@ public class BlockchainMember {
                 System.out.println("Message of nodeId " + processId);
                 System.out.println("Message of nodeId " + messagesFromCC[processId - 1] + "\n");
             }
-            });
+        });
 
         cc.input("hellofrom" + id);
     }

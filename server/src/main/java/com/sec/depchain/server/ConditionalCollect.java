@@ -176,7 +176,7 @@ public class ConditionalCollect {
 
     private void processCollected(int senderId, String collectedMessage) throws Exception {
         System.out.println("Received COLLECTED message: " + collectedMessage);
-        String[][] result = collectedParser(collectedMessage);
+        String[][] result = splitCollectedMessage(collectedMessage);
         String[] collectedMessages = result[0];
         String[] collectedSignatures = result[1];
         // System.out.println("Collected: " + collectedMessages);
@@ -210,7 +210,7 @@ public class ConditionalCollect {
             collected = true;
             System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
             if (deliverCallback != null) {
-                System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
+                System.out.println("ConditionalCollect delivering messages up1: " + collectedMessages[0]);
                 deliverCallback.deliver(collectedMessages);
             }
         }
@@ -267,27 +267,51 @@ public class ConditionalCollect {
     }
 
     public static String[][] collectedParser(String input) {
-        // Regular expression to extract content inside brackets []
-        Pattern bracketPattern = Pattern.compile("\\[(.*?)\\]");
-        Matcher matcher = bracketPattern.matcher(input);
+        // Regular expression to extract top-level content inside brackets []
+        Pattern outerBracketPattern = Pattern.compile("\\[([^\\[\\]]*)\\]");
+        Matcher matcher = outerBracketPattern.matcher(input);
 
         String[] messages = new String[0];  // Placeholder for messages
         String[] signatures = new String[0];  // Placeholder for signatures
 
         int index = 0;
         while (matcher.find()) {
-            String content = matcher.group(1); // Extract content inside []
-            String[] items = content.split(",\\s*"); // Split by ", "
-
+            String content = matcher.group(1).trim(); // Extract content inside []
+            
             if (index == 0) {
-                messages = items; // First set of brackets → messages
-            } else if (index == 1) {
-                signatures = items; // Second set of brackets → signatures
+                // Extract messages, but preserve inner brackets in individual items
+                messages = content.split(",\\s*(?=\\d+:|UNDEFINED)"); // Ensure we split correctly
+            } 
+            else if (index == 1) {
+                // Extract signatures
+                signatures = content.isEmpty() ? new String[0] : content.split(",\\s*");
             }
             index++;
         }
 
         return new String[][]{messages, signatures}; // Return as a 2D array
+    }
+    public static String[][] splitCollectedMessage(String input) {
+        // Remove starting "<COLLECTED:" and ending ">"
+        if (input.startsWith("<COLLECTED:") && input.endsWith(">")) {
+            input = input.substring(11, input.length() - 1);
+        }
+
+        // Split the message into two parts using "]:" as delimiter
+        String[] parts = input.split("\\]:", 2);
+
+        if (parts.length != 2) {
+            return new String[][]{{}, {}}; // Return empty arrays if the format is incorrect
+        }
+
+        // Add back the closing bracket "]" to the first part (since it was removed by the split)
+        parts[0] += "]";
+
+        // Split messages and signatures into separate arrays
+        String[] messages = parts[0].substring(1, parts[0].length() - 1).split(",\\s*"); // Remove outer [] and split
+        String[] signatures = parts[1].substring(1, parts[1].length() - 1).split(",\\s*"); // Remove outer [] and split
+
+        return new String[][]{messages, signatures};
     }
 
 

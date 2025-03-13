@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+
 class TSvaluePair{
     private final long timestamp;
     private final String val;
@@ -23,7 +24,10 @@ class TSvaluePair{
     }
 }
 public class EpochSate {
+    // value that the process received most recently in a quorum of writes
     private TSvaluePair valtsVal; // (valts,val)
+    // entry for every value that the process has ever written (TS is the most recently timesetamp where certain value was written )
+    // process writes v when it sends Write message to all processes containing  v during write phase
     private Set<TSvaluePair> writeSet; //set with (TS,val)
 
 

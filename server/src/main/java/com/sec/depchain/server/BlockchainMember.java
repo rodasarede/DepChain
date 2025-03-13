@@ -1,12 +1,9 @@
 package com.sec.depchain.server;
 
-import java.security.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,13 +20,13 @@ public class BlockchainMember {
     private static List<String> blockchain = new ArrayList<>();
     private static PerfectLinks perfectLinks;
 
-    private static EpochSate state;
+    private static EpochSate state = new EpochSate(new TSvaluePair(0, null), new HashSet<>());;
     
     private static String [] written; // TODO what type of array do we need?
     private static String [] accepted; // Array to store ACCEPT messages
     private static int N; // Total number of processes
     private static int f; // Maximum number of Byzantine faults
-    private static long ets; // Epoch timestamp
+    private static long ets = 1; // Epoch timestamp
 
     private static ConditionalCollect cc;
         public static void main(String[] args) throws Exception {
@@ -81,41 +78,64 @@ public class BlockchainMember {
     private static void onPerfectLinksDeliver(int senderId, String message) {
             System.out.println("Received request: " + message + " from Id: " + senderId);
             String[] messageElements = PerfectLinks.getMessageElements(message);
-            if (messageElements[0].equals("append")) {
-                String transaction = messageElements[1];
-    
-                // Run consensus
-                boolean success = runConsensus(transaction);
-                String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
-                String formattedMessage = "<append:" + messageElements[1] + ":" + responseMessage + ">";
-                // System.out.println(formattedMessage);
-    
-                // Send confirmation response back to client
-                int destId = Integer.parseInt(message.split("\\|")[0]);
-                perfectLinks.send(destId, formattedMessage);
+            switch(messageElements[0]) {
+                case "append":
+                    String transaction = messageElements[1];
+                    // Run consensus
+                    
+                    boolean success = runConsensus(transaction);
+                    
+                    // String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
+                    // String formattedMessage = "<append:" + messageElements[1] + ":" + responseMessage + ">";
+                    // // System.out.println(formattedMessage);
+        
+                    // // Send confirmation response back to client
+                    // int destId = Integer.parseInt(message.split("\\|")[0]);
+                    // perfectLinks.send(destId, formattedMessage);
+                case "READ":
+                    handleReadMessage(senderId); //TODO
+                    break;
+                case "STATE":
+                    handleCollectedStates(message); //TODO
+                    break;
+                case "WRITE":
+                    handleWriteMessage(message);      
+                    break;
+                case "ACCEPT":
+                    //handleAcceptMessage();
+                    break;
+                default: 
+                    break;
+                
             }
         }
 
         private static boolean runConsensus(String transaction) {
             System.out.println("Running consensus: INIT -> PROPOSE -> DECIDE");
-            //Clear? at a new round?
+            // is states only for each Epoch? If yes we need to clear after each (sucessfull?) epoch
             //states.clear();   
             if (!initConsensus())
                 return false;
             if (!proposeConsensus(transaction))
                 return false;
-            return decideConsensus(transaction);
+            // if (!decideConsensus(transaction))
+            //     return false;
+            return true;
         }
 
+        // how do we ensure all processes init (they might not receive append)
         private static boolean initConsensus() {
-            //initialize 
-            //initialized with a value state, output by the Byzantine epoch consensus instance that the process ran previously
+            System.out.println("INIT phase:");
+            // initialize with a value state, output by the Byzantine epoch consensus instance that the process ran previously
+            // first epoch means state is empty 
             TSvaluePair defaultVal = new TSvaluePair(0, null);
             state = new EpochSate(defaultVal, new HashSet<>());
 
             //written = new TSvaluePair[N];
             //accepted = new TSvaluePair[N];
 
+            // shouldnt written be the writeset? and updated acordingly?
+            // I know it is in 5.17 algo but still
             written = new String[N];
             accepted = new String[N];
 
@@ -125,37 +145,41 @@ public class BlockchainMember {
         private static boolean proposeConsensus(String transaction) {
             if(isLeader())//Only the leader
             {
-                if(getState().getValtsVal().getVal() == null) // val == null
+                if(getState().getValtsVal().getVal() == null) // val == null then val := v;
                 {
                     //TODO what TS should I put here?
-                    TSvaluePair tsValuePair = new TSvaluePair(1, transaction); 
-                    getState().setValtsVal(tsValuePair); // val:=v;
+                    TSvaluePair tsValuePair = new TSvaluePair(ets, transaction); 
+                    getState().setValtsVal(tsValuePair); // val:=v for valts:=ets;
 
                     for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
-                    { 
-                        String message = formatReadMessage(systemMembership.getLeaderId()); //TODO confirm this
-                        System.out.println("Message sent from propose "+ message);
-                        perfectLinks.send(nodeId, message);
+                    {
+                        // does it send read to self as well? 
+                        // I think so but for now it doesnt for test purposes
+                        if(nodeId != Id)
+                        {
+                            String message = formatReadMessage(systemMembership.getLeaderId()); //TODO confirm this
+                            System.out.println("Leader sending " + message + " to " + nodeId);
+                            perfectLinks.send(nodeId, message);
+                        }
                     }
             
                 }
             }
-            System.out.println("PROPOSE phase: " + transaction);
+            // System.out.println("PROPOSE phase: " + transaction);
             return true;
         }
         private static boolean handleReadMessage(int senderId)
         {
-            if(senderId == systemMembership.getLeaderId()) //Only the leader can send READ msg
-            {
-                //STATE|valts|val|writeset:
-                String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
-                try {
-                    cc.input(message); //maybe we should pass the leader
-                } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } 
-            }
+            // received Read -> invokes conditional collect primitive with message [State,valts,val,writeset] 
+            String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
+            try {
+                cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
+                cc.input(message); //maybe we should pass the leader
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } 
+            
             return true;
         }
         //TODO 
@@ -167,6 +191,7 @@ public class BlockchainMember {
 
             return true;
         }
+
         private static boolean onDeliver(int SenderId, String message){
             String[] parts = message.split("\\|");
             switch(parts[1]){
@@ -420,14 +445,17 @@ public class BlockchainMember {
     public static void setState(EpochSate state) {
         BlockchainMember.state = state;
     }
-    private static String formatReadMessage(Integer id)
+
+    // READ messages only need  the current timstamp
+    private static String formatReadMessage(long ets)
     {
-        return "<READ:" + id + ">";
+        return "<READ:" + ets + ">";
     }
     private static String formatStateMessage(TSvaluePair valtsVAl, Set<TSvaluePair> writeSet)
     {
         //TODO how to write the writeset into the message
-        return "<STATE:" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet + ">";
+        System.out.println("WriteSet: " + writeSet);
+        return valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet ;
     }
     private static String formatWriteMessage(String tmpval)
     {

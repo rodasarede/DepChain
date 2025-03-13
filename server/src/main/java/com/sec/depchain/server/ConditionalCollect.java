@@ -70,15 +70,15 @@ public class ConditionalCollect {
         //TODO what should be instead of cc //ROUND?
         //String message_to_sign = "<cc|" + nodeId + ":INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
 
-        String message_to_sign = "INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
+        // String message_to_sign = "INPUT:" + message + ">";     //σ := sign(self, cc || self || INPUT || m);
         PrivateKey privateKey = this.perfectLinks.getPrivateKey();
 
-        String signature = CryptoUtils.signMessage(privateKey, message_to_sign); // TODO sign message how can I get the private
-                                                                         // key in a safe way?
+        String signature = CryptoUtils.signMessage(privateKey, message); 
         //String signature = CryptoUtils.signWithPrivateKey(message, nodeId);
 
         String formatted_message = "<SEND:" + message + ":" + signature + ">";
         int leaderId = systemMembership.getLeaderId();
+        System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
         perfectLinks.send(leaderId, formatted_message);
     }
 
@@ -122,8 +122,8 @@ public class ConditionalCollect {
             return;
         }
         String[] args = getMessageArgs(sendMessage);
-        String message = args[1];
-        String signature = args[2];
+        String message = String.join(":", Arrays.copyOfRange(args, 1, args.length - 1));
+        String signature = args[args.length - 1];
         if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
             messages.put(senderId, message);
             signatures.put(senderId, signature);

@@ -35,9 +35,7 @@ public class SystemMembership {
                 String address = properties.getProperty(i + "_Address");
                 int port = Integer.parseInt(properties.getProperty(i + "_Port"));
                 membershipList.put(i, new Member(address, port));
-                // System.out.println("Member" + i + " Address: " + address + " Port: " + port);
             }
-            System.out.println("Membership List loaded ");
 
         } catch (Exception e) {
             e.printStackTrace();

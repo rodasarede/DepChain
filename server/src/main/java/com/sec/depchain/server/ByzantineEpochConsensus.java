@@ -20,7 +20,7 @@ public class ByzantineEpochConsensus {
 
     private static int nodeId;
     private static int leaderId;
-    private static EpochSate state;
+    private EpochSate state;
     private long ets;
     private String written[];
     private static String[] accepted; // Array to store ACCEPT messages
@@ -30,7 +30,7 @@ public class ByzantineEpochConsensus {
 
     private SystemMembership systemMembership;
 
-    public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership) throws Exception {
+    public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership, int nodeId) throws Exception {
         this.leaderId = leaderId;
         this.ets = ets;
 
@@ -42,10 +42,12 @@ public class ByzantineEpochConsensus {
         this.f = systemMembership.getMaximumNumberOfByzantineNodes();
         //TODO
         cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
+
+        this.nodeId = nodeId;
     }
 
     public void init() {
-
+        System.out.println("INIT phase:");
         TSvaluePair defaultVal = new TSvaluePair(0, null); // TODO how to initialize ?
 
         this.state = new EpochSate(defaultVal, new HashSet<>());
@@ -55,8 +57,10 @@ public class ByzantineEpochConsensus {
     }
 
     public void propose(String v){
+        System.out.println("PROPOSE phase: ");
         if(nodeId == leaderId) //is leader
         {
+            System.out.println("test");
             if(getState().getValtsVal().getVal() == null)
             {
                 TSvaluePair tsValuePair = new TSvaluePair(ets, v); 
@@ -68,6 +72,7 @@ public class ByzantineEpochConsensus {
                 }
             }
         }//mandar o append ao lider
+        System.out.println("PROPOSE phase: " + v);
     }
 
     public void deliverRead(int senderId) throws Exception {
@@ -276,10 +281,6 @@ public class ByzantineEpochConsensus {
         return count;
     }
 
-    public static EpochSate getState() {
-        return state;
-    }
-
     private static String formatReadMessage(long ets) {
         return "<READ:" + ets + ">";
     }
@@ -327,5 +328,9 @@ public class ByzantineEpochConsensus {
         }
 
         return writeSet;
+    }
+
+    public EpochSate getState() {
+        return state;
     }
 }

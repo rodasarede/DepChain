@@ -70,8 +70,8 @@ public class ConditionalCollect {
     public void onInit()
     {
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            this.messages.add(processId, Constants.UNDEFINED);
-            this.signatures.add(processId, ""); 
+            this.messages.add(processId - 1, Constants.UNDEFINED);
+            this.signatures.add(processId - 1, ""); 
         }
     }
     public void input(String message) throws Exception {

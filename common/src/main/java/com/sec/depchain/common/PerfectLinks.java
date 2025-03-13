@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 
@@ -29,7 +30,7 @@ public class PerfectLinks {
     //TODO sequence number in order to make in-order delivery
     public PerfectLinks(int nodeId) throws Exception {
         systemMembership = new SystemMembership(
-                "../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
+                Constants.PROPERTIES_PATH);
         this.port = getPort(nodeId);
         System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);

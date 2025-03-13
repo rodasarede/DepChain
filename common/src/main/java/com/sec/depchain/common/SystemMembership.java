@@ -7,10 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.KeyLoader;
 
 public class SystemMembership {
-    public static final String KEY_DIR = "../common/src/main/java/com/sec/depchain/resources/keys";
+    
 
     private int leaderId;
     private HashMap<Integer, Member> membershipList = new HashMap<>();
@@ -28,7 +29,7 @@ public class SystemMembership {
             setLeaderId(Integer.parseInt(properties.getProperty("LeaderId")));
             setNumberOfNodes(Integer.parseInt(properties.getProperty("NumberOfNodes")));
             setMaximumNumberOfByzantineNodes(this.getNumberOfNodes());
-            setPublicKeys(KeyLoader.loadPublicKeys(KEY_DIR));
+            setPublicKeys(KeyLoader.loadPublicKeys(Constants.KEY_DIR));
 
             for (int i = 1; i <= numberOfNodes; i++) {
                 String address = properties.getProperty(i + "_Address");

@@ -17,8 +17,8 @@ public class CryptoUtils {
 
     public static byte[] deriveSymmetricKey(byte[] sharedSecret) throws Exception {
         byte[] salt = new byte[32]; // Could be a fixed or dynamically generated salt
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(salt, "HmacSHA256"));
+        Mac mac = Mac.getInstance( Constants.HMAC_SHA256_ALGORITHM);
+        mac.init(new SecretKeySpec(salt, Constants.HMAC_SHA256_ALGORITHM));
         return mac.doFinal(sharedSecret);
     }
 
@@ -31,8 +31,8 @@ public class CryptoUtils {
     }
 
     public static byte[] generateHMAC(byte[] symmetricKey, byte[] message) throws Exception {
-        Mac hmac = Mac.getInstance("HmacSHA256");
-        SecretKeySpec secretKey = new SecretKeySpec(symmetricKey, "HmacSHA256");
+        Mac hmac = Mac.getInstance(Constants.HMAC_SHA256_ALGORITHM);
+        SecretKeySpec secretKey = new SecretKeySpec(symmetricKey, Constants.HMAC_SHA256_ALGORITHM);
         hmac.init(secretKey);
         return hmac.doFinal(message);
     }
@@ -70,7 +70,7 @@ public class CryptoUtils {
     }
     public static String signMessage(PrivateKey privateKey, String message) throws Exception
     {
-        Signature signature = Signature.getInstance("SHA256withECDSA");
+        Signature signature = Signature.getInstance(Constants.SIGNATURE_ALGORITHM_SHA256_ECDSA);
 
         signature.initSign(privateKey);
 
@@ -82,7 +82,7 @@ public class CryptoUtils {
     }
     public static boolean verifySignature(PublicKey publicKey, String messsage, String receivedSignature) throws Exception{
 
-        Signature signature = Signature.getInstance("SHA256withECDSA");
+        Signature signature = Signature.getInstance(Constants.SIGNATURE_ALGORITHM_SHA256_ECDSA);
 
         signature.initVerify(publicKey);
 

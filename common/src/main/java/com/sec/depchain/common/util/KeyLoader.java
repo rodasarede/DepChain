@@ -122,14 +122,14 @@ public class KeyLoader {
 
     private static PublicKey parsePublicKey(byte[] binaryKey) throws Exception {
         // Use KeyFactory to parse the binary key
-        KeyFactory keyFactory = KeyFactory.getInstance("EC"); // Use "EC" for elliptic curve keys
+        KeyFactory keyFactory = KeyFactory.getInstance(Constants.EC); // Use "EC" for elliptic curve keys
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(binaryKey);
         return keyFactory.generatePublic(keySpec);
     }
 
     private static PrivateKey parsePrivateKey(byte[] binaryKey) throws Exception {
         // Use KeyFactory to parse the binary key
-        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+        KeyFactory keyFactory = KeyFactory.getInstance(Constants.EC);
 
         // Create an PKCS8EncodedKeySpec from the encoded key
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(binaryKey);

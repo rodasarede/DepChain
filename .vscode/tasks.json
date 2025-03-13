@@ -1,0 +1,80 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Start All ",
+        "dependsOn": ["Start Server 1", "Start Server 2", "Start Server 3", "Start Server 4","Start Client 10"],
+        "group": "build",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      },
+      {
+        "label": "Start Server 1",
+        "type": "shell",
+        "command": "cd server/ && mvn exec:java -Dexec.args='1'",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "new"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Start Server 2",
+        "type": "shell",
+        "command": "cd server/ && mvn exec:java -Dexec.args='2'",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "new"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Start Server 3",
+        "type": "shell",
+        "command": "cd server/ && mvn exec:java -Dexec.args='3'",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "new"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Start Server 4",
+        "type": "shell",
+        "command": "cd server/ && mvn exec:java -Dexec.args='4'",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "new"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Start Client 10",
+        "type": "shell",
+        "command": "cd client/ && mvn exec:java -Dexec.args='10'",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": true,
+          "panel": "new"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+  

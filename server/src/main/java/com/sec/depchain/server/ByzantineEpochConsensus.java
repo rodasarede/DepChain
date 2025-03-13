@@ -96,8 +96,8 @@ public class ByzantineEpochConsensus {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[1]);
-            String entryVal = parts[2];
+            long entryTs = Long.parseLong(parts[0]);
+            String entryVal = parts[1];
 
             if (entryTs >= 0 && entryVal != null && binds(entryTs, entryVal, CollectedMessages)) {
                 tmpval = entryVal;
@@ -202,7 +202,7 @@ public class ByzantineEpochConsensus {
             if (entry.equals("UNDEFINED"))
                 continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[1]);
+            long entryTs = Long.parseLong(parts[0]);
 
             if (entryTs != 0) {
                 return false;
@@ -222,8 +222,8 @@ public class ByzantineEpochConsensus {
         {
             if(entry.equals("UNDEFINED")) continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[1]);
-            String entryVal = parts[2];
+            long entryTs = Long.parseLong(parts[0]);
+            String entryVal = parts[1];
 
             if(entryTs < ts || (entryTs == ts && entryVal.equals(v)))
             {
@@ -240,10 +240,8 @@ public class ByzantineEpochConsensus {
         {
             if(entry.equals("UNDEFINED")) continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[1]);
-            String entryVal = parts[2];
 
-            String writeSetString = parts[3];
+            String writeSetString = parts[2];
 
             Set <TSvaluePair> writeSet = parseWriteSet(writeSetString);
             //I need the writeSet 
@@ -262,8 +260,8 @@ public class ByzantineEpochConsensus {
         {
             if(entry.equals("UNDEFINED")) continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[1]);
-            String entryVal = parts[2];
+            long entryTs = Long.parseLong(parts[0]);
+            String entryVal = parts[1];
             if(binds(entryTs, entryVal, S) || unbound(S))
             {
                 return true;

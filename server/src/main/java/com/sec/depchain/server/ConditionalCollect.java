@@ -33,12 +33,6 @@ public class ConditionalCollect {
         this.deliverCallback = callback;
     }
 
-    //DONE
-
-    /*upon event ⟨ cc, Init ⟩ do
-    messages := [UNDEFINED]^N;
-    Σ := [⊥]^N;
-    collected := FALSE; */
     public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership, Predicate<List<String>> outputPredicate) throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;

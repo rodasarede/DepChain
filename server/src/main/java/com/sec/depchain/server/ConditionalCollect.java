@@ -55,7 +55,7 @@ public class ConditionalCollect {
 
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
             messages.put(processId, Constants.UNDEFINED);
-            signatures.put(processId, null); // signatures should start with null not UNDEFINED
+            signatures.put(processId, "⊥"); // signatures should start with //TODO null not UNDEFINED
         }
     }
 
@@ -68,8 +68,9 @@ public class ConditionalCollect {
     trigger ⟨ al, Send | ℓ, [SEND, m, σ] ⟩; */
     public void input(String message) throws Exception {
         //TODO what should be instead of cc //ROUND?
-        String message_to_sign = "<cc|" + nodeId + ":INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
+        //String message_to_sign = "<cc|" + nodeId + ":INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
 
+        String message_to_sign = "INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
         PrivateKey privateKey = this.perfectLinks.getPrivateKey();
 
         String signature = CryptoUtils.signMessage(privateKey, message_to_sign); // TODO sign message how can I get the private
@@ -121,8 +122,8 @@ public class ConditionalCollect {
             return;
         }
         String[] args = getMessageArgs(sendMessage);
-        String message = args[3];
-        String signature = args[4];
+        String message = args[1];
+        String signature = args[2];
         if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
             messages.put(senderId, message);
             signatures.put(senderId, signature);
@@ -158,7 +159,7 @@ public class ConditionalCollect {
         signatures.clear();
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
             messages.put(processId, "UNDEFINED");
-            signatures.put(processId, null);
+            signatures.put(processId, "⊥");
         }
         }
 

@@ -172,7 +172,7 @@ public class PerfectLinks {
                 if (getMessageType(originalMsg).equals("append")) {
                     deliverCallback.deliver(senderNodeId, message);
                 }else{
-                    deliverCallbackCollect.deliver(senderNodeId, originalMsg);
+                    deliverCallbackCollect.deliver(senderNodeId, originalMsg); //TODO null point error
                 }
             }
         }

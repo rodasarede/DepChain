@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.PerfectLinks;
 
 public class BlockchainMember {
@@ -171,27 +172,19 @@ public class BlockchainMember {
 
             //State in form [State,ts,v,ws] or undefined
             String tmpval = null; //tmpval:=⊥;
-            for (Map.Entry<Integer, String> entry : states.entrySet()) {
-                String[] split = entry.getValue().split("\\|");
-                int ts = Integer.parseInt(split[1]);
-                String val = split[2];
-                if(ts >= 0 && val!= null) //ts≥0 , v diff null //TODO binds(ts, v, states)
-                {
-                    tmpval = val;
-                }
+            /*if exists ts ≥ 0, v ≠ ⊥ from S such that binds(ts, v, states) then  
+                tmpval := v; */
+            for (String entry: S) {
+               if(entry.ts >= 0 && entry.val != null && binds(entry.ts, entry.val, ))
+               {
+                tmpval = entry.val
+               }
+               else if()
+               {
+                //tmpval = v
+               }
             }
-            //else if 
-            //on bounded value?
-            if (tmpval == null) {
-                String leaderState = states.get(systemMembership.getLeaderId());
-                if (leaderState != null && !leaderState.equals("UNDEFINED")) {
-                    String[] leaderStateParts = leaderState.split("\\|");
-                    String v = leaderStateParts[2];
-                    if (v != null ) {
-                        tmpval = v; // Unbound value from leader's state
-                    }
-                }
-            }
+
             //TODO condition after f+1 processes
             if(tmpval != null) //tmp value diff null
             {
@@ -224,7 +217,10 @@ public class BlockchainMember {
                 if(entry != null)
                {
                 //TODO //is the second or about the write set?
-                if(entry.ts < ts || entry.ts)
+                if(entry.ts < ts || (entry.ts = ts && entry.val.equals(v)))
+                {
+                    count ++;
+                }
                }
             }
             return count > (N + f) / 2;
@@ -232,7 +228,64 @@ public class BlockchainMember {
 
         private static boolean certifiedValue(long ts, String v, List <String> S)
         {
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            int count = 0;
+            for(String entry: S)
+            {
+                for(TSvaluePair writeSetEntry: entry.writeset){
+                    if(writeSetEntry.ts >= ts && writeSetEntry.val.equals(v))
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count > f;
+        }
+
+        private static boolean binds(long ts, String v, List <String> states)
+        {
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            return (states.size() >=  N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
+        }
+        private static boolean unbound(List <String> S){
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            if(getNumberOfDefinedEntries(S) < N - f)
+            {
+                return false;
+            }
+            for(String entry: S){
+                if(S.ts != 0)
+                {
+                    return false;
+                }
+            }
             return true;
+        }
+        private static boolean predicateSound(List <String> S){
+            if(unbound(S)){
+                return true;
+            }
+            for(String entry: S){
+                if(binds(entry.ts, entry.v, S)){
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static int getNumberOfDefinedEntries(List <String> S)
+        {
+            int count = 0;
+            for(String entry: S)
+            {
+                if(!entry.equals(Constants.UNDEFINED))
+                {
+                    count ++;
+                }
+            }
+            return count;
         }
         private static boolean decideConsensus(String transaction) {
             System.out.println("DECIDE phase: Committing transaction.");

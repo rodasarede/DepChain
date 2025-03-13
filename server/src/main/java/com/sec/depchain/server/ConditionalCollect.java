@@ -144,7 +144,7 @@ public class ConditionalCollect {
         }
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        if (getNumberOfMessages() >= N - f && satisfiesConditionC()) {
+        if (getNumberOfMessages() >= N - f && outputPredicate()) {
             String formattedMessages = getFormattedArray(messages);
             String formattedSignatures = getFormattedArray(signatures);
             String formattedMessage = "<COLLECTED:" + formattedMessages + ":" + formattedSignatures + ">";
@@ -221,8 +221,8 @@ public class ConditionalCollect {
 
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        if (!collected && collectedMessages.length >= N - f
-                && verifyAllSignatures(collectedMessages, collectedSignatures) && satisfiesConditionC()) {// and C(M)
+        if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
+                && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate()) {// and C(M)
                                                                                                           // where is
                                                                                                           // this
             collected = true;
@@ -265,7 +265,17 @@ public class ConditionalCollect {
                 System.err.println("Error: Unknown message type received from " + senderId + " -> " + message);
         }
     }
-
+    public int getNumberOfMessagesDiffFromUNDEFINED(String[] messages)
+    {
+        int count = 0;
+        for(int i = 0; i < messages.length ; i++)
+        {
+            if(!messages[i].equals(Constants.UNDEFINED)){
+                count ++;
+            }
+        }
+        return count;
+    }
     public void setNodeId(int nodeId) {
         this.nodeId = nodeId;
     }

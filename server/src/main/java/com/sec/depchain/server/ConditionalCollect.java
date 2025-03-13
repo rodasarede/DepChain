@@ -180,7 +180,7 @@ public class ConditionalCollect {
     }
 
     private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures) throws Exception {
-        for (int i = 1; i < collectedMessages.length; i++) {
+        for (int i = 1; i <= collectedMessages.length ; i++) {
             if (collectedMessages[i].equals(Constants.UNDEFINED)) continue;
             String message = collectedMessages[i];
             String signature = collectedSignatures[i];

@@ -50,7 +50,7 @@ public class BlockchainMember {
             perfectLinks.setDeliverCallbackCollect(BlockchainMember::onPerfectLinksDeliver);
             perfectLinks.setDeliverCallback(BlockchainMember::onPerfectLinksDeliver);
 
-            testConditionalCollect();
+            // testConditionalCollect();
             
             //Every correct process initializes the conditional collect primitive with this predicate sound(·).
             //cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
@@ -92,7 +92,9 @@ public class BlockchainMember {
                     // // Send confirmation response back to client
                     // int destId = Integer.parseInt(message.split("\\|")[0]);
                     // perfectLinks.send(destId, formattedMessage);
+                    break;
                 case "READ":
+                    System.out.println("Received READ message from " + senderId + " with message: " + message);
                     handleReadMessage(senderId); //TODO
                     break;
                 case "STATE":
@@ -174,6 +176,13 @@ public class BlockchainMember {
             String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
             try {
                 cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
+                cc.setDeliverCallback((messagesFromCC) -> {
+                    System.out.println("Received Collected from CC:");
+                    for (Integer processId : systemMembership.getMembershipList().keySet()) {
+                        System.out.println("Message of nodeId " + processId);
+                        System.out.println("Message of nodeId " + messagesFromCC[processId - 1] + "\n");
+                    }
+                });
                 cc.input(message); //maybe we should pass the leader
             } catch (Exception e) {
                 // TODO Auto-generated catch block

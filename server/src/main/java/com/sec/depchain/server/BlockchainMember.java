@@ -21,7 +21,12 @@ public class BlockchainMember {
     private static PerfectLinks perfectLinks;
 
     private static EpochSate state;
-    private static Map<Integer, String> states; //TODO how can I save the states for the collected
+    
+    private String[] written; // Array to store WRITE messages
+    private String[] accepted; // Array to store ACCEPT messages
+    private static int N; // Total number of processes
+    private static int f; // Maximum number of Byzantine faults
+    private static int ets; // Epoch timestamp
 
     private static ConditionalCollect cc;
         public static void main(String[] args) throws Exception {
@@ -157,7 +162,7 @@ public class BlockchainMember {
                     handleCollectedStates();
                     break;
                 case "WRITE":
-                    handeWriteMessage();      
+                    handleWriteMessage();      
                     break;
                 case "ACCEPT":
                     //handleAcceptMessage();
@@ -294,32 +299,45 @@ public class BlockchainMember {
         }
         /*upon event ⟨ al, Deliver | p, [WRITE, v] ⟩ do
                 written[p] := v; */
-        private static boolean handeWriteMessage(int SenderId){
+        private static boolean handleWriteMessage(int SenderId, String val){
+            written[senderId] = val
+            check_write_quorom()
             return true;
         }
 
+        private void check_write_quorom(){
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            for(String value: written)
+            {
+
+            }
+            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+            {
+                //trigger a send WRITE message containing tmpval
+                String message =  formatAcceptMessage(val);
+                
+            }
+        }
         /*upon event ⟨ al, Deliver | p, [ACCEPT, v] ⟩ do
                 accepted[p] := v; */
         private static boolean handleAcceptMessage(int SenderId, String val){
+            accepted[] //accepted[p] := v;
+            check_accept_quorom();
             
             return true;
         }
-/*upon exists v such that #{p | written[p] = v} > N + f do
-    (valts, val) := (ets, v); written := [⊥]N ; forall q ∈ Π do
-    trigger ⟨ al, Send | q, [ACCEPT, val] ⟩ */
-        private static boolean processWrittenValues()
-    {
-        int N = systemMembership.getNumberOfNodes();
-        int f = systemMembership.getMaximumNumberOfByzantineNodes(); 
-        for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
-        {
-            //trigger a send WRITE message containing tmpval
-            String message =  formatAcceptMessage();
-            
+        private void check_accept_quorom(){
+            int N = systemMembership.getNumberOfNodes();
+            int f = systemMembership.getMaximumNumberOfByzantineNodes();
+            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+            {
+                //trigger a send WRITE message containing tmpval
+                //String message =  formatAcceptMessage(val);
+                //decide
+            }
         }
-
-        return true
-    }
+    
     private static boolean processWrittenValues(){
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes(); 

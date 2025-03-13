@@ -31,6 +31,9 @@ public class ByzantineEpochConsensus {
     public ByzantineEpochConsensus(int leaderId, long ets) {
         this.leaderId = leaderId;
         this.ets = ets;
+
+        //TODO
+        //cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
     }
 
     public void init() {
@@ -63,7 +66,9 @@ public class ByzantineEpochConsensus {
         if (senderId == leaderId) {
             String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
 
-            cc = new ConditionalCollect(nodeId, perfectLinks, systemMembership);
+            //cc = new ConditionalCollect(nodeId, perfectLinks, systemMembership);
+
+            cc.onInit();
 
             cc.input(message);
         }
@@ -91,7 +96,7 @@ public class ByzantineEpochConsensus {
             String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId());
             String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
             String entryVal = parts[2];
-            if (unbound(CollectedMessages) && entryVal != null) // TODO not sure about this else if
+            if (unbound(CollectedMessages) && entryVal != null) 
             {
                 tmpval = entryVal;
             }
@@ -238,7 +243,7 @@ public class ByzantineEpochConsensus {
         return count > f;
     }
 
-    private boolean sound(List <String> S){
+    public boolean sound(List <String> S){
         for(String entry: S)
         {
             if(entry.equals("UNDEFINED")) continue;

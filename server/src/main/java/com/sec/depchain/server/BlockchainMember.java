@@ -55,13 +55,25 @@ public class BlockchainMember {
             //Every correct process initializes the conditional collect primitive with this predicate sound(·).
             //cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
             //cc.setPredicate(BlockchainMember::predicateSound);
+            
+
+            /* começar o algortimo 
+            todos os p começam com o init() incluindo o lider para começarem todos com o mesmo estado
+
+            -apend de um client:
+                com ideia q o lider receba o apend mas se nao enviar terá q receber para começar o propose
+
+                o lider começa com o propose
+
+
+                //decide(valor)*/
         }
 
     public static void testConditionalCollect() throws Exception {
         // Conditional Collect will be used by byzantine read write epoch
         System.out.println("Starting test of Conditional Collect...");
-
-        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership); // Pass the necessary Id
+        //TODO
+        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership, ByzantineEpochConsensus.sound); // Pass the necessary Id
 
         cc.setDeliverCallback((messagesFromCC) -> {
             System.out.println("Received Collected from CC:");
@@ -174,7 +186,8 @@ public class BlockchainMember {
             // received Read -> invokes conditional collect primitive with message [State,valts,val,writeset] 
             String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
             try {
-                cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
+                //TODO
+                cc = new ConditionalCollect(Id, perfectLinks, systemMembership, ByzantineEpochConsensus.sound());
                 cc.setDeliverCallback((messagesFromCC) -> {
                     System.out.println("Received Collected from CC:");
                     for (Integer processId : systemMembership.getMembershipList().keySet()) {
@@ -443,7 +456,9 @@ public class BlockchainMember {
         int f = systemMembership.getMaximumNumberOfByzantineNodes(); 
         return true;
     }
-
+    private void decide(String val){
+        blockchain.add(val);
+    }
         public static boolean isLeader() {
             return isLeader;
         }

@@ -5,6 +5,7 @@ import com.sec.depchain.common.PerfectLinks;
 import java.security.PrivateKey;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,9 +16,11 @@ import com.sec.depchain.common.util.CryptoUtils;
 public class ConditionalCollect {
     private DeliverCallback deliverCallback;
     private final PerfectLinks perfectLinks;
-    private static ArrayList<String> messages;
-    private static ArrayList<String>  signatures;
+    private static ArrayList <String> messages;
+    private static ArrayList <String>  signatures;
     private static boolean collected;
+
+    private Predicate<List<String>> outputPredicate;
 
     private static SystemMembership systemMembership;
     private static int nodeId;
@@ -36,7 +39,7 @@ public class ConditionalCollect {
     messages := [UNDEFINED]^N;
     Σ := [⊥]^N;
     collected := FALSE; */
-    public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership) throws Exception {
+    public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership, Predicate<List<String>> outputPredicate) throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;
         setSystemMembership(systemMembership);
@@ -56,28 +59,26 @@ public class ConditionalCollect {
         this.signatures = new ArrayList<>(systemMembership.getNumberOfNodes());
         this.collected = false; 
 
-        for (Integer processId : systemMembership.getMembershipList().keySet()) {
+        this.outputPredicate = outputPredicate;
+
+        /*for (Integer processId : systemMembership.getMembershipList().keySet()) {
             messages.add("UNDEFINED");
-            signatures.add("⊥"); // signatures should start with //TODO null not UNDEFINED
-        }
+            signatures.add(""); 
+        }*/
     }
 
-    // DONE
-    /*upon event ⟨ cc, Input | m ⟩ do
-    σ := sign(self, cc || self || INPUT || m);
-    String signingData = "cc||" + this.nodeId + "||INPUT||" + message;
-    String signature = CryptoUtils.signMessage(privateKey, signingData);
-    String metadata = nodeId + "|ConditionalCollect|INPUT|" + message;
-    trigger ⟨ al, Send | ℓ, [SEND, m, σ] ⟩; */
+    public void onInit()
+    {
+        for (Integer processId : systemMembership.getMembershipList().keySet()) {
+            this.messages.add(processId, Constants.UNDEFINED);
+            this.signatures.add(processId, ""); 
+        }
+    }
     public void input(String message) throws Exception {
-        //TODO what should be instead of cc //ROUND?
-        //String message_to_sign = "<cc|" + nodeId + ":INPUT:" + message + ">";    //σ := sign(self, cc || self || INPUT || m);
-
-        // String message_to_sign = "INPUT:" + message + ">";     //σ := sign(self, cc || self || INPUT || m);
+      
         PrivateKey privateKey = this.perfectLinks.getPrivateKey();
 
         String signature = CryptoUtils.signMessage(privateKey, message); 
-        //String signature = CryptoUtils.signWithPrivateKey(message, nodeId);
 
         String formatted_message = "<SEND:" + message + ":" + signature + ">";
         int leaderId = systemMembership.getLeaderId();
@@ -112,12 +113,7 @@ public class ConditionalCollect {
         return counter;
     }
 
-    // TODO
-    //(only for the leader)
-    /*upon event ⟨ al, Deliver | p, [SEND, m, σ] ⟩ do
-    if verifysig(p, cc || p || INPUT || m, σ) then //p processID; cc->; INPUT; m -> message; signF
-        messages[p] := m;
-        Σ[p] := σ; */
+
     private void processSend(int senderId, String sendMessage) throws Exception {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
@@ -134,12 +130,6 @@ public class ConditionalCollect {
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 
-
-    /*upon #(messages) ≥ N − f ∧ C(messages) do
-    forall q ∈ Π do
-        trigger ⟨ al, Send | q, [COLLECTED, messages, Σ] ⟩;
-    messages := [UNDEFINED]^N;
-    Σ := [⊥]^N; */
     public void checkAndBrodcastCollectedMessages(String sendMessage, int senderId) {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
@@ -148,7 +138,7 @@ public class ConditionalCollect {
         }
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        if (getNumberOfMessages() >= N - f && outputPredicate()) {
+        if (getNumberOfMessages() >= N - f && outputPredicate.test(messages)) {
             // String formattedMessages = getFormattedArray(messages);
             // String formattedSignatures = getFormattedArray(signatures);
             String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
@@ -166,13 +156,7 @@ public class ConditionalCollect {
         // }
         }
 
-    // TODO
-    private boolean outputPredicate() { 
-        // predicate that determines whether the collected messages satisfy certain requirements before the protocol proceeds.
-        //A quorum agrees on the same value (Byzantine fault tolerance)?
-        // Majority Agreement?
-        return true;
-    }
+
 
     public static String[] unformatArray(String input) {
         if (input.startsWith("[") && input.endsWith("]")) {
@@ -196,15 +180,6 @@ public class ConditionalCollect {
         return true;
     }
 
-    // TODO
-
-    /*upon event ⟨ al, Deliver | ℓ, [COLLECTED, M, Σ] ⟩ do
-    if collected = FALSE ∧ #(M) ≥ N - f ∧ C(M) ∧
-       (forall p ∈ Π such that M[p] ≠ UNDEFINED, it holds
-        verifysig(p, cc || p || INPUT || M[p], Σ[p])) then
-        collected := TRUE;
-        trigger ⟨ cc, Collected | M ⟩;
- */
     private void processCollected(int senderId, String collectedMessage) throws Exception {
         System.out.println("Received COLLECTED message: " + collectedMessage);
         String[][] result = collectedParser(collectedMessage);
@@ -230,12 +205,14 @@ public class ConditionalCollect {
             System.out.println("- " + signature);
         }
 
+
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
+
+        List<String> messageList = new ArrayList<>(Arrays.asList(collectedMessages));
+
         if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
-                && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate()) {// and C(M)
-                                                                                                          // where is
-                                                                                                          // this
+                && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate.test(messageList)) {
             collected = true;
             System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
             if (deliverCallback != null) {

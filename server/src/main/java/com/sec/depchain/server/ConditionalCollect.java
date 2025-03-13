@@ -5,6 +5,9 @@ import com.sec.depchain.common.PerfectLinks;
 import java.security.PrivateKey;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
@@ -12,8 +15,8 @@ import com.sec.depchain.common.util.CryptoUtils;
 public class ConditionalCollect {
     private DeliverCallback deliverCallback;
     private final PerfectLinks perfectLinks;
-    private static Map<Integer, String> messages;
-    private static Map<Integer, String> signatures;
+    private static ArrayList<String> messages;
+    private static ArrayList<String>  signatures;
     private static boolean collected;
 
     private static SystemMembership systemMembership;
@@ -33,8 +36,7 @@ public class ConditionalCollect {
     messages := [UNDEFINED]^N;
     Σ := [⊥]^N;
     collected := FALSE; */
-    public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership)
-            throws Exception {
+    public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership) throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;
         setSystemMembership(systemMembership);
@@ -49,13 +51,14 @@ public class ConditionalCollect {
                 e.printStackTrace();
             }
         });
-        this.messages = new ConcurrentHashMap<>();
-        this.signatures = new ConcurrentHashMap<>();
+
+        this.messages = new ArrayList<>(systemMembership.getNumberOfNodes());
+        this.signatures = new ArrayList<>(systemMembership.getNumberOfNodes());
         this.collected = false; 
 
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            messages.put(processId, Constants.UNDEFINED);
-            signatures.put(processId, "⊥"); // signatures should start with //TODO null not UNDEFINED
+            messages.add("UNDEFINED");
+            signatures.add("⊥"); // signatures should start with //TODO null not UNDEFINED
         }
     }
 
@@ -101,8 +104,8 @@ public class ConditionalCollect {
     private static int getNumberOfMessages() {
         int counter = 0;
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            System.out.println("ProcessId: " + processId + "; Message: " + messages.get(processId));
-            if (!(messages.get(processId).equals("UNDEFINED")))
+            System.out.println("ProcessId: " + processId + "; Message: " + messages.get(processId-1));
+            if (!(messages.get(processId-1).equals("UNDEFINED")))
                 counter++;
             System.out.println("Counter: " + counter);
         }
@@ -112,7 +115,7 @@ public class ConditionalCollect {
     // TODO
     //(only for the leader)
     /*upon event ⟨ al, Deliver | p, [SEND, m, σ] ⟩ do
-    if verifysig(p, cc || p || INPUT || m, σ) then //p processID; cc->; INPUT; m -> message; sign
+    if verifysig(p, cc || p || INPUT || m, σ) then //p processID; cc->; INPUT; m -> message; signF
         messages[p] := m;
         Σ[p] := σ; */
     private void processSend(int senderId, String sendMessage) throws Exception {
@@ -125,8 +128,8 @@ public class ConditionalCollect {
         String message = String.join(":", Arrays.copyOfRange(args, 1, args.length - 1));
         String signature = args[args.length - 1];
         if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
-            messages.put(senderId, message);
-            signatures.put(senderId, signature);
+            messages.set(senderId-1, message); 
+            signatures.set(senderId-1, signature);
         }
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
@@ -146,9 +149,9 @@ public class ConditionalCollect {
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
         if (getNumberOfMessages() >= N - f && outputPredicate()) {
-            String formattedMessages = getFormattedArray(messages);
-            String formattedSignatures = getFormattedArray(signatures);
-            String formattedMessage = "<COLLECTED:" + formattedMessages + ":" + formattedSignatures + ">";
+            // String formattedMessages = getFormattedArray(messages);
+            // String formattedSignatures = getFormattedArray(signatures);
+            String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 System.out.println("Process ID: " + processId);
                 perfectLinks.send(processId, formattedMessage);
@@ -181,9 +184,9 @@ public class ConditionalCollect {
 
     private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures) throws Exception {
         for (int i = 1; i <= collectedMessages.length ; i++) {
-            if (collectedMessages[i].equals(Constants.UNDEFINED)) continue;
-            String message = collectedMessages[i];
-            String signature = collectedSignatures[i];
+            if (collectedMessages[i-1].equals(Constants.UNDEFINED)) continue;
+            String message = collectedMessages[i-1];
+            String signature = collectedSignatures[i-1];
             // String signingData = "cc||" + i + "||INPUT||" + message;
             System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
             if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
@@ -204,12 +207,18 @@ public class ConditionalCollect {
  */
     private void processCollected(int senderId, String collectedMessage) throws Exception {
         System.out.println("Received COLLECTED message: " + collectedMessage);
-
-        String[] args = getMessageArgs(collectedMessage);
-        String rawCollectedMessages = args[1];
-        String rawCollectedSignatures = args[2];
-        String[] collectedMessages = unformatArray(rawCollectedMessages);
-        String[] collectedSignatures = unformatArray(rawCollectedSignatures);
+        String[][] result = collectedParser(collectedMessage);
+        String[] collectedMessages = result[0];
+        String[] collectedSignatures = result[1];
+        // System.out.println("Collected: " + collectedMessages);
+        // System.out.println("Signatures: " + collectedSignatures);
+        // String[] args = getMessageArgs(collectedMessage);
+        // String rawCollectedMessages = args[1];
+        // String rawCollectedSignatures = args[2];
+        // String[] collectedMessages = unformatArray(rawCollectedMessages);
+        // String[] collectedSignatures = unformatArray(rawCollectedSignatures);
+        // System.out.println("Collected Messages: " + rawCollectedMessages);
+        // System.out.println("Collected Signatures: " + rawCollectedSignatures);
 
         System.out.println("Collected Messages:");
         for (String message : collectedMessages) {
@@ -285,4 +294,30 @@ public class ConditionalCollect {
     public void setSystemMembership(SystemMembership systemMembership) {
         this.systemMembership = systemMembership;
     }
+
+    public static String[][] collectedParser(String input) {
+        // Regular expression to extract content inside brackets []
+        Pattern bracketPattern = Pattern.compile("\\[(.*?)\\]");
+        Matcher matcher = bracketPattern.matcher(input);
+
+        String[] messages = new String[0];  // Placeholder for messages
+        String[] signatures = new String[0];  // Placeholder for signatures
+
+        int index = 0;
+        while (matcher.find()) {
+            String content = matcher.group(1); // Extract content inside []
+            String[] items = content.split(",\\s*"); // Split by ", "
+
+            if (index == 0) {
+                messages = items; // First set of brackets → messages
+            } else if (index == 1) {
+                signatures = items; // Second set of brackets → signatures
+            }
+            index++;
+        }
+
+        return new String[][]{messages, signatures}; // Return as a 2D array
+    }
+
+
 }

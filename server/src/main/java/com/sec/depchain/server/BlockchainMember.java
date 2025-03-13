@@ -157,12 +157,11 @@ public class BlockchainMember {
                     {
                         // does it send read to self as well? 
                         // I think so but for now it doesnt for test purposes
-                        if(nodeId != Id)
-                        {
+                        
                             String message = formatReadMessage(systemMembership.getLeaderId()); //TODO confirm this
                             System.out.println("Leader sending " + message + " to " + nodeId);
                             perfectLinks.send(nodeId, message);
-                        }
+                        
                     }
             
                 }

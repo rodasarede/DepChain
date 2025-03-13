@@ -21,7 +21,7 @@ public class ByzantineEpochConsensus {
     private static int nodeId;
     private static int leaderId;
     private EpochSate state;
-    private long ets=1;
+    private long ets;
     private String written[];
     private String[] accepted; // Array to store ACCEPT messages
     private ConditionalCollect cc;
@@ -120,11 +120,12 @@ public class ByzantineEpochConsensus {
             String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
             String entryVal = null;
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
-                entryVal = parts[2];
+                entryVal = parts[1];
             }
             if (unbound(CollectedMessages) && entryVal != null) 
             {
                 System.out.println("Unbound condition met");
+                System.out.println("Entry Val: " + entryVal);
                 tmpval = entryVal;
             }
         }
@@ -146,6 +147,7 @@ public class ByzantineEpochConsensus {
             state.getWriteSet().add(tsValuePair);
 
             // BRODCAST WRITE message to all nodes
+            System.out.println("tmpval: " + tmpval);
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
@@ -158,19 +160,19 @@ public class ByzantineEpochConsensus {
 
     public void deliverWrite(int id, String v)
     {
-        written[id] = v; //id-1?
+        System.out.println("Deliver Write: " + v);
+        written[id-1] = v; //id-1?
         check_write_quorom(v);
     }
-    public void deliverAccpet(int id, String v)
+    public void deliverAccept(int id, String v)
     {
-        accepted[id] = v; //id-1?
+        accepted[id-1] = v; //id-1?
         check_accept_quorom(v);
     }
     private void check_write_quorom(String v){
         int count = 0 ;
-        for(String writtenEntry: written)
-        {
-            if(writtenEntry.equals(v)){
+        for(String writtenEntry: written){
+            if(writtenEntry != null  && writtenEntry.equals(v)){
                 count ++;
             }
         }
@@ -183,7 +185,7 @@ public class ByzantineEpochConsensus {
             for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
             {
                 //trigger a send ACCEPT Message
-                String message = formatAcceptMessage(v);
+                String message = formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }
         }
@@ -194,7 +196,7 @@ public class ByzantineEpochConsensus {
         int count = 0 ;
         for(String acceptedEntry: accepted)
         {
-            if(acceptedEntry.equals(v)){
+            if(acceptedEntry != null && acceptedEntry.equals(v)){
                 count ++;
             }
         }
@@ -315,9 +317,8 @@ public class ByzantineEpochConsensus {
         return "<WRITE:" + ets + ":" + tmpval + ">";
     }
 
-    private static String formatAcceptMessage(String val)
-    {
-        return "<ACCEPT:" + val + ">";
+    private static String formatAcceptMessage(String val, long ets) {
+        return "<ACCEPT:" + ets + ":" + val + ">";
     }
 
     private static List<String> CollectedMessageSeparator(String collectedMessage) {

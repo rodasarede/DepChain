@@ -127,10 +127,10 @@ public class BlockchainMember {
                     bep.deliverRead(senderId);
                     break;
                 case "WRITE":
-                    //handleWriteMessage(message);      
+                    bep.deliverWrite(senderId, messageElements[2]);
                     break;
                 case "ACCEPT":
-                    //handleAcceptMessage();
+                    bep.deliverAccept(senderId, messageElements[2]);
                     break;
                 default: 
                     break;
@@ -199,14 +199,15 @@ public class BlockchainMember {
     public static void decide(String val){
         System.out.println("DECIDE phase: Committing transaction.");
         blockchain.add(val);
+        
     }
-        public static boolean isLeader() {
-            return isLeader;
-        }
+    public static boolean isLeader() {
+        return isLeader;
+    }
    
-        public static void setBep(ByzantineEpochConsensus bep) {
-            BlockchainMember.bep = bep;
-        }
+    public static void setBep(ByzantineEpochConsensus bep) {
+        BlockchainMember.bep = bep;
     }
+}
     
 

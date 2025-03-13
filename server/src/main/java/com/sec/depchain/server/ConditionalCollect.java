@@ -154,13 +154,13 @@ public class ConditionalCollect {
                 perfectLinks.send(processId, formattedMessage);
             }
         }
-        //reset the state
-        messages.clear();
-        signatures.clear();
-        for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            messages.put(processId, "UNDEFINED");
-            signatures.put(processId, "⊥");
-        }
+        // // reset the state
+        // messages.clear();
+        // signatures.clear();
+        // for (Integer processId : systemMembership.getMembershipList().keySet()) {
+        //     messages.put(processId, "UNDEFINED");
+        //     signatures.put(processId, "⊥");
+        // }
         }
 
     // TODO
@@ -180,12 +180,13 @@ public class ConditionalCollect {
     }
 
     private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures) throws Exception {
-        for (int i = 0; i < collectedMessages.length; i++) {
+        for (int i = 1; i < collectedMessages.length; i++) {
             if (collectedMessages[i].equals(Constants.UNDEFINED)) continue;
             String message = collectedMessages[i];
             String signature = collectedSignatures[i];
-            String signingData = "cc||" + i + "||INPUT||" + message;
-            if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), signingData, signature)) {
+            // String signingData = "cc||" + i + "||INPUT||" + message;
+            System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
+            if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
                 return false;
             }
         }

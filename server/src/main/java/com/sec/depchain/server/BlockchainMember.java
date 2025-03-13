@@ -142,7 +142,7 @@ public class BlockchainMember {
             return true;
         }
 
-        private static boolean proposeConsensus(String transaction) {
+        private static boolean  proposeConsensus(String transaction) {
             if(isLeader())//Only the leader
             {
                 if(getState().getValtsVal().getVal() == null) // val == null then val := v;

@@ -25,11 +25,11 @@ public class BlockchainMember {
 
     private static EpochSate state;
     
-    private static TSvaluePair[] written; // Array to store WRITE messages
-    private static TSvaluePair[] accepted; // Array to store ACCEPT messages
+    private static String [] written; // TODO what type of array do we need?
+    private static String [] accepted; // Array to store ACCEPT messages
     private static int N; // Total number of processes
     private static int f; // Maximum number of Byzantine faults
-    private static int ets; // Epoch timestamp
+    private static long ets; // Epoch timestamp
 
     private static ConditionalCollect cc;
         public static void main(String[] args) throws Exception {
@@ -113,8 +113,12 @@ public class BlockchainMember {
             TSvaluePair defaultVal = new TSvaluePair(0, null);
             state = new EpochSate(defaultVal, new HashSet<>());
 
-            written = new TSvaluePair[N];
-            accepted = new TSvaluePair[N];
+            //written = new TSvaluePair[N];
+            //accepted = new TSvaluePair[N];
+
+            written = new String[N];
+            accepted = new String[N];
+
             return true;
         }
 
@@ -123,8 +127,10 @@ public class BlockchainMember {
             {
                 if(getState().getValtsVal().getVal() == null) // val == null
                 {
-                    //TODO
-                    //getState().setVal(transaction); // val:=v;
+                    //TODO what TS should I put here?
+                    TSvaluePair tsValuePair = new TSvaluePair(1, transaction); 
+                    getState().setValtsVal(tsValuePair); // val:=v;
+
                     for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
                     { 
                         String message = formatReadMessage(systemMembership.getLeaderId()); //TODO confirm this
@@ -188,6 +194,7 @@ public class BlockchainMember {
             /*if exists ts ≥ 0, v ≠ ⊥ from S such that binds(ts, v, states) then  
                 tmpval := v; */
             List <String> CollectedMessages = CollectedMessageSeparator(S);
+            boolean firstConditionMet = false;
             for (String entry: CollectedMessages) {
                 if(entry.equals("UNDEFINED")) continue;
                 String[] parts = entry.replace("<", "").replace(">", "").split(":");
@@ -197,27 +204,34 @@ public class BlockchainMember {
                if(entryTs >= 0 && entryVal != null && binds(entryTs, entryVal, CollectedMessages ))
                {
                 tmpval = entryVal;
-               }
-               //TODO
-               else if(entryVal != null && unbound(CollectedMessages)) //&& ∧ states[l] = [STATE, ·, v, ·] )
-               {
-                tmpval = entryVal;
+                firstConditionMet = true;
+                //TODO do I break??
                }
             }
-
+            if(!firstConditionMet)
+            {
+                String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId());
+                String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
+                String entryVal = parts[2];
+                if(unbound(CollectedMessages) && parts != null) //TODO not sure about this else if
+                {
+                    tmpval = parts[2];
+                }
+            }
             //TODO condition after f+1 processes
             if(tmpval != null) //tmp value diff null
             {
-                for (String entry: CollectedMessages) {
-                    String[] parts = entry.replace("<", "").replace(">", "").split(":");
-                    long entryTs = Long.parseLong(parts[1]);
-                    String entryVal = parts[2];
-                    //TODO
-                    //compare with what writeset??
-                        // writeset := writeset \ {(ts, tmpval)};
+                Iterator<TSvaluePair> iterator = state.getWriteSet().iterator();
+                while (iterator.hasNext()) {
+                    TSvaluePair writeSetEntry = iterator.next();
+                    if (state.getValtsVal().getTimestamp() == writeSetEntry.getTimestamp()) {
+                        iterator.remove(); // Remove the entry with the matching timestamp
+                    }
                 }
-                //writeset := writeset ∪ {(ets, tmpval)};
-            }
+            
+            TSvaluePair tsValuePair = new TSvaluePair(ets, tmpval);
+            state.getWriteSet().add(tsValuePair);
+
             //BRODCAST WRITE message to all nodes
             for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
             {
@@ -225,6 +239,7 @@ public class BlockchainMember {
                 String message =  formatWriteMessage(tmpval);
                 perfectLinks.send(nodeId, message);
             }
+        }
             return true;
         }
         private static boolean quoromHighest(long ts, String v, List <String> S)
@@ -328,44 +343,67 @@ public class BlockchainMember {
         }
         /*upon event ⟨ al, Deliver | p, [WRITE, v] ⟩ do
                 written[p] := v; */
-        private static boolean handleWriteMessage(int SenderId, String val){
-            //written[senderId] = val
-            //check_write_quorom()
+        private static boolean handleWriteMessage(int senderId, String val){
+            written[senderId] = val;
+            check_write_quorom(val);
             return true;
         }
 
-        private void check_write_quorom(){
+        private static void check_write_quorom(String v){
             int N = systemMembership.getNumberOfNodes();
             int f = systemMembership.getMaximumNumberOfByzantineNodes();
-            /*for(String value: written)
+            int count = 0 ;
+            for(String writtenEntry: written)
             {
-
-            }*/
-            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
-            {
-                //trigger a send WRITE message containing tmpval
-                //String message =  formatAcceptMessage(val);
-                
+                if(writtenEntry.equals(v)){
+                    count ++;
+                }
             }
+            if(count > (N+f)/2)
+            {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, v);
+
+                state.setValtsVal(tsValuePair);
+                written = new String[N]; //clear written
+                for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+                {
+                    //trigger a send ACCEPT Message
+                    String message = formatAcceptMessage(v);
+                    perfectLinks.send(nodeId, message);
+                }
+            }
+           
         }
         /*upon event ⟨ al, Deliver | p, [ACCEPT, v] ⟩ do
                 accepted[p] := v; */
-        private static boolean handleAcceptMessage(int SenderId, String val){
-            //accepted[] //accepted[p] := v;
-            //check_accept_quorom();
+        private static boolean handleAcceptMessage(int senderId, String val){
+            written[senderId] = val; //accepted[p] := v;
+            check_accept_quorom(val);
             
             return true;
         }
-        private void check_accept_quorom(){
+        private static void check_accept_quorom(String v){
             int N = systemMembership.getNumberOfNodes();
             int f = systemMembership.getMaximumNumberOfByzantineNodes();
-            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+            int count = 0 ;
+            for(String acceptedEntry: accepted)
             {
-                //trigger a send WRITE message containing tmpval
-                //String message =  formatAcceptMessage(val);
-                //decide
+                if(acceptedEntry.equals(v)){
+                    count ++;
+                }
             }
-        }
+            if(count > (N+f)/2)
+            {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, v);
+
+                state.setValtsVal(tsValuePair);
+                accepted = new String[N]; //clear accepted
+                
+            }
+            // ⟨ bep, Decide | v ⟩;
+           
+            }
+        
     
     private static boolean processWrittenValues(){
         int N = systemMembership.getNumberOfNodes();
@@ -395,7 +433,7 @@ public class BlockchainMember {
     {
         return "<WRITE:" + tmpval + ">";
     }
-    private static String formatAcceptMessage(int val)
+    private static String formatAcceptMessage(String val)
     {
         return "<ACCEPT:" + val + ">";
     }

@@ -28,7 +28,7 @@ public class BlockchainMember {
     private static int f; // Maximum number of Byzantine faults
     private static long ets = 1; // Epoch timestamp
 
-    private static ConditionalCollect cc;
+    private ConditionalCollect cc;
         public static void main(String[] args) throws Exception {
             if (args.length != 1) {
                 System.out.println("Usage: <id>");
@@ -72,8 +72,9 @@ public class BlockchainMember {
     public static void testConditionalCollect() throws Exception {
         // Conditional Collect will be used by byzantine read write epoch
         System.out.println("Starting test of Conditional Collect...");
-        //TODO
-        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership, ByzantineEpochConsensus.sound); // Pass the necessary Id
+        //TODO just to compile
+
+        ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership, null);
 
         cc.setDeliverCallback((messagesFromCC) -> {
             System.out.println("Received Collected from CC:");
@@ -186,8 +187,8 @@ public class BlockchainMember {
             // received Read -> invokes conditional collect primitive with message [State,valts,val,writeset] 
             String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
             try {
-                //TODO
-                cc = new ConditionalCollect(Id, perfectLinks, systemMembership, ByzantineEpochConsensus.sound());
+                //TODO just to compile
+                ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership, null);
                 cc.setDeliverCallback((messagesFromCC) -> {
                     System.out.println("Received Collected from CC:");
                     for (Integer processId : systemMembership.getMembershipList().keySet()) {
@@ -456,7 +457,7 @@ public class BlockchainMember {
         int f = systemMembership.getMaximumNumberOfByzantineNodes(); 
         return true;
     }
-    private void decide(String val){
+    public static void decide(String val){
         blockchain.add(val);
     }
         public static boolean isLeader() {

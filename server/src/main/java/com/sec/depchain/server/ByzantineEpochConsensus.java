@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.function.Predicate;
 
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
+
 
 public class ByzantineEpochConsensus {
     private static int N;
@@ -28,17 +30,23 @@ public class ByzantineEpochConsensus {
 
     private SystemMembership systemMembership;
 
-    public ByzantineEpochConsensus(int leaderId, long ets) {
+    public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership) throws Exception {
         this.leaderId = leaderId;
         this.ets = ets;
 
+        this.perfectLinks = perfectLinks;
+
+        this.systemMembership = systemMembership;
+
+        this.N = systemMembership.getNumberOfNodes();
+        this.f = systemMembership.getMaximumNumberOfByzantineNodes();
         //TODO
-        //cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
+        cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
     }
 
     public void init() {
 
-        TSvaluePair defaultVal = new TSvaluePair(0, null); // TODO how to initialize
+        TSvaluePair defaultVal = new TSvaluePair(0, null); // TODO how to initialize ?
 
         this.state = new EpochSate(defaultVal, new HashSet<>());
 
@@ -80,7 +88,7 @@ public class ByzantineEpochConsensus {
 
         boolean firstConditionMet = false;
         for (String entry : CollectedMessages) {
-            if (entry.equals("UNDEFINED"))
+            if (entry.equals(Constants.UNDEFINED))
                 continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
             long entryTs = Long.parseLong(parts[1]);
@@ -173,14 +181,15 @@ public class ByzantineEpochConsensus {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
             state.setValtsVal(tsValuePair);
             accepted = new String[N]; //clear accepted
+            BlockchainMember.decide(v);
             
         }
-        // trigger ⟨ bep, Decide | v ⟩;
+       
        
         }
     
 
-    private static boolean unbound(List<String> S) {
+    private  boolean unbound(List<String> S) {
         if (getNumberOfDefinedEntries(S) < N - f) {
             return false;
         }

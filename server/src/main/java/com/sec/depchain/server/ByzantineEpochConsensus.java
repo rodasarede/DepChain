@@ -7,12 +7,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.function.Predicate;
 
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
-
 
 public class ByzantineEpochConsensus {
     private static int N;
@@ -30,8 +28,10 @@ public class ByzantineEpochConsensus {
 
     private SystemMembership systemMembership;
 
-    public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership, int nodeId) throws Exception {
+    public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
+            int nodeId) throws Exception {
         this.leaderId = leaderId;
+
         this.ets = ets;
 
         this.perfectLinks = perfectLinks;
@@ -40,10 +40,10 @@ public class ByzantineEpochConsensus {
 
         this.N = systemMembership.getNumberOfNodes();
         this.f = systemMembership.getMaximumNumberOfByzantineNodes();
-        //TODO
+
         cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
         cc.setDeliverCallback(this::onCollectedDelivery);
-        
+
         this.nodeId = nodeId;
     }
 
@@ -53,35 +53,31 @@ public class ByzantineEpochConsensus {
 
         this.state = new EpochSate(defaultVal, new HashSet<>());
         // to do establish right place to incremets ets
-        
+
         this.written = new String[N];
         this.accepted = new String[N];
     }
 
-    public void propose(String v){
+    public void propose(String v) {
         System.out.println("PROPOSE phase: ");
-        if(nodeId == leaderId) //is leader
+        if (nodeId == leaderId) // is leader
         {
-            System.out.println("test");
-            if(getState().getValtsVal().getVal() == null)
-            {
-                TSvaluePair tsValuePair = new TSvaluePair(ets, v); 
+            if (getState().getValtsVal().getVal() == null) {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, v);
                 getState().setValtsVal(tsValuePair);
-                for(int nodeId: systemMembership.getMembershipList().keySet()) {
-                    String message = formatReadMessage(systemMembership.getLeaderId()); //TODO confirm this
-                            System.out.println("Leader sending " + message + " to " + nodeId);
-                            perfectLinks.send(nodeId, message);
+                for (int nodeId : systemMembership.getMembershipList().keySet()) {
+                    String message = formatReadMessage(ets);
+                    System.out.println("Leader sending " + message + " to " + nodeId);
+                    perfectLinks.send(nodeId, message);
                 }
             }
-        }//mandar o append ao lider
+        } // mandar o append ao lider
         System.out.println("PROPOSE phase: " + v);
     }
 
     public void deliverRead(int senderId) throws Exception {
         if (senderId == leaderId) {
-            String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
-
-            //cc = new ConditionalCollect(nodeId, perfectLinks, systemMembership);
+            String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
 
             cc.onInit();
 
@@ -91,41 +87,37 @@ public class ByzantineEpochConsensus {
 
     public void collected(String[] states) {
         String tmpval = null;
-        // List<String> CollectedMessages = CollectedMessageSeparator(states);
+
         List<String> CollectedMessages = new ArrayList<>();
         for (String state : states) {
             CollectedMessages.add(state);
         }
         boolean firstConditionMet = false;
         for (String entry : states) {
-            System.out.println("Entry: " + entry);
+            //System.out.println("Entry: " + entry);
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-            String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[0]);
-            System.out.println("Entry TS: " + entryTs);
-            String entryVal = parts[1];
-            System.out.println("Entry Val: " + entryVal);
 
-            if (entryTs >= 0 && entryVal != null && binds(entryTs, entryVal, CollectedMessages)) {
-                tmpval = entryVal;
+            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+
+            if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
+                tmpval = parsedEntry.getVal();
                 firstConditionMet = true;
-                System.out.println("First condition met");
+                //System.out.println("First condition met");
                 // TODO do I break??
             }
         }
         if (!firstConditionMet) {
-            String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId()-1);
-            System.out.println("Leader Entry: " + leaderEntry);
+            String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
+            //System.out.println("Leader Entry: " + leaderEntry);
             String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
             String entryVal = null;
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
-                entryVal = parts[1];
+                entryVal = parts[2];
             }
-            if (unbound(CollectedMessages) && entryVal != null) 
-            {
-                System.out.println("Unbound condition met");
-                System.out.println("Entry Val: " + entryVal);
+            if (unbound(CollectedMessages) && entryVal != null) {
+                //System.out.println("Unbound condition met");
+                //System.out.println("Entry Val: " + entryVal);
                 tmpval = entryVal;
             }
         }
@@ -141,13 +133,13 @@ public class ByzantineEpochConsensus {
                         iterator.remove(); // Remove the entry with the matching timestamp
                     }
                 }
-            }   
+            }
 
             TSvaluePair tsValuePair = new TSvaluePair(ets, tmpval);
             state.getWriteSet().add(tsValuePair);
 
             // BRODCAST WRITE message to all nodes
-            System.out.println("tmpval: " + tmpval);
+            //System.out.println("tmpval: " + tmpval);
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
@@ -158,118 +150,109 @@ public class ByzantineEpochConsensus {
 
     }
 
-    public void deliverWrite(int id, String v)
-    {
+    public void deliverWrite(int id, String v) {
         System.out.println("Deliver Write: " + v);
-        written[id-1] = v; //id-1?
+        written[id - 1] = v;
         check_write_quorom(v);
     }
-    public void deliverAccept(int id, String v)
-    {
-        accepted[id-1] = v; //id-1?
+
+    public void deliverAccept(int id, String v) {
+        accepted[id - 1] = v;
         check_accept_quorom(v);
     }
-    private void check_write_quorom(String v){
-        int count = 0 ;
-        for(String writtenEntry: written){
-            if(writtenEntry != null  && writtenEntry.equals(v)){
-                count ++;
+
+    private void check_write_quorom(String v) {
+        int count = 0;
+        for (String writtenEntry : written) {
+            if (writtenEntry != null && writtenEntry.equals(v)) {
+                count++;
             }
         }
-        if(count > (N+f)/2)
-        {
+        if (count > (N + f) / 2) {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
 
             state.setValtsVal(tsValuePair);
-            written = new String[N]; //clear written
-            for(int nodeId: systemMembership.getMembershipList().keySet()) //for all q∈Π do 
+            written = new String[N]; // clear written
+            for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
-                //trigger a send ACCEPT Message
+                // trigger a send ACCEPT Message
                 String message = formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }
         }
-       
+
     }
 
-    private void check_accept_quorom(String v){
-        int count = 0 ;
-        for(String acceptedEntry: accepted)
-        {
-            if(acceptedEntry != null && acceptedEntry.equals(v)){
-                count ++;
+    private void check_accept_quorom(String v) {
+        int count = 0;
+        for (String acceptedEntry : accepted) {
+            if (acceptedEntry != null && acceptedEntry.equals(v)) {
+                count++;
             }
         }
-        if(count > (N+f)/2)
-        {
+        if (count > (N + f) / 2) {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
             state.setValtsVal(tsValuePair);
-            accepted = new String[N]; //clear accepted
+            accepted = new String[N]; // clear accepted
             BlockchainMember.decide(v);
-            
-        }
-       
-       
-        }
-    
 
-    private  boolean unbound(List<String> S) {
+        }
+
+    }
+
+    private boolean unbound(List<String> S) {
         if (getNumberOfDefinedEntries(S) < N - f) {
             return false;
         }
         for (String entry : S) {
-            if (entry.equals("UNDEFINED"))
+            if (entry.equals(Constants.UNDEFINED))
                 continue;
-            String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[0]);
 
-            if (entryTs != 0) {
+            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+
+            if (parsedEntry.getTimestamp() != 0) {
                 return false;
             }
         }
         return true;
     }
-    private static boolean binds(long ts, String v, List <String> states)
-    {
+
+    private static boolean binds(long ts, String v, List<String> states) {
         System.out.println("Binds: " + ts + " " + v + " " + states);
         System.out.println("States size: " + states.size());
-        return (states.size() >=  N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
+        return (states.size() >= N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
     }
 
-    private static boolean quoromHighest(long ts, String v, List <String> S)
-    {
+    private static boolean quoromHighest(long ts, String v, List<String> S) {
         int count = 0;
-        for(String entry: S)
-        {
-            if(entry.equals("UNDEFINED")) continue;
+        for (String entry : S) {
+            if (entry.equals(Constants.UNDEFINED))
+                continue;
             String[] parts = entry.split(":");
-            long entryTs = Long.parseLong(parts[0]);
-            String entryVal = parts[1];
+            long entryTs = Long.parseLong(parts[1]);
+            String entryVal = parts[2];
 
-            if(entryTs < ts || (entryTs == ts && entryVal.equals(v)))
-            {
-                count ++;
-            } 
+            if (entryTs < ts || (entryTs == ts && entryVal.equals(v))) {
+                count++;
+            }
         }
-        System.out.println("Count: " + count + " N + f: " + (N+f)/2);
+        System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
         return count > (N + f) / 2;
     }
 
-    private static boolean certifiedValue(long ts, String v, List <String> S)
-    {
+    private static boolean certifiedValue(long ts, String v, List<String> S) {
         int count = 0;
-        for(String entry: S)
-        {
-            if(entry.equals("UNDEFINED")) continue;
+        for (String entry : S) {
+            if (entry.equals(Constants.UNDEFINED))
+                continue;
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
 
             String writeSetString = parts[2];
 
-            Set <TSvaluePair> writeSet = parseWriteSet(writeSetString);
-            //I need the writeSet 
-            for(TSvaluePair writeSetEntry: writeSet){
-                if(writeSetEntry.getTimestamp() >= ts && writeSetEntry.getVal().equals(v))
-                {
+            Set<TSvaluePair> writeSet = parseWriteSet(writeSetString);
+
+            for (TSvaluePair writeSetEntry : writeSet) {
+                if (writeSetEntry.getTimestamp() >= ts && writeSetEntry.getVal().equals(v)) {
                     count++;
                 }
             }
@@ -278,21 +261,21 @@ public class ByzantineEpochConsensus {
         return count > f;
     }
 
-    public boolean sound(List <String> S){
-        for(String entry: S)
-        {
-            if(entry.equals("UNDEFINED")) continue;
-            String[] parts = entry.replace("<", "").replace(">", "").split(":");
-            long entryTs = Long.parseLong(parts[0]);
-            String entryVal = parts[1];
-            if(binds(entryTs, entryVal, S) || unbound(S))
-            {
+    public boolean sound(List<String> S) {
+        for (String entry : S) {
+            if (entry.equals(Constants.UNDEFINED))
+                continue;
+  
+            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+
+            if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {
                 // dont we have to change something?
                 return true;
             }
         }
         return false;
     }
+
     public static int getNumberOfDefinedEntries(List<String> S) {
         int count = 0;
         for (String entry : S) {
@@ -307,10 +290,10 @@ public class ByzantineEpochConsensus {
         return "<READ:" + ets + ">";
     }
 
-    private static String formatStateMessage(TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
+    private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
         // TODO how to write the writeset into the message
-        System.out.println("WriteSet: " + writeSet);
-        return valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet;
+        System.out.println("WriteSet: " + writeSet); // TODO
+        return ets + ":" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet;
     }
 
     private static String formatWriteMessage(String tmpval, long ets) {
@@ -361,10 +344,16 @@ public class ByzantineEpochConsensus {
         for (int i = 0; i < collectedMessages.length; i++) {
             System.out.println("Message from node " + i + ": " + collectedMessages[i]);
         }
-        collected( collectedMessages);
+        collected(collectedMessages);
 
     }
 
-
+    private static TSvaluePair getValsValFromStateMessage(String entry)
+    {
+        String[] parts = entry.replace("<", "").replace(">", "").split(":");
+        long entryTs = Long.parseLong(parts[1]);
+        String entryVal = parts[2];
+        return new TSvaluePair(entryTs, entryVal);
+    } 
 
 }

@@ -74,7 +74,9 @@ public class ConditionalCollect {
 
         String signature = CryptoUtils.signMessage(privateKey, message); 
 
-        String formatted_message = "<SEND:" + message + ":" + signature + ">";
+        String formatted_message = "<STATE:" + message + ":" + signature + ">";
+        
+        System.out.println("TESTEEEEEEE" + message);
         int leaderId = systemMembership.getLeaderId();
         System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
         perfectLinks.send(leaderId, formatted_message);
@@ -133,8 +135,7 @@ public class ConditionalCollect {
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
         if (getNumberOfMessages() >= N - f && outputPredicate.test(messages)) {
-            // String formattedMessages = getFormattedArray(messages);
-            // String formattedSignatures = getFormattedArray(signatures);
+        
             String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 System.out.println("Process ID: " + processId);
@@ -165,7 +166,7 @@ public class ConditionalCollect {
             if (collectedMessages[i - 1].equals(Constants.UNDEFINED)) continue;
             String message = collectedMessages[i - 1];
             String signature = collectedSignatures[i - 1];
-            // String signingData = "cc||" + i + "||INPUT||" + message;
+
             System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
             if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
                 return false;
@@ -234,7 +235,7 @@ public class ConditionalCollect {
         System.out.println("Message: " + message + ". Message Type: " + messageType);
 
         switch (messageType) {
-            case "SEND":
+            case "STATE":
                 processSend(senderId, message);
                 break;
             case "COLLECTED":

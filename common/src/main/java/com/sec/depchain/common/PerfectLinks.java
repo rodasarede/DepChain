@@ -119,7 +119,6 @@ public class PerfectLinks {
 
         String originalMsg = parts[2];
 
-
         String receivedMac = parts[3];
         
         //System.out.println(receivedMac);
@@ -192,9 +191,6 @@ public class PerfectLinks {
 
         return message;
     }
-
-
-
 
     // Stop resending a message (if needed)
     public void stopResending(String messageKey) {

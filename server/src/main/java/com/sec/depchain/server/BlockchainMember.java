@@ -21,6 +21,7 @@ public class BlockchainMember {
     private static PerfectLinks perfectLinks;
     private static ByzantineEpochConsensus bep;
 
+    private static int clientId;
 
     //private static EpochSate state;
 
@@ -109,6 +110,8 @@ public class BlockchainMember {
             switch(messageElements[0]) {
                 case "append":
                     String transaction = messageElements[1];
+                    System.out.print("Proposing " + transaction);
+                    setClientId(senderId); //TODO um bocado a fds para testar
                     bep.propose(transaction);
                     // Run consensus
                     
@@ -137,68 +140,13 @@ public class BlockchainMember {
                 
             }
         }
-
-        /*private static boolean runConsensus(String transaction) {
-            System.out.println("Running consensus: INIT -> PROPOSE -> DECIDE");
-            // is states only for each Epoch? If yes we need to clear after each (sucessfull?) epoch
-            //states.clear();   
-            if (!initConsensus())
-                return false;
-            if (!proposeConsensus(transaction))
-                return false;
-            // if (!decideConsensus(transaction))
-            //     return false;
-            return true;
-        }*/
-
-        /*private static boolean handleReadMessage(int senderId)
-        {
-            // received Read -> invokes conditional collect primitive with message [State,valts,val,writeset] 
-            String message = formatStateMessage(state.getValtsVal(), state.getWriteSet());
-            try {
-                //TODO just to compile
-                ConditionalCollect cc = new ConditionalCollect(Id, perfectLinks, systemMembership, null);
-                cc.setDeliverCallback((messagesFromCC) -> {
-                    System.out.println("Received Collected from CC:");
-                    for (Integer processId : systemMembership.getMembershipList().keySet()) {
-                        System.out.println("Message of nodeId " + processId);
-                        System.out.println("Message of nodeId " + messagesFromCC[processId - 1] + "\n");
-                    }
-                });
-                cc.input(message); //maybe we should pass the leader
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } 
-            
-            return true;
-        }*/
-        //TODO 
-
-        private static boolean onDeliver(int SenderId, String message){
-            String[] parts = message.split("\\|");
-            switch(parts[1]){
-                case "READ":
-                    //handleReadMessage(SenderId); //TODO
-                    break;
-                case "STATE":
-                    //handleCollectedStates(message); //TODO
-                    break;
-                case "WRITE":
-                    //handleWriteMessage(message);      
-                    break;
-                case "ACCEPT":
-                    //handleAcceptMessage();
-                    break;
-                default: 
-                    break;
-            }
-            return true;
-        }
-
     public static void decide(String val){
         System.out.println("DECIDE phase: Committing transaction.");
         blockchain.add(val);
+
+        String responseMessage = "<append:" + val + ":success>";
+
+        perfectLinks.send(clientId, responseMessage);
         
     }
     public static boolean isLeader() {
@@ -207,6 +155,9 @@ public class BlockchainMember {
    
     public static void setBep(ByzantineEpochConsensus bep) {
         BlockchainMember.bep = bep;
+    }
+    public static void setClientId(int client_id) {
+        BlockchainMember.clientId = client_id;
     }
 }
     

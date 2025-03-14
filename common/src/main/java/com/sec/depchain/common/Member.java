@@ -1,8 +1,8 @@
 package com.sec.depchain.common;
 
 public class Member {
-    private String address; // Keep address private
-    private int port; // Keep port private
+    private String address; 
+    private int port; 
 
     public Member(String address, int port) {
         this.address = address;
@@ -10,10 +10,10 @@ public class Member {
     }
 
     public int getPort() {
-        return this.port; // Provide a getter for port
+        return this.port;
     }
 
     public String getAddress() {
-        return this.address; // Provide a getter for ip
+        return this.address;
     }
 }

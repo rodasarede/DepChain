@@ -30,7 +30,6 @@ public class ClientLibrary {
 
     public void sendAppendRequest(String string) {
         String formattedMessage = "<append:" + string + ">";
-        // TODO: Decide do which blockchain nodes to send the request
         for(int nodeId: systemMembership.getMembershipList().keySet())
         {
             perfectLinks.send(nodeId, formattedMessage);

@@ -1,12 +1,10 @@
 package com.sec.depchain.server;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
@@ -21,9 +19,7 @@ public class BlockchainMember {
     private static PerfectLinks perfectLinks;
     private static ByzantineEpochConsensus bep;
 
-    private static int clientId;
-
-    //private static EpochSate state;
+   private static Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
 
         public static void main(String[] args) throws Exception {
             if (args.length != 1) {
@@ -32,15 +28,10 @@ public class BlockchainMember {
             }
             id = Integer.parseInt(args[0]);
             systemMembership = new SystemMembership(
-                    "../common/src/main/java/com/sec/depchain/resources/system_membership.properties");
+                    Constants.PROPERTIES_PATH);
     
-            if (id == systemMembership.getLeaderId()) {
-                System.out.println("I am the leader with id: " + id);
-                isLeader = true;
-            }
+            isLeader = (id == systemMembership.getLeaderId());
     
-            // PORT = systemMembership.getMembershipList().get(Id).getPort();
-            // PORT = getPort(Id);
             perfectLinks = new PerfectLinks(id);
             perfectLinks.setDeliverCallbackCollect((NodeId, message) -> {
                 try {
@@ -64,43 +55,7 @@ public class BlockchainMember {
             setBep(bep);
 
             bep.init();
-            // testConditionalCollect();
-            
-            //Every correct process initializes the conditional collect primitive with this predicate sound(·).
-            //cc = new ConditionalCollect(Id, perfectLinks, systemMembership);
-            //cc.setPredicate(BlockchainMember::predicateSound);
-            
-
-            /* começar o algortimo 
-            todos os p começam com o init() incluindo o lider para começarem todos com o mesmo estado
-
-            -apend de um client:
-                com ideia q o lider receba o apend mas se nao enviar terá q receber para começar o propose
-
-                o lider começa com o propose
-
-
-                //decide(valor)*/
         }
-
-    public static void testConditionalCollect() throws Exception {
-        // Conditional Collect will be used by byzantine read write epoch
-        System.out.println("Starting test of Conditional Collect...");
-        //TODO just to compile
-
-        ConditionalCollect cc = new ConditionalCollect(id, perfectLinks, systemMembership, null);
-
-        cc.setDeliverCallback((messagesFromCC) -> {
-            System.out.println("Received Collected from CC:");
-            for (Integer processId : systemMembership.getMembershipList().keySet()) {
-                System.out.println("Message of nodeId " + processId);
-                System.out.println("Message of nodeId " + messagesFromCC[processId - 1] + "\n");
-            }
-        });
-
-        cc.input("hellofrom" + id);
-    }
-
 
     private static void onPerfectLinksDeliver(int senderId, String message) throws Exception  {
             System.out.println("Received request: " + message + " from Id: " + senderId);
@@ -109,19 +64,9 @@ public class BlockchainMember {
                 case "append":
                     String transaction = messageElements[1];
                     System.out.print("Proposing " + transaction);
-                    setClientId(senderId); //TODO um bocado a fds para testar
+                    //setClientId(senderId); //TODO um bocado a fds para testar
+                    clientTransactions.put(senderId, transaction);
                     bep.propose(transaction);
-                    // Run consensus
-                    
-                    //boolean success = runConsensus(transaction);
-                    
-                    // String responseMessage = success ? "Transaction confirmed and appended." : "Transaction failed.";
-                    // String formattedMessage = "<append:" + messageElements[1] + ":" + responseMessage + ">";
-                    // // System.out.println(formattedMessage);
-        
-                    // // Send confirmation response back to client
-                    // int destId = Integer.parseInt(message.split("\\|")[0]);
-                    // perfectLinks.send(destId, formattedMessage);
                     break;
                 case "READ":
                     System.out.println("Received READ message from " + senderId + " with message: " + message);
@@ -145,11 +90,17 @@ public class BlockchainMember {
         System.out.println("Transaction " + val + " committed at index " + index + ".");
         
 
-        String responseMessage = "<append:" + val + ":" + index + ":success>";
-
-        System.out.println(clientId);
-        perfectLinks.send(clientId, responseMessage);
-        
+        for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
+            if (entry.getValue().equals(val)) {
+                int clientId = entry.getKey();
+                String responseMessage = "<append:" + val + ":success>";
+    
+                System.out.println("Sending response to client: " + clientId);
+                perfectLinks.send(clientId, responseMessage);
+                
+                clientTransactions.remove(clientId);
+            }
+        }
     }
     public static boolean isLeader() {
         return isLeader;
@@ -157,9 +108,6 @@ public class BlockchainMember {
    
     public static void setBep(ByzantineEpochConsensus bep) {
         BlockchainMember.bep = bep;
-    }
-    public static void setClientId(int client_id) {
-        BlockchainMember.clientId = client_id;
     }
 }
     

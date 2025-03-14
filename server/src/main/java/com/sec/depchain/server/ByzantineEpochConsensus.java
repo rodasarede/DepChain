@@ -20,7 +20,7 @@ public class ByzantineEpochConsensus {
     private static int leaderId;
     private EpochSate state;
     private long ets;
-    private String written[];
+    private String[] written;
     private String[] accepted; // Array to store ACCEPT messages
     private ConditionalCollect cc;
 
@@ -94,30 +94,28 @@ public class ByzantineEpochConsensus {
         }
         boolean firstConditionMet = false;
         for (String entry : states) {
-            //System.out.println("Entry: " + entry);
+            // System.out.println("Entry: " + entry);
             if (entry.equals(Constants.UNDEFINED))
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
 
-            if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
+            if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
+                    && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
                 tmpval = parsedEntry.getVal();
                 firstConditionMet = true;
-                //System.out.println("First condition met");
                 // TODO do I break??
             }
         }
         if (!firstConditionMet) {
             String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
-            //System.out.println("Leader Entry: " + leaderEntry);
             String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
             String entryVal = null;
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
                 entryVal = parts[2];
             }
             if (unbound(CollectedMessages) && entryVal != null) {
-                //System.out.println("Unbound condition met");
-                //System.out.println("Entry Val: " + entryVal);
+
                 tmpval = entryVal;
             }
         }
@@ -139,7 +137,6 @@ public class ByzantineEpochConsensus {
             state.getWriteSet().add(tsValuePair);
 
             // BRODCAST WRITE message to all nodes
-            //System.out.println("tmpval: " + tmpval);
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
@@ -151,7 +148,6 @@ public class ByzantineEpochConsensus {
     }
 
     public void deliverWrite(int id, String v) {
-        System.out.println("Deliver Write: " + v);
         written[id - 1] = v;
         check_write_quorom(v);
     }
@@ -218,8 +214,6 @@ public class ByzantineEpochConsensus {
     }
 
     private static boolean binds(long ts, String v, List<String> states) {
-        System.out.println("Binds: " + ts + " " + v + " " + states);
-        System.out.println("States size: " + states.size());
         return (states.size() >= N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
     }
 
@@ -265,7 +259,7 @@ public class ByzantineEpochConsensus {
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-  
+
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
 
             if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {
@@ -304,22 +298,6 @@ public class ByzantineEpochConsensus {
         return "<ACCEPT:" + ets + ":" + val + ">";
     }
 
-    private static List<String> CollectedMessageSeparator(String collectedMessage) {
-        List<String> messages = new ArrayList<>(N);
-
-        // Define a regex pattern to match the <STATE:...> format
-        Pattern pattern = Pattern.compile("<STATE:[^>]+>|UNDEFINED");
-        Matcher matcher = pattern.matcher(collectedMessage);
-
-        // Find all matches and add them to the list
-        while (matcher.find()) {
-            messages.add(matcher.group());
-        }
-
-        return messages;
-
-    }
-
     public static Set<TSvaluePair> parseWriteSet(String writeSetString) {
         Set<TSvaluePair> writeSet = new HashSet<>();
         Pattern pattern = Pattern.compile("\\((\\d+),([A-Za-z0-9]+)\\)");
@@ -348,12 +326,11 @@ public class ByzantineEpochConsensus {
 
     }
 
-    private static TSvaluePair getValsValFromStateMessage(String entry)
-    {
+    private static TSvaluePair getValsValFromStateMessage(String entry) {
         String[] parts = entry.replace("<", "").replace(">", "").split(":");
         long entryTs = Long.parseLong(parts[1]);
         String entryVal = parts[2];
         return new TSvaluePair(entryTs, entryVal);
-    } 
+    }
 
 }

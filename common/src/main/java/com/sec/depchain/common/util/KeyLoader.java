@@ -84,42 +84,6 @@ public class KeyLoader {
         return null;
     }
 
-    public static Map<Integer, PublicKey> loadAllPublicKeys(String filePath) throws IOException {
-        Map<Integer, PublicKey> publicKeyMap = new HashMap<>();
-        // TODO needs to be tested; This here is for loading from the cat file
-        try {
-            // Read the file content as a single string
-            String combinedKeys = new String(Files.readAllBytes(Paths.get(filePath)));
-
-            // Remove headers and newlines
-            String cleanedKeys = combinedKeys
-                    .replace("-----BEGIN PUBLIC KEY-----", "")
-                    .replace("-----END PUBLIC KEY-----", "")
-                    .replace("\n", "")
-                    .replace("\r", "");
-
-            // Split into fixed-size chunks (88 characters for uncompressed keys)
-            int keyLength = 88;
-            int index = 0;
-            for (int i = 0; i < cleanedKeys.length(); i += keyLength) {
-                String base64Key = cleanedKeys.substring(i, Math.min(i + keyLength, cleanedKeys.length()));
-
-                // Decode the base64-encoded key
-                byte[] binaryKey = Base64.getDecoder().decode(base64Key);
-
-                // Parse the binary key into a PublicKey object
-                PublicKey publicKey = parsePublicKey(binaryKey);
-
-                // Add the PublicKey to the map with an integer key
-                publicKeyMap.put(index++, publicKey);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return publicKeyMap;
-    }
-
     private static PublicKey parsePublicKey(byte[] binaryKey) throws Exception {
         // Use KeyFactory to parse the binary key
         KeyFactory keyFactory = KeyFactory.getInstance(Constants.EC); // Use "EC" for elliptic curve keys

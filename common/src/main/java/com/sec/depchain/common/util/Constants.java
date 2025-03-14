@@ -7,5 +7,8 @@ public final class Constants {
     public static final String EC = "EC";
     public static final String PROPERTIES_PATH = "../common/src/main/java/com/sec/depchain/resources/system_membership.properties";
     public static final String KEY_DIR = "../common/src/main/java/com/sec/depchain/resources/keys";
-    
+    public static final String UNKNOWN = "UNKNOWN";
+    private Constants(){
+
+    }
 }

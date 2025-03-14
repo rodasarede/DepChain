@@ -54,7 +54,6 @@ public class ClientApplication {
 
             // Send the append request with the user's input to the ClientLibrary
             clientLibrary.sendAppendRequest(input);
-            System.out.println("Sent append request to ClientLibrary: <append, \"" + input + "\">.");
 
             // Wait for the response (blocking call)
             futureResponse.get();

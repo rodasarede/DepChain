@@ -13,9 +13,11 @@ public class PerfectLinks {
     private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
-    private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend //TODO nao podemos guardar mensagens infinitamente -> mudar para sequence number 
+    private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend //TODO nao podemos
+                                                                   // guardar mensagens infinitamente -> mudar para
+                                                                   // sequence number
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
-    private static SystemMembership systemMembership; 
+    private static SystemMembership systemMembership;
     private final int nodeId;
     private final int port;
     private int seqNumber = 0;
@@ -25,7 +27,8 @@ public class PerfectLinks {
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
     }
-    //TODO sequence number in order to make in-order delivery
+
+    // TODO sequence number in order to make in-order delivery
     public PerfectLinks(int nodeId) throws Exception {
         systemMembership = new SystemMembership(
                 Constants.PROPERTIES_PATH);
@@ -57,44 +60,38 @@ public class PerfectLinks {
 
     // Send a message Perfectly (keep resending)
     public void send(int destId, String message) {
-        // TODO if destId == -1 -> its a client: send to all servers but for now set to
-        // 1
         String destIP = getIP(destId);
         int destPort = getPort(destId);
         String messageKey = destId + ":" + message;
         sentMessages.put(messageKey, true);
-        //System.out.println("Message Key: " + messageKey);
 
         seqNumber++;
-        String messageWithId = nodeId + "|"+ seqNumber +"|"+ message;
+        String messageWithId = nodeId + "|" + seqNumber + "|" + message;
         // Resend indefinitely (until process crashes)
-
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
-
-        // generate mac
         try {
-            // IP
+            // mac
             String mac = CryptoUtils.generateMAC(privateKey, destPublicKey, messageWithId);
 
             // tampering mac
             /*
-
+             * 
              * String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
              * System.out.println("original mac: " + mac);
              * System.out.println("tampered mac: " + tamperedMac);
              * mac = tamperedMac;
              * 
              */
-            
+
             AtomicLong timeout = new AtomicLong(1000);
             String authenticatedMsg = messageWithId + "|" + mac; // append mac
             new Thread(() -> {
                 while (sentMessages.containsKey(messageKey)) {
                     try {
                         fairLossLinks.send(destIP, destPort, authenticatedMsg); // send authenticated msg
-                        
+
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
-                        timeout.set((long)(1.5 * timeout.get())); //flexible
+                        timeout.set((long) (1.5 * timeout.get())); // flexible
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -114,13 +111,11 @@ public class PerfectLinks {
             return;
 
         }
-        String messageWithId = parts[0] + "|" + parts[1] +"|"+ parts[2];
+        String messageWithId = parts[0] + "|" + parts[1] + "|" + parts[2];
 
         String originalMsg = parts[2];
 
         String receivedMac = parts[3];
-        
-        //System.out.println(receivedMac);
 
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
                 : Integer.parseInt(parts[0].substring(3));
@@ -141,12 +136,10 @@ public class PerfectLinks {
         }
         // Deliver only if the message has not been delivered before
         if (!delivered.containsKey(messageKey)) {
-            //System.out.println("Fair loss Deliver from " + srcIP + ":" + srcPort + " -> " + message);
             delivered.put(messageKey, true); // Mark message as delivered
 
             if (message.startsWith("ACK")) {
 
-                //System.out.println("stop resending message: " + messageKey);
                 stopResending(messageKey);
                 return;
             }
@@ -154,7 +147,7 @@ public class PerfectLinks {
             // Send ACK back to the sender via a single message using fairloss
             try {
                 seqNumber++;
-                String ackMessage = "ACK" + nodeId +"|"+ seqNumber +"|" + originalMsg;
+                String ackMessage = "ACK" + nodeId + "|" + seqNumber + "|" + originalMsg;
                 String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
                 fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
 
@@ -163,20 +156,21 @@ public class PerfectLinks {
             }
             if (deliverCallbackCollect != null || deliverCallback != null) {
                 System.out.println("PerfectLinks delivering message up: " + message);
-                
+
                 System.out.println("Stripping message...");
-                // String messageStriped = stripMessageToBeDelivered(message);
-                if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ") || getMessageType(originalMsg).equals("WRITE") || getMessageType(originalMsg).equals("ACCEPT")) {
+
+                if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ")
+                        || getMessageType(originalMsg).equals("WRITE")
+                        || getMessageType(originalMsg).equals("ACCEPT")) {
                     deliverCallback.deliver(senderNodeId, message);
-                }else{
-                    deliverCallbackCollect.deliver(senderNodeId, originalMsg); //TODO null point error
+                } else {
+                    deliverCallbackCollect.deliver(senderNodeId, originalMsg);
                 }
             }
         }
     }
 
     public String stripMessageToBeDelivered(String message) {
-        String[] parts = message.split("\\|");
         int firstSeparatorIndex = message.indexOf("|");
 
         if (firstSeparatorIndex != -1) {
@@ -223,20 +217,19 @@ public class PerfectLinks {
         if (systemMembership.getMembershipList().get(nodeId) == null) {
             return 6000 + nodeId;
         }
-        int port = systemMembership.getMembershipList().get(nodeId).getPort();
-        return port;
+        return systemMembership.getMembershipList().get(nodeId).getPort(); // port
     }
 
     private String getIP(int nodeId) {
         if (systemMembership.getMembershipList().get(nodeId) == null) {
             return "127.0.0.1";
         }
-        String leaderIP = systemMembership.getMembershipList().get(nodeId).getAddress();
-        return leaderIP;
+        return systemMembership.getMembershipList().get(nodeId).getAddress(); // leader Ip
     }
-public PrivateKey getPrivateKey() {
-    return privateKey;
-}
+
+    public PrivateKey getPrivateKey() {
+        return privateKey;
+    }
 
     private String getMessageType(String message) {
         if (message.startsWith("<") && message.endsWith(">")) {
@@ -246,7 +239,7 @@ public PrivateKey getPrivateKey() {
 
             return parts[0];
         }
-        return "UNKNOWN";
+        return Constants.UNKNOWN;
     }
 
 }

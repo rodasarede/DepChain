@@ -39,8 +39,6 @@ public class BlockchainMember {
                 isLeader = true;
             }
     
-        
-
             // PORT = systemMembership.getMembershipList().get(Id).getPort();
             // PORT = getPort(Id);
             perfectLinks = new PerfectLinks(id);
@@ -146,6 +144,7 @@ public class BlockchainMember {
 
         String responseMessage = "<append:" + val + ":success>";
 
+        System.out.println(clientId);
         perfectLinks.send(clientId, responseMessage);
         
     }

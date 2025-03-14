@@ -59,8 +59,6 @@ public class PerfectLinks {
     public void send(int destId, String message) {
         // TODO if destId == -1 -> its a client: send to all servers but for now set to
         // 1
-        if (destId == -1)
-            destId = 1;
         String destIP = getIP(destId);
         int destPort = getPort(destId);
         String messageKey = destId + ":" + message;
@@ -71,8 +69,8 @@ public class PerfectLinks {
         String messageWithId = nodeId + "|"+ seqNumber +"|"+ message;
         // Resend indefinitely (until process crashes)
 
-        //System.out.println("Destination Node Id: " + destId);
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
+
         // generate mac
         try {
             // IP
@@ -80,6 +78,7 @@ public class PerfectLinks {
 
             // tampering mac
             /*
+
              * String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
              * System.out.println("original mac: " + mac);
              * System.out.println("tampered mac: " + tamperedMac);

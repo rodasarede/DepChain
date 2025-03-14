@@ -56,7 +56,7 @@ public class ClientApplication {
 
             // Provide feedback based on whether the string was appended successfully
             if (result) {
-                System.out.println("Success: The string was appended successfully to the blockchain.");
+                System.out.println("Success: The string was appended successfully to the blockchain."); //TODO print the string and when it was executed
             } else {
                 System.out.println("Failure: The string could not be appended to the blockchain.");
             }

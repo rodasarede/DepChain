@@ -17,6 +17,9 @@ public class PerfectLinks {
                                                                    // guardar mensagens infinitamente -> mudar para
                                                                    // sequence number
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
+
+    //private final ConcurrentHashMap<Integer, Integer> sentMessages = new ConcurrentHashMap<>();
+    //private final ConcurrentHashMap<Integer, Integer> deliveredMessages = new ConcurrentHashMap<>();
     private static SystemMembership systemMembership;
     private final int nodeId;
     private final int port;
@@ -63,7 +66,7 @@ public class PerfectLinks {
         String destIP = getIP(destId);
         int destPort = getPort(destId);
         String messageKey = destId + ":" + message;
-        sentMessages.put(messageKey, true);
+        sentMessages.put(messageKey, true); //TODO do I save the squence n?
 
         seqNumber++;
         String messageWithId = nodeId + "|" + seqNumber + "|" + message;
@@ -100,6 +103,25 @@ public class PerfectLinks {
         } catch (Exception e) {
             e.printStackTrace();
         }
+       /*  scheduler.scheduleWithFixedDelay(() -> {
+            if (!sentMessages.containsKey(destId) || sentMessages.get(destId) < currentSeq) {
+                scheduler.shutdown(); // Stop resending once ACK is received
+                return;
+            }
+            try {
+                fairLossLinks.send(destIP, destPort, authenticatedMsg);
+                System.out.println("Resending to " + destId + " with delay " + timeout.get() + "ms");
+
+                // Increase timeout exponentially (1.5x)
+                timeout.set(Math.min(timeout.get() * 3 / 2, 10000)); // Cap at 10s
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, timeout.get(), TimeUnit.MILLISECONDS); // First send immediately
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}*/
     }
 
     // Handle received messages from FairLossLinks
@@ -124,7 +146,6 @@ public class PerfectLinks {
         PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); // Not sure is nodeID
 
         try {
-
             if (!CryptoUtils.verifyMAC(privateKey, destPublicKey, messageWithId, receivedMac)) {
                 System.out.println("MAC verification failed for message: " + messageWithId);
                 return;
@@ -134,12 +155,18 @@ public class PerfectLinks {
             e.printStackTrace();
             return;
         }
+
+         /*int lastDelivered = deliveredMessages.getOrDefault(senderNodeId, -1);
+            if (sequenceNumber <= lastDelivered) {
+                return; // Ignore duplicates or out-of-order messages
+            }*/
         // Deliver only if the message has not been delivered before
         if (!delivered.containsKey(messageKey)) {
             delivered.put(messageKey, true); // Mark message as delivered
 
             if (message.startsWith("ACK")) {
-
+                //    int ackedSeqNum = Integer.parseInt(parts[1]);
+                //sentMessages.computeIfPresent(senderNodeId, (k, v) -> v <= ackedSeqNum ? null : v);
                 stopResending(messageKey);
                 return;
             }
@@ -154,10 +181,12 @@ public class PerfectLinks {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if (deliverCallbackCollect != null || deliverCallback != null) {
-                System.out.println("PerfectLinks delivering message up: " + message);
 
-                System.out.println("Stripping message...");
+
+            if (deliverCallbackCollect != null || deliverCallback != null) {
+                //System.out.println("PerfectLinks delivering message up: " + message);
+
+                //System.out.println("Stripping message...");
 
                 if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ")
                         || getMessageType(originalMsg).equals("WRITE")

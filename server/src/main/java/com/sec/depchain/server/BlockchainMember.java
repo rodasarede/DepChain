@@ -93,7 +93,7 @@ public class BlockchainMember {
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
             if (entry.getValue().equals(val)) {
                 int clientId = entry.getKey();
-                String responseMessage = "<append:" + val + ":success>";
+                String responseMessage = "<append:" + val + ":" + index +  ":success>";
     
                 System.out.println("Sending response to client: " + clientId);
                 perfectLinks.send(clientId, responseMessage);

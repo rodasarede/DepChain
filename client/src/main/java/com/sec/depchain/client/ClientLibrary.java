@@ -38,7 +38,7 @@ public class ClientLibrary {
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {
-        System.out.println("Client Library received a message from node with id " + nodeId + " -> " + message);
+        // System.out.println("Client Library received a message from node with id " + nodeId + " -> " + message);
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
 
         String[] parts = message.split("\\|");

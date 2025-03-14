@@ -78,7 +78,7 @@ public class ConditionalCollect {
         String formatted_message = "<STATE:" + message + ":" + signature + ">";
 
         int leaderId = systemMembership.getLeaderId();
-        System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
+        // System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
         perfectLinks.send(leaderId, formatted_message);
     }
 
@@ -100,10 +100,10 @@ public class ConditionalCollect {
     private static int getNumberOfMessages() {
         int counter = 0;
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            System.out.println("ProcessId: " + processId + "; Message: " + messages.get(processId - 1));
+            // System.out.println("ProcessId: " + processId + "; Message: " + messages.get(processId - 1));
             if (!(messages.get(processId - 1).equals("UNDEFINED")))
                 counter++;
-            System.out.println("Counter: " + counter);
+            // System.out.println("Counter: " + counter);
         }
         return counter;
     }
@@ -136,7 +136,7 @@ public class ConditionalCollect {
 
             String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
-                System.out.println("Process ID: " + processId);
+                // System.out.println("Process ID: " + processId);
                 perfectLinks.send(processId, formattedMessage);
             }
 

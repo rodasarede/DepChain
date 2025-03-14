@@ -355,7 +355,7 @@ public class ByzantineEpochConsensus {
 
     private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
         // TODO write the writeset into the message
-        System.out.println("WriteSet: " + writeSet); 
+        // System.out.println("WriteSet: " + writeSet); 
         return ets + ":" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet;
     }
 

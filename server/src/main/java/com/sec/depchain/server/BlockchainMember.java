@@ -56,7 +56,7 @@ public class BlockchainMember {
         }
 
     private static void onPerfectLinksDeliver(int senderId, String message) throws Exception  {
-            System.out.println("Received request: " + message + " from Id: " + senderId);
+            // System.out.println("Received request: " + message + " from Id: " + senderId);
             String[] messageElements = PerfectLinks.getMessageElements(message);
             switch(messageElements[0]) {
                 case "append":
@@ -65,7 +65,7 @@ public class BlockchainMember {
                     bep.propose(transaction);
                     break;
                 case "READ":
-                    System.out.println("Received READ message from " + senderId + " with message: " + message);
+                    // System.out.println("Received READ message from " + senderId + " with message: " + message);
                     bep.deliverRead(senderId);
                     break;
                 case "WRITE":

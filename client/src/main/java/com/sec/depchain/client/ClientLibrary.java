@@ -14,6 +14,7 @@ public class ClientLibrary {
     private final PerfectLinks perfectLinks;
     private static SystemMembership systemMembership;
     private Map<String, Set<Integer>> messageResponses = new HashMap<>();
+    private Set<String> processedTransactions = new HashSet<>();
 
     // Functional interface for the callback
     public interface DeliverCallback {
@@ -50,15 +51,20 @@ public class ClientLibrary {
 
         if(type.equals("<append") && status.equals("success>"))
         { 
+            if(processedTransactions.contains(transaction)){
+
+                return;
+            }
             messageResponses.putIfAbsent(transaction, new HashSet<>());
             Set<Integer> respondingNodes = messageResponses.get(transaction);
             respondingNodes.add(nodeId);
             //ensure we get f+1 sucess responses to the append request 
-            // System.out.println("Responding nodes: " + respondingNodes.size());
+            System.out.println("Responding nodes: " + respondingNodes.size());
             if (respondingNodes.size() >= (f + 1)) {
                 if (deliverCallback != null) {
-                    messageResponses.remove(transaction); 
-                    // System.out.println("Delivering AppendResponse to callback");
+                    // System.out.println("Delivering AppendResponse to callback");~
+                    processedTransactions.add(transaction);
+                    messageResponses.remove(transaction);
                     deliverCallback.deliverAppendResponse(true, transaction , position);
                 } else {
                     System.out.println("No callback set: could not deliver AppendResponse");

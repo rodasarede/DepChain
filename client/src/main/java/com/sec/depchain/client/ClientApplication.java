@@ -30,38 +30,45 @@ public class ClientApplication {
         // User input loop to send append requests
         while (true) {
             System.out.print("> ");
-            String input = scanner.nextLine();
+            String input = scanner.nextLine().trim();
+            String[] caseArgs = input.split(" ", 2);
 
-            // Exit condition when user types 'exit'
-            if (input.equalsIgnoreCase("exit")) {
-                System.out.println("Exiting the application...");
-                break;
+            switch (caseArgs[0].toLowerCase()) {
+                case "exit":
+                    System.out.println("Exiting the application...");
+                    scanner.close();
+                    return; // Exits the program immediately
+
+                case "append":
+                    if(caseArgs.length < 2) {
+                        System.out.println("Error: Please provide a string to append.");
+                        break;
+                    }
+                    // Create a CompletableFuture to wait for the callback response
+                    CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
+
+                    // Set a callback to handle the result of the append operation
+                    clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
+                        futureResponse.complete(result);
+                        if (result) {
+                            System.out.println("Success: The string \"" + appendedString + "\" was appended at position " + timestamp + ".");
+                        } else {
+                            System.out.println("Failure: The string \"" + appendedString + "\" could not be appended to the blockchain.");
+                        }
+                    });
+
+                    // Send the append request with the user's input to the ClientLibrary
+                    System.out.println("Sending append request with " + caseArgs[1]);
+                    clientLibrary.sendAppendRequest(caseArgs[1]);
+
+                    // Wait for the response (blocking call)
+                    futureResponse.get();
+                    break;
+
+                default:
+                    System.out.println("Invalid input. Please enter 'append' to append a string or 'exit' to quit.");
+                    break;
             }
-
-            // Create a CompletableFuture to wait for the callback response
-            CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
-
-            // Set a callback to handle the result of the append operation
-            clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
-                // Complete the future with the result (true/false)
-                futureResponse.complete(result);
-                if (result) {
-                    System.out.println("Success: The string \"" + appendedString + "\" was appended at position " + timestamp + ".");
-                } else {
-                    System.out.println("Failure: The string \"" + appendedString + "\" could not be appended to the blockchain.");
-                }
-            });
-
-            // Send the append request with the user's input to the ClientLibrary
-            clientLibrary.sendAppendRequest(input);
-
-            // Wait for the response (blocking call)
-            futureResponse.get();
-
-            
         }
-
-        // Close the scanner after the loop ends
-        scanner.close();
     }
 }

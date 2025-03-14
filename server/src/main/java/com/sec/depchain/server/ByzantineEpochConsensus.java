@@ -23,6 +23,7 @@ public class ByzantineEpochConsensus {
     private String[] written;
     private String[] accepted; // Array to store ACCEPT messages
     private ConditionalCollect cc;
+    private String toPropose;
 
     private PerfectLinks perfectLinks;
 
@@ -60,19 +61,22 @@ public class ByzantineEpochConsensus {
 
     public void propose(String v) {
         System.out.println("PROPOSE phase: ");
+        // leader sends READs to collect previous information
+        toPropose = v;
+        // System.out.println("Node id: " + nodeId + " leader id: " + leaderId);
         if (nodeId == leaderId) // is leader
         {
-            if (getState().getValtsVal().getVal() == null) {
-                TSvaluePair tsValuePair = new TSvaluePair(ets, v);
-                getState().setValtsVal(tsValuePair);
-                for (int nodeId : systemMembership.getMembershipList().keySet()) {
-                    String message = formatReadMessage(ets);
-                    System.out.println("Leader sending " + message + " to " + nodeId);
-                    perfectLinks.send(nodeId, message);
-                }
+            // if (getState().getValtsVal().getVal() == null) {
+            //     TSvaluePair tsValuePair = new TSvaluePair(ets, null);
+            //     getState().setValtsVal(tsValuePair);
+            // }
+            for (int nodeId : systemMembership.getMembershipList().keySet()) {
+                String message = formatReadMessage(ets);
+                System.out.println("Leader sending " + message + " to " + nodeId);
+                perfectLinks.send(nodeId, message);
             }
-        } // mandar o append ao lider
-        System.out.println("PROPOSE phase: " + v);
+            
+        } 
     }
 
     public void deliverRead(int senderId) throws Exception {
@@ -102,6 +106,7 @@ public class ByzantineEpochConsensus {
 
             if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
                     && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
+                System.out.println("First condition met");
                 tmpval = parsedEntry.getVal();
                 firstConditionMet = true;
                 // TODO do I break??
@@ -114,9 +119,10 @@ public class ByzantineEpochConsensus {
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
                 entryVal = parts[2];
             }
+            
+            System.out.println("Leader value to propose: " + toPropose);
             if (unbound(CollectedMessages) && entryVal != null) {
-
-                tmpval = entryVal;
+                tmpval = toPropose;
             }
         }
         // TODO condition after f+1 processes
@@ -205,7 +211,7 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-
+            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
             if (parsedEntry.getTimestamp() != 0) {
                 return false;
             }
@@ -230,7 +236,7 @@ public class ByzantineEpochConsensus {
                 count++;
             }
         }
-        System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
+        // System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
         return count > (N + f) / 2;
     }
 
@@ -251,7 +257,7 @@ public class ByzantineEpochConsensus {
                 }
             }
         }
-        System.out.println("Count: " + count + " f: " + f);
+        // System.out.println("Count: " + count + " f: " + f);
         return count > f;
     }
 

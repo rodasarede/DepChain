@@ -63,7 +63,6 @@ public class BlockchainMember {
             switch(messageElements[0]) {
                 case "append":
                     String transaction = messageElements[1];
-                    System.out.print("Proposing " + transaction);
                     //setClientId(senderId); //TODO um bocado a fds para testar
                     clientTransactions.put(senderId, transaction);
                     bep.propose(transaction);

@@ -102,25 +102,7 @@ public class PerfectLinks {
         } catch (Exception e) {
             e.printStackTrace();
         }
-       /*  scheduler.scheduleWithFixedDelay(() -> {
-            if (!sentMessages.containsKey(destId) || sentMessages.get(destId) < currentSeq) {
-                scheduler.shutdown(); // Stop resending once ACK is received
-                return;
-            }
-            try {
-                fairLossLinks.send(destIP, destPort, authenticatedMsg);
-                System.out.println("Resending to " + destId + " with delay " + timeout.get() + "ms");
-
-                // Increase timeout exponentially (1.5x)
-                timeout.set(Math.min(timeout.get() * 3 / 2, 10000)); // Cap at 10s
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }, 0, timeout.get(), TimeUnit.MILLISECONDS); // First send immediately
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-}*/
+       
     }
 
     // Handle received messages from FairLossLinks

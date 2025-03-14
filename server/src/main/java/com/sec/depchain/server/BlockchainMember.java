@@ -100,6 +100,7 @@ public class BlockchainMember {
                 clientTransactions.remove(clientId);
             }
         }
+        bep.init();
     }
     public static boolean isLeader() {
         return isLeader;

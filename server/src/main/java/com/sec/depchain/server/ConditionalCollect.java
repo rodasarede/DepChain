@@ -58,10 +58,16 @@ public class ConditionalCollect {
     }
 
     public void onInit() {
-        for (Integer processId : systemMembership.getMembershipList().keySet()) {
-            this.messages.add(processId - 1, Constants.UNDEFINED);
-            this.signatures.add(processId - 1, "");
+        collected = false;
+        messages.clear();
+        signatures.clear();
+
+        // Fill with Constants.UNDEFINED
+        for (int i = 0; i < systemMembership.getNumberOfNodes(); i++) {
+            messages.add(Constants.UNDEFINED);
+            signatures.add(Constants.UNDEFINED);
         }
+
     }
 
     public void input(String message) throws Exception {
@@ -134,10 +140,8 @@ public class ConditionalCollect {
                 System.out.println("Process ID: " + processId);
                 perfectLinks.send(processId, formattedMessage);
             }
-            // reset the state
-            messages.clear();
-            signatures.clear();
-            onInit();
+
+
         }
 
     }

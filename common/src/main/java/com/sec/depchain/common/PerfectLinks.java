@@ -65,7 +65,8 @@ public class PerfectLinks {
     public void send(int destId, String message) {
         String destIP = getIP(destId);
         int destPort = getPort(destId);
-        String messageKey = destId + ":" + message;
+        // change key to have dest id and source id of a given message
+        String messageKey = destId + ":" + nodeId + ":" + message;
         sentMessages.put(messageKey, true); //TODO do I save the squence n?
 
         seqNumber++;
@@ -141,7 +142,7 @@ public class PerfectLinks {
 
         int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
                 : Integer.parseInt(parts[0].substring(3));
-        String messageKey = senderNodeId + ":" + parts[2];
+        String messageKey = nodeId + ":" + senderNodeId + ":" + parts[2];
 
         PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); // Not sure is nodeID
 
@@ -167,7 +168,9 @@ public class PerfectLinks {
             if (message.startsWith("ACK")) {
                 //    int ackedSeqNum = Integer.parseInt(parts[1]);
                 //sentMessages.computeIfPresent(senderNodeId, (k, v) -> v <= ackedSeqNum ? null : v);
-                stopResending(messageKey);
+                String ackedMessageKey = senderNodeId + ":" + nodeId + ":" + parts[2];
+                System.out.println("Received ACK from " + senderNodeId + " with message: " + ackedMessageKey + " with key " + messageKey);
+                stopResending(ackedMessageKey);
                 return;
             }
 
@@ -176,6 +179,7 @@ public class PerfectLinks {
                 seqNumber++;
                 String ackMessage = "ACK" + nodeId + "|" + seqNumber + "|" + originalMsg;
                 String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
+                System.out.println("Sending ACK to " + senderNodeId + " with message: " + ackMessage);
                 fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
 
             } catch (Exception e) {
@@ -196,6 +200,8 @@ public class PerfectLinks {
                     deliverCallbackCollect.deliver(senderNodeId, originalMsg);
                 }
             }
+        }else{
+            // System.out.println("Message already delivered: " + message + "with key" + messageKey);
         }
     }
 

@@ -15,7 +15,7 @@ import com.sec.depchain.common.util.Constants;
 public class ByzantineEpochConsensus {
     private static int N;
     private static int f;
-
+    private static int position=1;
     private static int nodeId;
     private static int leaderId;
     private EpochSate state;
@@ -54,6 +54,7 @@ public class ByzantineEpochConsensus {
 
         this.state = new EpochSate(defaultVal, new HashSet<>());
         // to do establish right place to incremets ets
+        
 
         this.written = new String[N];
         this.accepted = new String[N];
@@ -84,7 +85,6 @@ public class ByzantineEpochConsensus {
             String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
 
             cc.onInit();
-
             cc.input(message);
         }
     }
@@ -98,7 +98,7 @@ public class ByzantineEpochConsensus {
         }
         boolean firstConditionMet = false;
         for (String entry : states) {
-            // System.out.println("Entry: " + entry);
+            System.out.println("Entry: " + entry);
             if (entry.equals(Constants.UNDEFINED))
                 continue;
 
@@ -113,15 +113,15 @@ public class ByzantineEpochConsensus {
             }
         }
         if (!firstConditionMet) {
-            String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
-            String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
-            String entryVal = null;
-            if (!leaderEntry.equals(Constants.UNDEFINED)) {
-                entryVal = parts[2];
-            }
+            // String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
+            // String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
+            // String entryVal = null;
+            // if (!leaderEntry.equals(Constants.UNDEFINED)) {
+            //     entryVal = parts[2];
+            // }
             
             System.out.println("Leader value to propose: " + toPropose);
-            if (unbound(CollectedMessages) && entryVal != null) {
+            if (unbound(CollectedMessages) && toPropose != null) {
                 tmpval = toPropose;
             }
         }
@@ -196,6 +196,7 @@ public class ByzantineEpochConsensus {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
             state.setValtsVal(tsValuePair);
             accepted = new String[N]; // clear accepted
+            position++;
             BlockchainMember.decide(v);
 
         }
@@ -211,7 +212,7 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
+            System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
             if (parsedEntry.getTimestamp() != 0) {
                 return false;
             }
@@ -236,7 +237,7 @@ public class ByzantineEpochConsensus {
                 count++;
             }
         }
-        // System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
+        System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
         return count > (N + f) / 2;
     }
 
@@ -257,7 +258,7 @@ public class ByzantineEpochConsensus {
                 }
             }
         }
-        // System.out.println("Count: " + count + " f: " + f);
+        System.out.println("Count: " + count + " f: " + f);
         return count > f;
     }
 
@@ -287,7 +288,7 @@ public class ByzantineEpochConsensus {
     }
 
     private static String formatReadMessage(long ets) {
-        return "<READ:" + ets + ">";
+        return "<READ:" + ets +  ":" + position + ">";
     }
 
     private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {

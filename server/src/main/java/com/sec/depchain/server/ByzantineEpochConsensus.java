@@ -34,6 +34,8 @@ public class ByzantineEpochConsensus {
     private int countAccepts=0;
     private Timer quorumAcceptTimer;
     private int countWrites=0;
+    private boolean writeQuorumReached = false;
+    private boolean acceptQuorumReached = false;
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
             int nodeId) throws Exception {
@@ -65,6 +67,8 @@ public class ByzantineEpochConsensus {
 
         this.written = new String[N];
         this.accepted = new String[N];
+        countAccepts = 0;
+        countWrites = 0;
     }
 
     public void propose(String v) {
@@ -172,12 +176,14 @@ public class ByzantineEpochConsensus {
 
     private void check_write_quorom(String v) {
         System.out.println("Checking write quorum for value: " + v);
+        int count = 0;
         for (String writtenEntry : written) {
             if (writtenEntry != null && writtenEntry.equals(v)) {
-                countWrites++;
+                count++;
             }
         }
-        if (countWrites > (N + f) / 2) {
+       
+        if (count > (N + f) / 2) {
             if (quorumWriteTimer != null) {
                 quorumWriteTimer.cancel();
                 quorumWriteTimer.purge();
@@ -185,8 +191,8 @@ public class ByzantineEpochConsensus {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
 
             state.setValtsVal(tsValuePair);
+            writeQuorumReached = true;
             written = new String[N]; // clear written
-            countWrites = 0;
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send ACCEPT Message
@@ -203,27 +209,29 @@ public class ByzantineEpochConsensus {
             quorumWriteTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (countWrites <  (N + f) / 2) {
+                    System.out.println("CountWrites: " + countWrites );
+                    if (!writeQuorumReached) {
                         System.out.println("Write quorum not reached, aborting...");
                         written = new String[N]; // Clear the written array
-                        countWrites = 0;
+                        writeQuorumReached = false;
                     }else{
                         System.out.println("Timer:Write quorum reached");
                     }
                 }
-            },5000 - countWrites *1000); // Timeout 
+            },5000 - count *1000); // Timeout 
         }
 
     }
 
     private void check_accept_quorom(String v) {
-        
+        int count = 0;
         for (String acceptedEntry : accepted) {
             if (acceptedEntry != null && acceptedEntry.equals(v)) {
-                countAccepts++;
+                count++;
             }
         }
-        if (countAccepts > (N + f) / 2) {
+        countAccepts = count;
+        if (count > (N + f) / 2) {
             if (quorumAcceptTimer != null) {
                 quorumAcceptTimer.cancel();
                 quorumAcceptTimer.purge();
@@ -231,7 +239,7 @@ public class ByzantineEpochConsensus {
             TSvaluePair tsValuePair = new TSvaluePair(ets, v);
             state.setValtsVal(tsValuePair);
             accepted = new String[N]; // clear accepted
-            countAccepts = 0;
+            acceptQuorumReached = true;
             position++;
             BlockchainMember.decide(v);
 
@@ -244,15 +252,15 @@ public class ByzantineEpochConsensus {
             quorumAcceptTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (countAccepts <  (N + f) / 2) {
+                    if (!acceptQuorumReached) {
                         System.out.println("Accept quorum not reached, aborting...");
                         accepted = new String[N]; // Clear the accept array
-                        countAccepts = 0;
+                        acceptQuorumReached = false;
                     }else{
                         System.out.println("Timer:Accept quorum reached");
                     }
                 }
-            }, 5000 - countAccepts *1000); // Timeout 
+            }, 5000 - count *1000); // Timeout 
         }
 
     }

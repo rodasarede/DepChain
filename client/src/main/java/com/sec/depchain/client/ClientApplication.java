@@ -62,7 +62,7 @@ public class ClientApplication {
                     clientLibrary.sendAppendRequest(caseArgs[1]);
 
                     // Wait for the response (blocking call)
-                    futureResponse.get();
+                    // futureResponse.get();
                     break;
 
                 default:

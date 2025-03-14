@@ -37,7 +37,6 @@ public class BlockchainMember {
                 try {
                     onPerfectLinksDeliver(NodeId, message);
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             });
@@ -45,7 +44,6 @@ public class BlockchainMember {
                 try {
                     onPerfectLinksDeliver(NodeId, message);
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             });
@@ -63,7 +61,6 @@ public class BlockchainMember {
             switch(messageElements[0]) {
                 case "append":
                     String transaction = messageElements[1];
-                    //setClientId(senderId); //TODO um bocado a fds para testar
                     clientTransactions.put(senderId, transaction);
                     bep.propose(transaction);
                     break;
@@ -83,10 +80,9 @@ public class BlockchainMember {
             }
         }
     public static void decide(String val){
-        System.out.println("DECIDE phase: Committing transaction.");
         blockchain.add(val);
         int index = blockchain.size() ;
-        System.out.println("Transaction " + val + " committed at index " + index + ".");
+        System.out.println("DECIDE PHASE: Transaction " + val + " committed at index " + index + ".");
         
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
@@ -94,7 +90,7 @@ public class BlockchainMember {
                 int clientId = entry.getKey();
                 String responseMessage = "<append:" + val + ":" + index +  ":success>";
     
-                System.out.println("Sending response to client: " + clientId);
+                // System.out.println("Sending response to client: " + clientId);
                 perfectLinks.send(clientId, responseMessage);
                 
                 clientTransactions.remove(clientId);

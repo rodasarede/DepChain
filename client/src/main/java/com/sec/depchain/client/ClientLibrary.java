@@ -59,7 +59,7 @@ public class ClientLibrary {
             Set<Integer> respondingNodes = messageResponses.get(transaction);
             respondingNodes.add(nodeId);
             //ensure we get f+1 sucess responses to the append request 
-            System.out.println("Responding nodes: " + respondingNodes.size());
+            // System.out.println("Responding nodes: " + respondingNodes.size());
             if (respondingNodes.size() >= (f + 1)) {
                 if (deliverCallback != null) {
                     // System.out.println("Delivering AppendResponse to callback");~

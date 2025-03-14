@@ -59,7 +59,7 @@ public class ByzantineEpochConsensus {
 
     public void init() {
         System.out.println("INIT phase:");
-        TSvaluePair defaultVal = new TSvaluePair(0, null); // TODO how to initialize ?
+        TSvaluePair defaultVal = new TSvaluePair(0, null); 
 
         this.state = new EpochSate(defaultVal, new HashSet<>());
         // to do establish right place to incremets ets
@@ -72,7 +72,7 @@ public class ByzantineEpochConsensus {
     }
 
     public void propose(String v) {
-        System.out.println("PROPOSE phase: ");
+        System.out.println("READ phase: ");
         // leader sends READs to collect previous information
         toPropose = v;
         // System.out.println("Node id: " + nodeId + " leader id: " + leaderId);
@@ -109,7 +109,7 @@ public class ByzantineEpochConsensus {
         }
         boolean firstConditionMet = false;
         for (String entry : states) {
-            System.out.println("Entry: " + entry);
+            // System.out.println("Entry: " + entry);
             if (entry.equals(Constants.UNDEFINED))
                 continue;
 
@@ -117,10 +117,10 @@ public class ByzantineEpochConsensus {
 
             if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
                     && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
-                System.out.println("First condition met");
+                // System.out.println("First condition met");
                 tmpval = parsedEntry.getVal();
                 firstConditionMet = true;
-                // TODO do I break??
+
             }
         }
         if (!firstConditionMet) {
@@ -136,7 +136,7 @@ public class ByzantineEpochConsensus {
                 tmpval = toPropose;
             }
         }
-        // TODO condition after f+1 processes
+        
         // means we have a value to propose
         if (tmpval != null) // tmp value diff null
         {
@@ -175,7 +175,7 @@ public class ByzantineEpochConsensus {
     }
 
     private void check_write_quorom(String v) {
-        System.out.println("Checking write quorum for value: " + v);
+        // System.out.println("Checking write quorum for value: " + v);
         int count = 0;
         for (String writtenEntry : written) {
             if (writtenEntry != null && writtenEntry.equals(v)) {
@@ -209,7 +209,7 @@ public class ByzantineEpochConsensus {
             quorumWriteTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    System.out.println("CountWrites: " + countWrites );
+                    // System.out.println("CountWrites: " + countWrites );
                     if (!writeQuorumReached) {
                         System.out.println("Write quorum not reached, aborting...");
                         written = new String[N]; // Clear the written array
@@ -274,7 +274,7 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-            System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
+            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
             if (parsedEntry.getTimestamp() != 0) {
                 return false;
             }
@@ -299,7 +299,7 @@ public class ByzantineEpochConsensus {
                 count++;
             }
         }
-        System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
+        // System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
         return count > (N + f) / 2;
     }
 
@@ -320,7 +320,7 @@ public class ByzantineEpochConsensus {
                 }
             }
         }
-        System.out.println("Count: " + count + " f: " + f);
+        // System.out.println("Count: " + count + " f: " + f);
         return count > f;
     }
 
@@ -354,8 +354,8 @@ public class ByzantineEpochConsensus {
     }
 
     private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
-        // TODO how to write the writeset into the message
-        System.out.println("WriteSet: " + writeSet); // TODO
+        // TODO write the writeset into the message
+        System.out.println("WriteSet: " + writeSet); 
         return ets + ":" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet;
     }
 
@@ -386,7 +386,7 @@ public class ByzantineEpochConsensus {
     }
 
     private void onCollectedDelivery(String[] collectedMessages) {
-        // TODO
+        
         System.out.println("Received on Consensus Layer Collected Messages:");
         for (int i = 0; i < collectedMessages.length; i++) {
             System.out.println("Message from node " + i + ": " + collectedMessages[i]);

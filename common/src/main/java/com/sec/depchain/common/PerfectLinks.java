@@ -13,9 +13,7 @@ public class PerfectLinks {
     private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
-    private final ConcurrentHashMap<String, Boolean> sentMessages; // Store messages to resend //TODO nao podemos
-                                                                   // guardar mensagens infinitamente -> mudar para
-                                                                   // sequence number
+    private final ConcurrentHashMap<String, Boolean> sentMessages; ///TODO not a good practice // guardar mensagens infinitamente -> mudar para sequence number
     private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
 
     //private final ConcurrentHashMap<Integer, Integer> sentMessages = new ConcurrentHashMap<>();
@@ -67,7 +65,7 @@ public class PerfectLinks {
         int destPort = getPort(destId);
         // change key to have dest id and source id of a given message
         String messageKey = destId + ":" + nodeId + ":" + message;
-        sentMessages.put(messageKey, true); //TODO do I save the squence n?
+        sentMessages.put(messageKey, true); 
 
         seqNumber++;
         String messageWithId = nodeId + "|" + seqNumber + "|" + message;
@@ -169,7 +167,7 @@ public class PerfectLinks {
                 //    int ackedSeqNum = Integer.parseInt(parts[1]);
                 //sentMessages.computeIfPresent(senderNodeId, (k, v) -> v <= ackedSeqNum ? null : v);
                 String ackedMessageKey = senderNodeId + ":" + nodeId + ":" + parts[2];
-                System.out.println("Received ACK from " + senderNodeId + " with message: " + ackedMessageKey + " with key " + messageKey);
+                // System.out.println("Received ACK from " + senderNodeId + " with message: " + ackedMessageKey + " with key " + messageKey);
                 stopResending(ackedMessageKey);
                 return;
             }
@@ -179,7 +177,7 @@ public class PerfectLinks {
                 seqNumber++;
                 String ackMessage = "ACK" + nodeId + "|" + seqNumber + "|" + originalMsg;
                 String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
-                System.out.println("Sending ACK to " + senderNodeId + " with message: " + ackMessage);
+                // System.out.println("Sending ACK to " + senderNodeId + " with message: " + ackMessage);
                 fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
 
             } catch (Exception e) {

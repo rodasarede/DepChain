@@ -39,12 +39,11 @@ public class ConditionalCollect {
         setSystemMembership(systemMembership);
         // this.perfectLinks.setDeliverCallbackCollect(this::onPerfectLinksDeliver);
 
-        // TODO changed this in order to compile
+    
         this.perfectLinks.setDeliverCallbackCollect((NodeId, message) -> {
             try {
                 onPerfectLinksDeliver(NodeId, message);
             } catch (Exception e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });
@@ -162,7 +161,7 @@ public class ConditionalCollect {
             String message = collectedMessages[i - 1];
             String signature = collectedSignatures[i - 1];
 
-            System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
+            // System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
             if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
                 return false;
             }
@@ -171,29 +170,21 @@ public class ConditionalCollect {
     }
 
     private void processCollected(int senderId, String collectedMessage) throws Exception {
-        System.out.println("Received COLLECTED message: " + collectedMessage);
+        // System.out.println("Received COLLECTED message: " + collectedMessage);
         String[][] result = splitCollectedMessage(collectedMessage);
         String[] collectedMessages = result[0];
         String[] collectedSignatures = result[1];
-        // System.out.println("Collected: " + collectedMessages);
-        // System.out.println("Signatures: " + collectedSignatures);
-        // String[] args = getMessageArgs(collectedMessage);
-        // String rawCollectedMessages = args[1];
-        // String rawCollectedSignatures = args[2];
-        // String[] collectedMessages = unformatArray(rawCollectedMessages);
-        // String[] collectedSignatures = unformatArray(rawCollectedSignatures);
-        // System.out.println("Collected Messages: " + rawCollectedMessages);
-        // System.out.println("Collected Signatures: " + rawCollectedSignatures);
 
-        System.out.println("Collected Messages:");
-        for (String message : collectedMessages) {
-            System.out.println("- " + message);
-        }
 
-        System.out.println("Collected Signatures:");
-        for (String signature : collectedSignatures) {
-            System.out.println("- " + signature);
-        }
+        // System.out.println("Collected Messages:");
+        // for (String message : collectedMessages) {
+        //     System.out.println("- " + message);
+        // }
+
+        // System.out.println("Collected Signatures:");
+        // for (String signature : collectedSignatures) {
+        //     System.out.println("- " + signature);
+        // }
 
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
@@ -203,9 +194,9 @@ public class ConditionalCollect {
         if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
                 && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate.test(messageList)) {
             collected = true;
-            System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
+            // System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
             if (deliverCallback != null) {
-                System.out.println("ConditionalCollect delivering messages up1: " + collectedMessages[0]);
+                System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
                 deliverCallback.deliver(collectedMessages);
             }
         }
@@ -225,7 +216,7 @@ public class ConditionalCollect {
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
 
         String messageType = getMessageType(message);
-        System.out.println("Message: " + message + ". Message Type: " + messageType);
+        // System.out.println("Message: " + message + ". Message Type: " + messageType);
 
         switch (messageType) {
             case "STATE":

@@ -141,8 +141,11 @@ public class BlockchainMember {
     public static void decide(String val){
         System.out.println("DECIDE phase: Committing transaction.");
         blockchain.add(val);
+        int index = blockchain.size() ;
+        System.out.println("Transaction " + val + " committed at index " + index + ".");
+        
 
-        String responseMessage = "<append:" + val + ":success>";
+        String responseMessage = "<append:" + val + ":" + index + ":success>";
 
         System.out.println(clientId);
         perfectLinks.send(clientId, responseMessage);

@@ -42,9 +42,14 @@ public class ClientApplication {
             CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
             // Set a callback to handle the result of the append operation
-            clientLibrary.setDeliverCallback((result) -> {
+            clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
                 // Complete the future with the result (true/false)
                 futureResponse.complete(result);
+                if (result) {
+                    System.out.println("Success: The string \"" + appendedString + "\" was appended at position " + timestamp + ".");
+                } else {
+                    System.out.println("Failure: The string \"" + appendedString + "\" could not be appended to the blockchain.");
+                }
             });
 
             // Send the append request with the user's input to the ClientLibrary
@@ -52,14 +57,9 @@ public class ClientApplication {
             System.out.println("Sent append request to ClientLibrary: <append, \"" + input + "\">.");
 
             // Wait for the response (blocking call)
-            boolean result = futureResponse.get();
+            futureResponse.get();
 
-            // Provide feedback based on whether the string was appended successfully
-            if (result) {
-                System.out.println("Success: The string was appended successfully to the blockchain."); //TODO print the string and when it was executed
-            } else {
-                System.out.println("Failure: The string could not be appended to the blockchain.");
-            }
+            
         }
 
         // Close the scanner after the loop ends

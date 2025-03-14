@@ -4,7 +4,6 @@ import com.sec.depchain.common.PerfectLinks;
 
 import java.security.PrivateKey;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,12 +55,6 @@ public class ConditionalCollect {
 
         this.outputPredicate = outputPredicate;
 
-        /*
-         * for (Integer processId : systemMembership.getMembershipList().keySet()) {
-         * messages.add("UNDEFINED");
-         * signatures.add("");
-         * }
-         */
     }
 
     public void onInit() {
@@ -79,7 +72,6 @@ public class ConditionalCollect {
 
         String formatted_message = "<STATE:" + message + ":" + signature + ">";
 
-        System.out.println("TESTEEEEEEE" + message);
         int leaderId = systemMembership.getLeaderId();
         System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
         perfectLinks.send(leaderId, formatted_message);
@@ -93,7 +85,7 @@ public class ConditionalCollect {
 
             return parts;
         }
-        return new String[] { "UNKNOWN" };
+        return new String[] { Constants.UNKNOWN };
     }
 
     private static String getFormattedArray(Map<Integer, String> map) {
@@ -145,7 +137,7 @@ public class ConditionalCollect {
             // reset the state
             messages.clear();
             signatures.clear();
-           onInit();
+            onInit();
         }
 
     }

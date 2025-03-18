@@ -41,3 +41,4 @@
 6. **Testing**
 
    Testing currently can be done by using the Clients and sending appending strings requests.
+   Stage1 Deliver.

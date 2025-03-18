@@ -23,12 +23,10 @@ public class ByzantineEpochConsensus {
     private EpochSate state;
     private long ets;
     private String[] written;
-    private String[] accepted; // Array to store ACCEPT messages
+    private String[] accepted;
     private ConditionalCollect cc;
     private String toPropose;
-
     private PerfectLinks perfectLinks;
-
     private SystemMembership systemMembership;
     private Timer quorumWriteTimer;
     private int countAccepts=0;
@@ -36,71 +34,76 @@ public class ByzantineEpochConsensus {
     private int countWrites=0;
     private boolean writeQuorumReached = false;
     private boolean acceptQuorumReached = false;
+    private static final int DEBUG_MODE = 1;
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
-            int nodeId) throws Exception {
+                                   int nodeId) throws Exception {
         this.leaderId = leaderId;
-
         this.ets = ets;
-
         this.perfectLinks = perfectLinks;
-
         this.systemMembership = systemMembership;
-
         this.N = systemMembership.getNumberOfNodes();
         this.f = systemMembership.getMaximumNumberOfByzantineNodes();
-
-        cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
-        cc.setDeliverCallback(this::onCollectedDelivery);
-
+        this.cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
+        this.cc.setDeliverCallback(this::onCollectedDelivery);
         this.nodeId = nodeId;
-    
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
+        }
     }
 
     public void init() {
-        System.out.println("INIT phase:");
-        TSvaluePair defaultVal = new TSvaluePair(0, null); 
-
+        TSvaluePair defaultVal = new TSvaluePair(0, null);
         this.state = new EpochSate(defaultVal, new HashSet<>());
-        // to do establish right place to incremets ets
-        
-
         this.written = new String[N];
         this.accepted = new String[N];
         countAccepts = 0;
         countWrites = 0;
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Initialized epoch state.");
+        }
     }
 
     public void propose(String v) {
-        System.out.println("READ phase: ");
-        // leader sends READs to collect previous information
         toPropose = v;
-        // System.out.println("Node id: " + nodeId + " leader id: " + leaderId);
-        if (nodeId == leaderId) // is leader
-        {
-            // if (getState().getValtsVal().getVal() == null) {
-            //     TSvaluePair tsValuePair = new TSvaluePair(ets, null);
-            //     getState().setValtsVal(tsValuePair);
-            // }
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: I am proposing value " + v);
+        }
+
+        if (nodeId == leaderId) {
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = formatReadMessage(ets);
-                System.out.println("Leader sending " + message + " to " + nodeId);
+
+                if (DEBUG_MODE == 1) {
+                    System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Leader " + leaderId + " sending READ message to " + nodeId);
+                }
+
                 perfectLinks.send(nodeId, message);
             }
-            
-        } 
+        }
     }
 
     public void deliverRead(int senderId) throws Exception {
         if (senderId == leaderId) {
             String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
-
+            if (DEBUG_MODE == 1) {
+                System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Sending STATE " + message + " to conditional collect");
+            }
             cc.onInit();
             cc.input(message);
         }
     }
 
     public void collected(String[] states) {
+        if (DEBUG_MODE == 1) {
+            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: collected states: ");
+            for (String state : states) {
+                System.out.println("- " + state);
+            }
+        }
         String tmpval = null;
 
         List<String> CollectedMessages = new ArrayList<>();
@@ -131,7 +134,7 @@ public class ByzantineEpochConsensus {
             //     entryVal = parts[2];
             // }
             
-            System.out.println("Leader value to propose: " + toPropose);
+            //System.out.println("Leader value to propose: " + toPropose);
             if (unbound(CollectedMessages) && toPropose != null) {
                 tmpval = toPropose;
             }
@@ -211,11 +214,11 @@ public class ByzantineEpochConsensus {
                 public void run() {
                     // System.out.println("CountWrites: " + countWrites );
                     if (!writeQuorumReached) {
-                        System.out.println("Write quorum not reached, aborting...");
+                        //System.out.println("Write quorum not reached, aborting...");
                         written = new String[N]; // Clear the written array
                         writeQuorumReached = false;
                     }else{
-                        System.out.println("Timer:Write quorum reached");
+                        //System.out.println("Timer:Write quorum reached");
                     }
                 }
             },5000 - count *1000); // Timeout 
@@ -253,11 +256,11 @@ public class ByzantineEpochConsensus {
                 @Override
                 public void run() {
                     if (!acceptQuorumReached) {
-                        System.out.println("Accept quorum not reached, aborting...");
+                        //System.out.println("Accept quorum not reached, aborting...");
                         accepted = new String[N]; // Clear the accept array
                         acceptQuorumReached = false;
                     }else{
-                        System.out.println("Timer:Accept quorum reached");
+                        //System.out.println("Timer:Accept quorum reached");
                     }
                 }
             }, 5000 - count *1000); // Timeout 
@@ -387,9 +390,9 @@ public class ByzantineEpochConsensus {
 
     private void onCollectedDelivery(String[] collectedMessages) {
         
-        System.out.println("Received on Consensus Layer Collected Messages:");
+        //System.out.println("Received on Consensus Layer Collected Messages:");
         for (int i = 0; i < collectedMessages.length; i++) {
-            System.out.println("Message from node " + i + ": " + collectedMessages[i]);
+            //System.out.println("Message from node " + i + ": " + collectedMessages[i]);
         }
         collected(collectedMessages);
 

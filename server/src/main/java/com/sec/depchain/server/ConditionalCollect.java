@@ -23,6 +23,7 @@ public class ConditionalCollect {
 
     private static SystemMembership systemMembership;
     private static int nodeId;
+    private int TAMPER_MESSAGE = 0;
 
     public interface DeliverCallback {
         void deliver(String[] messages);
@@ -133,7 +134,10 @@ public class ConditionalCollect {
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
         if (getNumberOfMessages() >= N - f && outputPredicate.test(messages)) {
-
+            if (TAMPER_MESSAGE == 1) {
+                int index = 0;
+                messages.set(index, "1" + messages.get(index).substring(1));
+            }
             String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 // System.out.println("Process ID: " + processId);
@@ -163,6 +167,7 @@ public class ConditionalCollect {
 
             // System.out.println("Verifying signature for message: " + message + " with signature: " + signature);
             if (!CryptoUtils.verifySignature(systemMembership.getPublicKey(i), message, signature)) {
+                System.out.println("CONDITIONAL COLLECT: Signature on index " + i + "failed! LEADER CHANGE!");
                 return false;
             }
         }
@@ -196,7 +201,7 @@ public class ConditionalCollect {
             collected = true;
             // System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
             if (deliverCallback != null) {
-                System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
+                //System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
                 deliverCallback.deliver(collectedMessages);
             }
         }

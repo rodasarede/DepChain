@@ -48,9 +48,22 @@ public class FairLossLinks {
                         deliverCallback.deliverReceivedMessage(srcIP, srcPort, message);
                     }
                 }
+            } catch (SocketException se) {
+                //end thread
+                System.out.println("Socket closed");
+                // se.printStackTrace();
+                return;
             } catch (Exception e) {
+                System.out.println("Error in deliver");
                 e.printStackTrace();
+                return;
             }
         }).start();
     }
+    public void close() {
+        if(socket != null && !socket.isClosed()) {
+            socket.close();
+        }
+    }
+
 }

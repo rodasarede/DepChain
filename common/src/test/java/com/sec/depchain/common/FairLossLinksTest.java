@@ -34,6 +34,7 @@ public class FairLossLinksTest {
     }
     
     @Test
+    // test simple message delivery
     public void testFairLoss() throws Exception {
         String message = "Hello";
         int sendCount = 50;
@@ -43,11 +44,12 @@ public class FairLossLinksTest {
             Thread.sleep(10); 
         }
         
-        Thread.sleep(2000); // Allow time for message delivery
+        Thread.sleep(2000); 
         assertTrue(receivedMessages.size() == sendCount, "Messages should be received");
     }
     
     @Test
+    // test for no duplication
     public void testFiniteDuplication() throws Exception {
         String message = "TestMessage";
         int sendCount = 10;
@@ -62,6 +64,7 @@ public class FairLossLinksTest {
     }
     
     @Test
+    // test for no creation
     public void testNoCreation() throws Exception {
         new Thread(() -> {
             try {

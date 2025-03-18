@@ -15,6 +15,7 @@ public class ClientLibrary {
     private static SystemMembership systemMembership;
     private Map<String, Set<Integer>> messageResponses = new HashMap<>();
     private Set<String> processedTransactions = new HashSet<>();
+    private int DEBUG_MODE = 0;
 
     // Functional interface for the callback
     public interface DeliverCallback {
@@ -31,14 +32,18 @@ public class ClientLibrary {
 
     public void sendAppendRequest(String string) {
         String formattedMessage = "<append:" + string + ">";
-        for(int nodeId: systemMembership.getMembershipList().keySet())
-        {
+        for(int nodeId: systemMembership.getMembershipList().keySet()) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("CLIENT LIBRARY: Sending " + formattedMessage + " to server " + nodeId + ".");
+            }
             perfectLinks.send(nodeId, formattedMessage);
         }
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {
-        // System.out.println("Client Library received a message from node with id " + nodeId + " -> " + message);
+        if (DEBUG_MODE == 1) {
+            System.out.println("CLIENT LIBRARY: Received " + message + "from server " + nodeId);
+        }
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
 
         String[] parts = message.split("\\|");
@@ -52,7 +57,6 @@ public class ClientLibrary {
         if(type.equals("<append") && status.equals("success>"))
         { 
             if(processedTransactions.contains(transaction)){
-
                 return;
             }
             messageResponses.putIfAbsent(transaction, new HashSet<>());
@@ -65,6 +69,7 @@ public class ClientLibrary {
                     // System.out.println("Delivering AppendResponse to callback");~
                     processedTransactions.add(transaction);
                     messageResponses.remove(transaction);
+                    System.out.println("CLIENT LIBRARY: Delivering " + transaction + " to CLIENT APP");
                     deliverCallback.deliverAppendResponse(true, transaction , position);
                 } else {
                     System.out.println("No callback set: could not deliver AppendResponse");

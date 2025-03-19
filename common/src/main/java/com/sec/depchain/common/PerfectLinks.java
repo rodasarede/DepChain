@@ -2,6 +2,8 @@ package com.sec.depchain.common;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,6 +20,8 @@ public class PerfectLinks {
 
     //private final ConcurrentHashMap<Integer, Integer> sentMessages = new ConcurrentHashMap<>();
     //private final ConcurrentHashMap<Integer, Integer> deliveredMessages = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Deque<Integer>> deliveredHistory;
+    private static final int WINDOW_SIZE = 50;
     private static SystemMembership systemMembership;
     private final int nodeId;
     private final int port;
@@ -37,6 +41,7 @@ public class PerfectLinks {
         System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
         this.sentMessages = new ConcurrentHashMap<>();
+        this.deliveredHistory = new ConcurrentHashMap<>();
         this.delivered = new ConcurrentHashMap<>(); // Initialize delivered set
         this.nodeId = nodeId;
 
@@ -116,6 +121,8 @@ public class PerfectLinks {
         }
         String messageWithId = parts[0] + "|" + parts[1] + "|" + parts[2];
 
+        int receivedSeqNum = Integer.parseInt(parts[1]);
+
         String originalMsg = parts[2];
 
         String receivedMac = parts[3];
@@ -142,8 +149,16 @@ public class PerfectLinks {
                 return; // Ignore duplicates or out-of-order messages
             }*/
         // Deliver only if the message has not been delivered before
-        if (!delivered.containsKey(messageKey)) {
-            delivered.put(messageKey, true); // Mark message as delivered
+        deliveredHistory.putIfAbsent(senderNodeId, new ArrayDeque<>(WINDOW_SIZE));
+        Deque<Integer> senderHistory = deliveredHistory.get(senderNodeId);
+
+
+        if (!senderHistory.contains(receivedSeqNum)) {
+            // delivered.put(messageKey, true); // Mark message as delivered
+            if (senderHistory.size() >= WINDOW_SIZE) {
+                senderHistory.poll(); // Remove the oldest seqNumber
+            }
+            senderHistory.add(receivedSeqNum);
 
             if (message.startsWith("ACK")) {
                 //    int ackedSeqNum = Integer.parseInt(parts[1]);
@@ -181,7 +196,7 @@ public class PerfectLinks {
                 }
             }
         }else{
-            // System.out.println("Message already delivered: " + message + "with key" + messageKey);
+            System.out.println("Message already delivered: " + message + "with key" + messageKey);
         }
     }
 

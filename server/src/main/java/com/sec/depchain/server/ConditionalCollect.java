@@ -230,7 +230,7 @@ public class ConditionalCollect {
             case "COLLECTED":
                 processCollected(senderId, message);
                 break;
-            case "append":
+            case "append-request":
                 // not supose to happen only for debug purposes
                 System.out.println("Received request in collect: " + message + " from Id: " + senderId);
                 break;

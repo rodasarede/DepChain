@@ -1,79 +1,96 @@
 package com.sec.depchain.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-/**
- * Client application that allows users to append strings to the blockchain.
- * Communicates with the ClientLibrary to send and receive responses.
- */
 public class ClientApplication {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
+    private static final int DEBUG_MODE = 0;
+
     public static void main(String[] args) throws Exception {
-        // Verify if the clientId argument is provided
         if (args.length < 1) {
             System.err.println("Usage: <clientId>");
             System.exit(1);
         }
 
-        int clientId;
+        int clientId = parseClientId(args[0]);
+        ClientLibrary clientLibrary = new ClientLibrary(clientId);
+        setupInputLoop(clientLibrary);
+    }
+
+    private static int parseClientId(String clientIdArg) {
         try {
-            clientId = Integer.parseInt(args[0]);
+            return Integer.parseInt(clientIdArg);
         } catch (NumberFormatException e) {
             System.err.println("[ERROR] <clientId> must be an integer.");
             System.exit(1);
+            return -1;
+        }
+    }
+
+    private static void setupInputLoop(ClientLibrary clientLibrary) {
+        try (Scanner scanner = new Scanner(System.in)) {
+            System.out.println("[INFO] Enter 'append <string>' to append, or 'exit' to quit:");
+
+            while (true) {
+                System.out.print("> ");
+                String input = scanner.nextLine().trim();
+                String[] caseArgs = input.split(" ", 2);
+
+                switch (caseArgs[0].toLowerCase()) {
+                    case "exit":
+                        exitApplication();
+                        return;
+
+                    case "append":
+                        handleAppendRequest(caseArgs, clientLibrary);
+                        break;
+
+                    default:
+                        System.out.println("[ERROR] Invalid command. Use 'append <string>' or 'exit'.");
+                        break;
+                }
+            }
+        }
+    }
+
+    private static void handleAppendRequest(String[] caseArgs, ClientLibrary clientLibrary) {
+        if (caseArgs.length < 2) {
+            System.out.println("[ERROR] Please provide a string to append.");
             return;
         }
 
-        // Initialize the ClientLibrary with the provided clientId
-        ClientLibrary clientLibrary = new ClientLibrary(clientId);
+        String appendString = caseArgs[1];
+        CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
-        // Set up the scanner to read user input
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("[INFO] Enter a string to append (or type 'exit' to quit):");
+        clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
+            String message = result
+                    ? String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp)
+                    : String.format("[FAILURE] Could not append '%s'.", appendedString);
+            System.out.println(message);
+            futureResponse.complete(result);
+        });
 
-        // User input loop to send append requests
-        while (true) {
-            System.out.print("> ");
-            String input = scanner.nextLine().trim();
-            String[] caseArgs = input.split(" ", 2);
+        if (DEBUG_MODE == 1) LOGGER.debug("Sending append request: '{}'", appendString);
 
-            switch (caseArgs[0].toLowerCase()) {
-                case "exit":
-                    System.out.println("[INFO] Exiting the application...");
-                    scanner.close();
-                    return; // Exit the program immediately
+        clientLibrary.sendAppendRequest(appendString);
 
-                case "append":
-                    if (caseArgs.length < 2) {
-                        System.out.println("[ERROR] Please provide a string to append.");
-                        break;
-                    }
-
-                    // Create a CompletableFuture to wait for the callback response
-                    CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
-
-                    // Set a callback to handle the result of the append operation
-                    clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
-                        futureResponse.complete(result);
-                        if (result) {
-                            System.out.println("[SUCCESS] The string '" + appendedString + "' was appended at position " + timestamp + ".");
-                        } else {
-                            System.out.println("[FAILURE] The string '" + appendedString + "' could not be appended to the blockchain.");
-                        }
-                    });
-
-                    // Send the append request with the user's input to the ClientLibrary
-                    System.out.println("[INFO] Sending append request with '" + caseArgs[1] + "'.");
-                    clientLibrary.sendAppendRequest(caseArgs[1]);
-
-                    // Wait for the response (blocking call)
-                    futureResponse.get();
-                    break;
-
-                default:
-                    System.out.println("[ERROR] Invalid input. Please enter 'append' to append a string or 'exit' to quit.");
-                    break;
-            }
+        try {
+            futureResponse.get();
+        } catch (InterruptedException e) {
+            System.err.println("[ERROR] Interrupted while waiting for append response.");
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            System.err.println("[ERROR] Execution failed: " + e.getCause());
         }
+    }
+
+    private static void exitApplication() {
+        LOGGER.info("Client is exiting");
+        System.exit(0);
     }
 }

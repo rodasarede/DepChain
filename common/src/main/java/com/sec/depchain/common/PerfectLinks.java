@@ -1,5 +1,8 @@
 package com.sec.depchain.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.concurrent.*;
@@ -10,6 +13,7 @@ import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 
 public class PerfectLinks {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PerfectLinks.class);
     private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
@@ -24,6 +28,7 @@ public class PerfectLinks {
     private int seqNumber = 0;
 
     private final PrivateKey privateKey;
+    private static final int DEBUG_MODE = 1;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
@@ -34,7 +39,7 @@ public class PerfectLinks {
         systemMembership = new SystemMembership(
                 Constants.PROPERTIES_PATH);
         this.port = getPort(nodeId);
-        System.out.println("I'm on port " + this.port);
+        //System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
         this.sentMessages = new ConcurrentHashMap<>();
         this.delivered = new ConcurrentHashMap<>(); // Initialize delivered set
@@ -61,6 +66,9 @@ public class PerfectLinks {
 
     // Send a message Perfectly (keep resending)
     public void send(int destId, String message) {
+        if (DEBUG_MODE == 1) {
+            LOGGER.debug("Sending message {} to server {}", message, destId);
+        }
         String destIP = getIP(destId);
         int destPort = getPort(destId);
         // change key to have dest id and source id of a given message
@@ -105,83 +113,181 @@ public class PerfectLinks {
        
     }
 
-    // Handle received messages from FairLossLinks
-    private void onFairLossDeliver(String srcIP, int srcPort, String message) {
+    private boolean checkReceivedACK(String receivedACK) {
+        String[] parts = receivedACK.split("\\|");
 
-        String[] parts = message.split("\\|");
-        if (parts.length != 4) {
-            System.out.println("Invalid message format: " + message);
-            return;
-
+        if (parts.length != 5) {
+            LOGGER.warn("Invalid ACK format: {}", receivedACK);
+            return false;
         }
-        String messageWithId = parts[0] + "|" + parts[1] + "|" + parts[2];
 
-        String originalMsg = parts[2];
+        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2] + "|" + parts[3];
+        int receivedSrcId = Integer.parseInt(parts[1]);
+        int receivedSeqNum = Integer.parseInt(parts[2]);
+        String receivedPayload = parts[3];
+        String receivedMac = parts[4];
 
-        String receivedMac = parts[3];
+        if (DEBUG_MODE == 1) {
+            LOGGER.debug("Extracted components:");
+            LOGGER.debug("- Received srcID: {}", receivedSrcId);
+            LOGGER.debug("- Received seqNum: {}", receivedSeqNum);
+            LOGGER.debug("- Received message without MAC: {}", receivedWithoutMac);
+            LOGGER.debug("- Received Payload: {}", receivedPayload);
+            LOGGER.debug("- Received MAC: {}", receivedMac);
+        }
 
-        int senderNodeId = !parts[0].startsWith("ACK") ? Integer.parseInt(parts[0])
-                : Integer.parseInt(parts[0].substring(3));
-        String messageKey = nodeId + ":" + senderNodeId + ":" + parts[2];
-
-        PublicKey destPublicKey = this.systemMembership.getPublicKey(senderNodeId); // Not sure is nodeID
+        String receivedMessageKey = nodeId + ":" + receivedSrcId + ":" + receivedPayload;
+        PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
-            if (!CryptoUtils.verifyMAC(privateKey, destPublicKey, messageWithId, receivedMac)) {
-                System.out.println("MAC verification failed for message: " + messageWithId);
-                return;
-
+            if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
+                LOGGER.warn("MAC verification failed for message: {}", receivedWithoutMac);
+                return false;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return;
+            LOGGER.error("Exception during MAC verification", e);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean checkReceivedMessage(String receivedMessage) {
+        String[] parts = receivedMessage.split("\\|");
+
+        if (parts.length != 4) {
+            LOGGER.warn("Invalid message format: {}", receivedMessage);
+            return false;
         }
 
-         /*int lastDelivered = deliveredMessages.getOrDefault(senderNodeId, -1);
-            if (sequenceNumber <= lastDelivered) {
-                return; // Ignore duplicates or out-of-order messages
-            }*/
-        // Deliver only if the message has not been delivered before
-        if (!delivered.containsKey(messageKey)) {
-            delivered.put(messageKey, true); // Mark message as delivered
+        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
+        int receivedSrcId = Integer.parseInt(parts[0]);
+        int receivedSeqNum = Integer.parseInt(parts[1]);
+        String receivedPayload = parts[2];
+        String receivedMac = parts[3];
 
-            if (message.startsWith("ACK")) {
-                //    int ackedSeqNum = Integer.parseInt(parts[1]);
-                //sentMessages.computeIfPresent(senderNodeId, (k, v) -> v <= ackedSeqNum ? null : v);
-                String ackedMessageKey = senderNodeId + ":" + nodeId + ":" + parts[2];
-                // System.out.println("Received ACK from " + senderNodeId + " with message: " + ackedMessageKey + " with key " + messageKey);
-                stopResending(ackedMessageKey);
+        if (DEBUG_MODE == 1) {
+            LOGGER.debug("Extracted components:");
+            LOGGER.debug("- Received srcID: {}", receivedSrcId);
+            LOGGER.debug("- Received seqNum: {}", receivedSeqNum);
+            LOGGER.debug("- Received message without MAC: {}", receivedWithoutMac);
+            LOGGER.debug("- Received Payload: {}", receivedPayload);
+            LOGGER.debug("- Received MAC: {}", receivedMac);
+        }
+
+        String receivedMessageKey = nodeId + ":" + receivedSrcId + ":" + receivedPayload;
+        PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
+
+        try {
+            if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
+                LOGGER.warn("MAC verification failed for message: {}", receivedWithoutMac);
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Exception during MAC verification", e);
+            return false;
+        }
+        return true;
+    }
+
+    private void sendACK(String destIP, int destPort, PublicKey destPublicKey, String payload) {
+        try {
+            seqNumber++;
+            String ackMessage = "ACK|" + nodeId + "|" + seqNumber + "|" + payload;
+            String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
+            fairLossLinks.send(destIP, destPort, ackMessage + "|" + ackMAC);
+
+            if (DEBUG_MODE == 1) {
+                LOGGER.debug("Sent ACK message: {}", ackMessage);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Exception while sending ACK", e);
+        }
+    }
+
+    private void deliverMessage(int srcId, String message, String bigMessage) {
+        String messageType = getMessageType(message);
+        if (DEBUG_MODE == 1) {
+            LOGGER.debug("Message type identified: {}", messageType);
+        }
+
+        if (deliverCallbackCollect != null || deliverCallback != null) {
+
+            if (messageType.equals("append-request") ||
+                    messageType.equals("append-response") ||
+                    messageType.equals("READ") ||
+                    messageType.equals("WRITE") ||
+                    messageType.equals("ACCEPT")) {
+                deliverCallback.deliver(srcId, message);
+            } else {
+                deliverCallbackCollect.deliver(srcId, message);
+            }
+        }
+    }
+
+    private void onFairLossDeliver(String srcIP, int srcPort, String receivedMessage) {
+        if (receivedMessage.startsWith("ACK")) {
+            if (DEBUG_MODE == 1) {
+                LOGGER.debug("Received ACK: {}", receivedMessage);
+                LOGGER.debug("Received ACK: ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+            }
+
+            if (checkReceivedACK(receivedMessage)){
+                String[] parts = receivedMessage.split("\\|");
+
+                int receivedSrcId = Integer.parseInt(parts[1]);
+                String receivedPayload = parts[3];
+
+                // TODO can this messageKey be repeated? i think it can
+                String correspondingMessageKey = receivedSrcId + ":" + nodeId + ":" + receivedPayload;
+
+                LOGGER.debug("Stopping to resend: {}", correspondingMessageKey);
+                stopResending(correspondingMessageKey);
                 return;
             }
-
-            // Send ACK back to the sender via a single message using fairloss
-            try {
-                seqNumber++;
-                String ackMessage = "ACK" + nodeId + "|" + seqNumber + "|" + originalMsg;
-                String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
-                // System.out.println("Sending ACK to " + senderNodeId + " with message: " + ackMessage);
-                fairLossLinks.send(srcIP, srcPort, ackMessage + "|" + ackMAC);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-
-            if (deliverCallbackCollect != null || deliverCallback != null) {
-                //System.out.println("PerfectLinks delivering message up: " + message);
-
-                //System.out.println("Stripping message...");
-
-                if (getMessageType(originalMsg).equals("append") || getMessageType(originalMsg).equals("READ")
-                        || getMessageType(originalMsg).equals("WRITE")
-                        || getMessageType(originalMsg).equals("ACCEPT")) {
-                    deliverCallback.deliver(senderNodeId, message);
-                } else {
-                    deliverCallbackCollect.deliver(senderNodeId, originalMsg);
+            else {
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("Check of the received ACK failed. Ignoring message.");
                 }
+                return;
             }
-        }else{
-            // System.out.println("Message already delivered: " + message + "with key" + messageKey);
+        }
+        else {
+            if (DEBUG_MODE == 1) {
+                LOGGER.debug("Received message: {}", receivedMessage);
+                LOGGER.debug("Received message: <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+            }
+
+            if (checkReceivedMessage(receivedMessage)) {
+                String[] parts = receivedMessage.split("\\|");
+
+                int receivedSrcId = Integer.parseInt(parts[0]);
+                String receivedPayload = parts[2];
+
+                PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
+
+                // TODO can this messageKey be repeated? i think it can
+                String messageKey = receivedSrcId + ":" + nodeId + ":" + receivedPayload;
+
+                LOGGER.debug("Sending ACK to the following message: {}", receivedMessage);
+                sendACK(srcIP, srcPort, receivedIdPK, receivedPayload); // TODO send to the srcIP or to the src ID?
+
+                if (delivered.containsKey(messageKey)) {
+                    if (DEBUG_MODE == 1) {
+                        LOGGER.debug("Message already delivered: {} with key {}", receivedMessage, messageKey);
+                    }
+                    return;
+                }
+
+                delivered.put(messageKey, true);
+                deliverMessage(receivedSrcId, receivedPayload, receivedMessage);
+
+                return;
+            } else {
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("Check of the received message failed. Ignoring message.");
+                }
+                return;
+            }
         }
     }
 
@@ -246,12 +352,13 @@ public class PerfectLinks {
         return privateKey;
     }
 
-    private String getMessageType(String message) {
+    public String getMessageType(String message) {
         if (message.startsWith("<") && message.endsWith(">")) {
             String content = message.substring(1, message.length() - 1);
 
             String[] parts = content.split(":");
 
+            //System.out.println("will return type of message " + message + ": " + parts[0]);
             return parts[0];
         }
         return Constants.UNKNOWN;

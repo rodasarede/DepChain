@@ -153,7 +153,7 @@ public class PerfectLinks {
         Deque<Integer> senderHistory = deliveredHistory.get(senderNodeId);
 
 
-        if (!senderHistory.contains(receivedSeqNum)) {
+        if (!senderHistory.contains(receivedSeqNum) && senderHistory.stream().max(Integer::compare).orElse(-1) - WINDOW_SIZE < receivedSeqNum) {
             // delivered.put(messageKey, true); // Mark message as delivered
             if (senderHistory.size() >= WINDOW_SIZE) {
                 senderHistory.poll(); // Remove the oldest seqNumber

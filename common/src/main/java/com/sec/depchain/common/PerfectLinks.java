@@ -3,6 +3,10 @@ package com.sec.depchain.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
+import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.concurrent.*;
@@ -17,17 +21,23 @@ public class PerfectLinks {
     private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
-    private final ConcurrentHashMap<String, Boolean> sentMessages; ///TODO not a good practice // guardar mensagens infinitamente -> mudar para sequence number
-    private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
 
-    //private final ConcurrentHashMap<Integer, Integer> sentMessages = new ConcurrentHashMap<>();
-    //private final ConcurrentHashMap<Integer, Integer> deliveredMessages = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Deque<Integer>> waitingForACK;
+    private final ConcurrentHashMap<Integer, AtomicInteger> higestSeqNumberSent;
+    //private final ConcurrentHashMap<Integer, Map.Entry<Deque<Integer>, Integer>> deliveredHistory;
+
+    //private final ConcurrentHashMap<String, Boolean> sentMessages; ///TODO not a good practice // guardar mensagens infinitamente -> mudar para sequence number
+    //private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
+
+    private final ConcurrentHashMap<Integer, Deque<Integer>> deliveredHistory;
+    private final ConcurrentHashMap<Integer, AtomicInteger> receivedSeqNumberUntil;
+
     private static SystemMembership systemMembership;
     private final int nodeId;
     private final int port;
-    private int seqNumber = 0;
 
     private final PrivateKey privateKey;
+
     private static final int DEBUG_MODE = 1;
 
     public interface DeliverCallback {
@@ -41,13 +51,16 @@ public class PerfectLinks {
         this.port = getPort(nodeId);
         //System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
-        this.sentMessages = new ConcurrentHashMap<>();
-        this.delivered = new ConcurrentHashMap<>(); // Initialize delivered set
+
+        this.waitingForACK = new ConcurrentHashMap<>();
+        this.higestSeqNumberSent = new ConcurrentHashMap<>();
+        this.deliveredHistory = new ConcurrentHashMap<>();
+        this.receivedSeqNumberUntil = new ConcurrentHashMap<>();
+
         this.nodeId = nodeId;
 
         // Register callback to receive messages from FairLossLinks
         this.fairLossLinks.setDeliverCallback(this::onFairLossDeliver);
-
         // Start listening for messages
         this.fairLossLinks.deliver();
 
@@ -71,37 +84,34 @@ public class PerfectLinks {
         }
         String destIP = getIP(destId);
         int destPort = getPort(destId);
-        // change key to have dest id and source id of a given message
-        String messageKey = destId + ":" + nodeId + ":" + message;
-        sentMessages.put(messageKey, true); 
 
-        seqNumber++;
-        String messageWithId = nodeId + "|" + seqNumber + "|" + message;
-        // Resend indefinitely (until process crashes)
+        // Ensure entry exists
+        waitingForACK.putIfAbsent(destId, new ArrayDeque<>());
+        higestSeqNumberSent.putIfAbsent(destId, new AtomicInteger(0));
+
+        // Get references (modifications affect the actual data)
+        Deque<Integer> destWaitingForACK = waitingForACK.get(destId);
+        AtomicInteger seqNumber = higestSeqNumberSent.get(destId);
+
+        // Increment sequence number
+        int newSeqNum = seqNumber.incrementAndGet();
+        destWaitingForACK.add(newSeqNum);
+
+        String messageWithoutMac = nodeId + "|" + newSeqNum + "|" + message;
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
-        try {
-            // mac
-            String mac = CryptoUtils.generateMAC(privateKey, destPublicKey, messageWithId);
 
-            // tampering mac
-            /*
-             * 
-             * String tamperedMac = mac.substring(0, mac.length() - 1) + "b";
-             * System.out.println("original mac: " + mac);
-             * System.out.println("tampered mac: " + tamperedMac);
-             * mac = tamperedMac;
-             * 
-             */
+        try {
+            String mac = CryptoUtils.generateMAC(privateKey, destPublicKey, messageWithoutMac);
+            String authenticatedMsg = messageWithoutMac + "|" + mac;
 
             AtomicLong timeout = new AtomicLong(1000);
-            String authenticatedMsg = messageWithId + "|" + mac; // append mac
-            new Thread(() -> {
-                while (sentMessages.containsKey(messageKey)) {
-                    try {
-                        fairLossLinks.send(destIP, destPort, authenticatedMsg); // send authenticated msg
 
+            new Thread(() -> {
+                while (destWaitingForACK.contains(newSeqNum)) {
+                    try {
+                        fairLossLinks.send(destIP, destPort, authenticatedMsg);
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
-                        timeout.set((long) (1.5 * timeout.get())); // flexible
+                        timeout.set((long) (1.5 * timeout.get())); // Flexible timeout increase
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -110,33 +120,29 @@ public class PerfectLinks {
         } catch (Exception e) {
             e.printStackTrace();
         }
-       
     }
 
     private boolean checkReceivedACK(String receivedACK) {
         String[] parts = receivedACK.split("\\|");
 
-        if (parts.length != 5) {
+        if (parts.length != 4) {
             LOGGER.warn("Invalid ACK format: {}", receivedACK);
             return false;
         }
 
-        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2] + "|" + parts[3];
+        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
         int receivedSrcId = Integer.parseInt(parts[1]);
         int receivedSeqNum = Integer.parseInt(parts[2]);
-        String receivedPayload = parts[3];
-        String receivedMac = parts[4];
+        String receivedMac = parts[3];
 
         if (DEBUG_MODE == 1) {
             LOGGER.debug("Extracted components:");
             LOGGER.debug("- Received srcID: {}", receivedSrcId);
             LOGGER.debug("- Received seqNum: {}", receivedSeqNum);
             LOGGER.debug("- Received message without MAC: {}", receivedWithoutMac);
-            LOGGER.debug("- Received Payload: {}", receivedPayload);
             LOGGER.debug("- Received MAC: {}", receivedMac);
         }
 
-        String receivedMessageKey = nodeId + ":" + receivedSrcId + ":" + receivedPayload;
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
@@ -174,7 +180,6 @@ public class PerfectLinks {
             LOGGER.debug("- Received MAC: {}", receivedMac);
         }
 
-        String receivedMessageKey = nodeId + ":" + receivedSrcId + ":" + receivedPayload;
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
@@ -189,22 +194,27 @@ public class PerfectLinks {
         return true;
     }
 
-    private void sendACK(String destIP, int destPort, PublicKey destPublicKey, String payload) {
+    private void sendACK(int destId, int seqNumber) {
         try {
-            seqNumber++;
-            String ackMessage = "ACK|" + nodeId + "|" + seqNumber + "|" + payload;
-            String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessage);
-            fairLossLinks.send(destIP, destPort, ackMessage + "|" + ackMAC);
+            String ackMessageWithoutMAC = "ACK|" + nodeId + "|" + seqNumber;
+
+            PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
+            String ackMAC = CryptoUtils.generateMAC(privateKey, destPublicKey, ackMessageWithoutMAC);
+
+            String destIP = getIP(destId);
+            int destPort = getPort(destId);
+
+            fairLossLinks.send(destIP, destPort, ackMessageWithoutMAC + "|" + ackMAC);
 
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("Sent ACK message: {}", ackMessage);
+                LOGGER.debug("Sent ACK message: {}", ackMessageWithoutMAC);
             }
         } catch (Exception e) {
             LOGGER.error("Exception while sending ACK", e);
         }
     }
 
-    private void deliverMessage(int srcId, String message, String bigMessage) {
+    private void deliverMessage(int srcId, String message) {
         String messageType = getMessageType(message);
         if (DEBUG_MODE == 1) {
             LOGGER.debug("Message type identified: {}", messageType);
@@ -231,27 +241,25 @@ public class PerfectLinks {
                 LOGGER.debug("Received ACK: ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
             }
 
-            if (checkReceivedACK(receivedMessage)){
+            if (checkReceivedACK(receivedMessage)) {
                 String[] parts = receivedMessage.split("\\|");
 
-                int receivedSrcId = Integer.parseInt(parts[1]);
-                String receivedPayload = parts[3];
+                int srcId = Integer.parseInt(parts[1]);
+                int seqNumber = Integer.parseInt(parts[2]);
 
-                // TODO can this messageKey be repeated? i think it can
-                String correspondingMessageKey = receivedSrcId + ":" + nodeId + ":" + receivedPayload;
-
-                LOGGER.debug("Stopping to resend: {}", correspondingMessageKey);
-                stopResending(correspondingMessageKey);
+                Deque<Integer> srcWaitingForACK = waitingForACK.get(srcId);
+                srcWaitingForACK.remove(seqNumber);
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("Stopping to resend the message with seq num: {}", seqNumber);
+                }
                 return;
-            }
-            else {
+            } else {
                 if (DEBUG_MODE == 1) {
                     LOGGER.debug("Check of the received ACK failed. Ignoring message.");
                 }
                 return;
             }
-        }
-        else {
+        } else {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("Received message: {}", receivedMessage);
                 LOGGER.debug("Received message: <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
@@ -260,33 +268,42 @@ public class PerfectLinks {
             if (checkReceivedMessage(receivedMessage)) {
                 String[] parts = receivedMessage.split("\\|");
 
-                int receivedSrcId = Integer.parseInt(parts[0]);
-                String receivedPayload = parts[2];
+                int srcId = Integer.parseInt(parts[0]);
+                int seqNumber = Integer.parseInt(parts[1]);
+                String payload = parts[2];
 
-                PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("Sending ACK to the following message: {}", receivedMessage);
+                    sendACK(srcId, seqNumber);
 
-                // TODO can this messageKey be repeated? i think it can
-                String messageKey = receivedSrcId + ":" + nodeId + ":" + receivedPayload;
+                    deliveredHistory.putIfAbsent(srcId, new ArrayDeque<>());
+                    receivedSeqNumberUntil.putIfAbsent(srcId, new AtomicInteger(0));
 
-                LOGGER.debug("Sending ACK to the following message: {}", receivedMessage);
-                sendACK(srcIP, srcPort, receivedIdPK, receivedPayload); // TODO send to the srcIP or to the src ID?
+                    if (deliveredHistory.get(srcId).contains(seqNumber) || receivedSeqNumberUntil.get(srcId).get() < seqNumber) {
+                        if (DEBUG_MODE == 1) {
+                            LOGGER.debug("Message already delivered: {}", receivedMessage);
+                        }
+                        return;
+                    }
 
-                if (delivered.containsKey(messageKey)) {
+                    if (seqNumber == receivedSeqNumberUntil.get(srcId).get() + 1) {
+                        receivedSeqNumberUntil.get(srcId).incrementAndGet();
+                        while (deliveredHistory.get(srcId).contains(receivedSeqNumberUntil.get(srcId).get() + 1)) {
+                            deliveredHistory.get(srcId).remove(receivedSeqNumberUntil.get(srcId).get() + 1);
+                            receivedSeqNumberUntil.get(srcId).incrementAndGet();
+                        }
+                    } else {
+                        deliveredHistory.get(srcId).add(seqNumber);
+                    }
+
+                    deliverMessage(srcId, payload);
+                    return;
+                } else {
                     if (DEBUG_MODE == 1) {
-                        LOGGER.debug("Message already delivered: {} with key {}", receivedMessage, messageKey);
+                        LOGGER.debug("Check of the received message failed. Ignoring message.");
                     }
                     return;
                 }
-
-                delivered.put(messageKey, true);
-                deliverMessage(receivedSrcId, receivedPayload, receivedMessage);
-
-                return;
-            } else {
-                if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Check of the received message failed. Ignoring message.");
-                }
-                return;
             }
         }
     }
@@ -308,15 +325,15 @@ public class PerfectLinks {
 
     // Stop resending a message (if needed)
     public void stopResending(String messageKey) {
-        sentMessages.remove(messageKey);
+        //sentMessages.remove(messageKey);
     }
 
     // debug
     public void printSentMessages() {
         System.out.println("Sent Messages: ");
-        for (String key : sentMessages.keySet()) {
+        /*for (String key : sentMessages.keySet()) {
             System.out.println(key);
-        }
+        }*/
     }
 
     public static String[] getMessageElements(String message) {

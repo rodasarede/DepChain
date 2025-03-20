@@ -274,36 +274,36 @@ public class PerfectLinks {
 
                 if (DEBUG_MODE == 1) {
                     LOGGER.debug("Sending ACK to the following message: {}", receivedMessage);
-                    sendACK(srcId, seqNumber);
+                }
+                sendACK(srcId, seqNumber);
 
-                    deliveredHistory.putIfAbsent(srcId, new ArrayDeque<>());
-                    receivedSeqNumberUntil.putIfAbsent(srcId, new AtomicInteger(0));
+                deliveredHistory.putIfAbsent(srcId, new ArrayDeque<>());
+                receivedSeqNumberUntil.putIfAbsent(srcId, new AtomicInteger(0));
 
-                    if (deliveredHistory.get(srcId).contains(seqNumber) || receivedSeqNumberUntil.get(srcId).get() < seqNumber) {
-                        if (DEBUG_MODE == 1) {
-                            LOGGER.debug("Message already delivered: {}", receivedMessage);
-                        }
-                        return;
-                    }
-
-                    if (seqNumber == receivedSeqNumberUntil.get(srcId).get() + 1) {
-                        receivedSeqNumberUntil.get(srcId).incrementAndGet();
-                        while (deliveredHistory.get(srcId).contains(receivedSeqNumberUntil.get(srcId).get() + 1)) {
-                            deliveredHistory.get(srcId).remove(receivedSeqNumberUntil.get(srcId).get() + 1);
-                            receivedSeqNumberUntil.get(srcId).incrementAndGet();
-                        }
-                    } else {
-                        deliveredHistory.get(srcId).add(seqNumber);
-                    }
-
-                    deliverMessage(srcId, payload);
-                    return;
-                } else {
+                if (deliveredHistory.get(srcId).contains(seqNumber) || seqNumber < receivedSeqNumberUntil.get(srcId).get()) {
                     if (DEBUG_MODE == 1) {
-                        LOGGER.debug("Check of the received message failed. Ignoring message.");
+                        LOGGER.debug("Message already delivered: {}", receivedMessage);
                     }
                     return;
                 }
+
+                if (seqNumber == receivedSeqNumberUntil.get(srcId).get() + 1) {
+                    receivedSeqNumberUntil.get(srcId).incrementAndGet();
+                    while (deliveredHistory.get(srcId).contains(receivedSeqNumberUntil.get(srcId).get() + 1)) {
+                        deliveredHistory.get(srcId).remove(receivedSeqNumberUntil.get(srcId).get() + 1);
+                        receivedSeqNumberUntil.get(srcId).incrementAndGet();
+                    }
+                } else {
+                    deliveredHistory.get(srcId).add(seqNumber);
+                }
+
+                deliverMessage(srcId, payload);
+                return;
+            } else {
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("Check of the received message failed. Ignoring message.");
+                }
+                return;
             }
         }
     }

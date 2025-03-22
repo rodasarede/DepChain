@@ -380,5 +380,8 @@ public class PerfectLinks {
         }
         return Constants.UNKNOWN;
     }
+    public void close() {
+        fairLossLinks.close();
+    }
 
 }

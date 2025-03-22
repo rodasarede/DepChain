@@ -2,10 +2,16 @@ package com.sec.depchain.common;
 
 import java.net.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FairLossLinks {
     private DatagramSocket socket;
     private int port;
     private DeliverCallback deliverCallback;
+    private volatile boolean running = true;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FairLossLinks.class);
+
 
     // Interface funcional para definir a callback
     public interface DeliverCallback {
@@ -36,21 +42,33 @@ public class FairLossLinks {
             try {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-                while (true) {
+    
+                while (running) {  // Only run while true
                     socket.receive(packet);
                     String message = new String(packet.getData(), 0, packet.getLength());
                     String srcIP = packet.getAddress().getHostAddress();
                     int srcPort = packet.getPort();
-
-                    // Se a callback foi definida, chamá-la
+    
                     if (deliverCallback != null) {
                         deliverCallback.deliverReceivedMessage(srcIP, srcPort, message);
                     }
+                }
+            } catch (SocketException e) {
+                if (running) {
+                    e.printStackTrace();  // Only print if not shutting down
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }).start();
+    }
+    public void close(){
+        LOGGER.info("Shutting down FairLossLinks...");
+        running = false;
+        if(socket != null && !socket.isClosed())
+        {
+            socket.close();
+            System.out.println("[INFO] FairLossLinks socket closed.");
+        }
     }
 }

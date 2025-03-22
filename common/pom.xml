@@ -19,7 +19,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.2.0</version>
+            <version>5.9.2</version>
             <scope>test</scope>
         </dependency>
         
@@ -35,9 +35,16 @@
         <dependency>
 	<groupId>org.junit.jupiter</groupId>
 	<artifactId>junit-jupiter-params</artifactId>
-	<version>5.2.0</version>
+	<version>5.9.0</version>
 	<scope>test</scope>
 </dependency>
+ <!-- JUnit 5 API -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.9.2</version> <!-- Make sure it's a recent version -->
+        <scope>test</scope>
+    </dependency>
     </dependencies>
 
     <build>

@@ -4,6 +4,7 @@ import static org.mockito.Mockito.*;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import com.sec.depchain.common.SystemMembership;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BlockChainMemberTest {
     private PerfectLinks perfectLinks;
     private SystemMembership systemMembership;
@@ -23,9 +25,11 @@ public class BlockChainMemberTest {
     private BlockchainMember blockchainMember;
     private final static int SENDER_ID = 1;
     
-    @BeforeEach
+    @BeforeAll
     void setUp() throws Exception
     {
+        System.setProperty("sun.net.client.defaultConnectTimeout", "2000");
+        System.setProperty("sun.net.client.defaultReadTimeout", "2000");
         systemMembership = Mockito.mock(SystemMembership.class);
         when(systemMembership.getNumberOfNodes()).thenReturn(4);
         when(systemMembership.getMaximumNumberOfByzantineNodes()).thenReturn(1);
@@ -42,7 +46,7 @@ public class BlockChainMemberTest {
         //BlockchainMember.clientTransactions = new HashMap<>();
 
     }
-    @AfterEach
+    @AfterAll
 void tearDown() throws Exception {
     if (blockchainMember != null) {
         blockchainMember.cleanup(); // Add a cleanup method in BlockchainMember to release resources

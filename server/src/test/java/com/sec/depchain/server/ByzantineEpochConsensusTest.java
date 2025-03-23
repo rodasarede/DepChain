@@ -11,14 +11,19 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ByzantineEpochConsensusTest {
     private static int LEADER_ID = 1;
     private SystemMembership systemMembership;
@@ -26,8 +31,10 @@ public class ByzantineEpochConsensusTest {
     private ByzantineEpochConsensus bep;
     private BlockchainMember[] nodes;
     private static int N_NODES = 4;
-    @BeforeEach
+    @BeforeAll
     void setup() throws Exception{
+        System.setProperty("sun.net.client.defaultConnectTimeout", "2000");
+        System.setProperty("sun.net.client.defaultReadTimeout", "2000");
         systemMembership = Mockito.mock(SystemMembership.class);
         when(systemMembership.getNumberOfNodes()).thenReturn(N_NODES);
         when(systemMembership.getLeaderId()).thenReturn(LEADER_ID);
@@ -36,10 +43,12 @@ public class ByzantineEpochConsensusTest {
         nodes = new BlockchainMember[N_NODES];
         for (int i = 0; i < N_NODES; i++) {
             nodes[i] = new BlockchainMember(i + 1);
-            nodes[i].setPerfectLinks(perfectLinks); // Use the same PerfectLinks mock for all nodes
+            nodes[i].setPerfectLinks(perfectLinks); // Use the same PerfectLinks mock for all nodes 
+            nodes[i].start();
         }
     }
-    @AfterEach
+@AfterAll
+
     void tearDown() throws Exception {
         for(int i=0 ; i < N_NODES; i++)
         {
@@ -70,6 +79,38 @@ void onlyLeaderSendsReadMessages() throws Exception {
             verify(perfectLinks, never()).send(anyInt(), anyString());
         }
     }
+}
+@Test
+public void testDeliverRead_LeaderMessage_TriggersCollector() throws Exception {
+    // Arrange
+
+    ConditionalCollect cc = Mockito.mock(ConditionalCollect.class);
+    int senderId = LEADER_ID; // Sender is the leader
+    String message =  "<READ:0:" + senderId + ">";
+    // Act
+    nodes[2].getBep().setCc(cc);
+
+    nodes[2].onPerfectLinksDeliver(senderId, message);
+    // Assert
+    verify(cc).onInit(); // Verify that onInit() is called
+    verify(cc).input(anyString()); // Verify that input() is called with any string
+}
+
+@Test
+public void testDeliverRead_NonLeaderMessage_DoesNotTriggerCollector() throws Exception {
+    // Arrange
+    
+    int senderId = 2; // Sender is not the leader
+    String message =  "<READ:0:" + senderId + ">";
+
+    ConditionalCollect cc = Mockito.mock(ConditionalCollect.class);
+    // Act
+    nodes[2].getBep().setCc(cc);
+
+    nodes[2].onPerfectLinksDeliver(senderId, message);
+    // Assert
+    verify(cc, never()).onInit(); // Verify that onInit() is never called
+    verify(cc, never()).input(anyString()); // Verify that input() is never called
 }
 }
      

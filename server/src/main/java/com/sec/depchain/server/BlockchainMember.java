@@ -35,7 +35,6 @@ public class BlockchainMember {
         systemMembership = new SystemMembership(Constants.PROPERTIES_PATH);
         BlockchainMember node = new BlockchainMember(nodeId);
         node.start();
-        
     }
     public BlockchainMember(int id) throws Exception{
         this.id = id;
@@ -157,7 +156,6 @@ public class BlockchainMember {
         return perfectLinks;
     }
     public void cleanup(){
-        perfectLinks.close();
-
+        this.perfectLinks.close();
     }
 }

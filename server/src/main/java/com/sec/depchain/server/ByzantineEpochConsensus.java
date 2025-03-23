@@ -408,4 +408,8 @@ public class ByzantineEpochConsensus {
         return new TSvaluePair(entryTs, entryVal);
     }
 
+    public void setCc(ConditionalCollect cc) {
+        this.cc = cc;
+    }
+
 }

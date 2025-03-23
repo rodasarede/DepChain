@@ -35,9 +35,11 @@ public class ByzantineEpochConsensus {
     private boolean writeQuorumReached = false;
     private boolean acceptQuorumReached = false;
     private static final int DEBUG_MODE = 1;
+    private BlockchainMember blockchainMember;
+
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
-                                   int nodeId) throws Exception {
+                                   int nodeId, BlockchainMember blockchainMember) throws Exception {
         this.leaderId = leaderId;
         this.ets = ets;
         this.perfectLinks = perfectLinks;
@@ -48,6 +50,7 @@ public class ByzantineEpochConsensus {
         this.cc.setDeliverCallback(this::onCollectedDelivery);
         this.nodeId = nodeId;
 
+        this.blockchainMember = blockchainMember;
         if (DEBUG_MODE == 1) {
             System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
         }
@@ -244,7 +247,7 @@ public class ByzantineEpochConsensus {
             accepted = new String[N]; // clear accepted
             acceptQuorumReached = true;
             position++;
-            BlockchainMember.decide(v);
+            blockchainMember.decide(v);
 
         }else{
             if (quorumAcceptTimer != null) {

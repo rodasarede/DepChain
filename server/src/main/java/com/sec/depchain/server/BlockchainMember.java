@@ -17,13 +17,13 @@ import com.sec.depchain.common.PerfectLinks;
  */
 public class BlockchainMember {
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockchainMember.class);
-    private static int id;
-    private static boolean isLeader = false; // Should start as false
+    private int id;
+    private boolean isLeader = false; // Should start as false
     private static SystemMembership systemMembership;
-    private static List<String> blockchain = new ArrayList<>();
-    private static PerfectLinks perfectLinks;
-    private static ByzantineEpochConsensus bep;
-    private static Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
+    private List<String> blockchain = new ArrayList<>();
+    private PerfectLinks perfectLinks;
+    private ByzantineEpochConsensus bep;
+    private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
     private static final int DEBUG_MODE = 1; // Set to 1 to enable debug messages
 
     public static void main(String[] args) throws Exception {
@@ -31,11 +31,20 @@ public class BlockchainMember {
             LOGGER.error("Usage: <id>");
             return;
         }
-        id = Integer.parseInt(args[0]);
+        int nodeId = Integer.parseInt(args[0]);
         systemMembership = new SystemMembership(Constants.PROPERTIES_PATH);
-        isLeader = (id == systemMembership.getLeaderId());
+        BlockchainMember node = new BlockchainMember(nodeId);
+        node.start();
+        
+    }
+    public BlockchainMember(int id) throws Exception{
+        this.id = id;
+        this.isLeader = (id == systemMembership.getLeaderId());
+        if (DEBUG_MODE == 1) {
+            LOGGER.debug("Initialized with ID {}, Leader: {}", id, isLeader);
+        }
+        this.perfectLinks = new PerfectLinks(id);
 
-        perfectLinks = new PerfectLinks(id);
         perfectLinks.setDeliverCallbackCollect((nodeId, message) -> {
             try {
                 onPerfectLinksDeliver(nodeId, message);
@@ -50,19 +59,14 @@ public class BlockchainMember {
                 LOGGER.error("Exception in deliverCallback", e);
             }
         });
-
-        bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id);
-    
-        setBep(bep);
-
-        if (DEBUG_MODE == 1) {
-            LOGGER.debug("Initialized with ID {}, Leader: {}", id, isLeader);
-        }
-
+        
+        this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+    }
+    public void start() throws Exception{
         bep.init();
     }
-
-    private static void onPerfectLinksDeliver(int senderId, String message) throws Exception {
+    //TODO mudei para public
+    public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
         if (DEBUG_MODE == 1) {
             LOGGER.debug("Received message from {} -> {}", senderId, message);
         }
@@ -75,6 +79,9 @@ public class BlockchainMember {
             case "append-request":
                 String transaction = elements[1];
                 clientTransactions.put(senderId, transaction);
+                if (DEBUG_MODE == 1) {
+                    LOGGER.debug("append: bep.propose(senderId:{}, value:{})", senderId, elements[1]);
+                }
                 bep.propose(transaction);
                 break;
             case "READ":
@@ -100,7 +107,7 @@ public class BlockchainMember {
         }
     }
 
-    public static void decide(String val) {
+    public void decide(String val) {
         blockchain.add(val);
         int index = blockchain.size();
         LOGGER.info("Transaction {} committed at index {}.", val, index);
@@ -121,17 +128,36 @@ public class BlockchainMember {
         bep.init();
     }
 
-    public static boolean isLeader() {
+    public boolean isLeader() {
         return isLeader;
     }
 
-    public static void setBep(ByzantineEpochConsensus bep) {
-        BlockchainMember.bep = bep;
+    public void setBep(ByzantineEpochConsensus bep) {
+        this.bep = bep;
     }
-    public static List<String> getBlockchain() {
+    public List<String> getBlockchain() {
         return blockchain;
     }
-    public static Map<Integer, String> getClientTransactions() {
+    public Map<Integer, String> getClientTransactions() {
         return clientTransactions;
+    }
+    public int getId() {
+        return id;
+    }
+    public ByzantineEpochConsensus getBep() {
+        return bep;
+    }
+    public void setPerfectLinks(PerfectLinks perfectLinks) {
+        this.perfectLinks = perfectLinks;
+    }
+    public static void setSystemMembership(SystemMembership membership) {
+        systemMembership = membership;
+    }
+    public PerfectLinks getPerfectLinks() {
+        return perfectLinks;
+    }
+    public void cleanup(){
+        perfectLinks.close();
+
     }
 }

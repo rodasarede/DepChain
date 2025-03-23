@@ -16,7 +16,6 @@ import com.sec.depchain.common.SystemMembership;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BlockChainMemberTest {
     private PerfectLinks perfectLinks;
     private SystemMembership systemMembership;
@@ -25,12 +24,15 @@ public class BlockChainMemberTest {
     private final static int SENDER_ID = 1;
     
     @BeforeEach
-    void setUp()
+    void setUp() throws Exception
     {
-        blockchainMember = new BlockchainMember();
         systemMembership = Mockito.mock(SystemMembership.class);
         when(systemMembership.getNumberOfNodes()).thenReturn(4);
         when(systemMembership.getMaximumNumberOfByzantineNodes()).thenReturn(1);
+        when(systemMembership.getLeaderId()).thenReturn(SENDER_ID);
+        BlockchainMember.setSystemMembership(systemMembership);
+
+        blockchainMember = new BlockchainMember(SENDER_ID);
 
         perfectLinks = Mockito.mock(PerfectLinks.class);
         bep = Mockito.mock(ByzantineEpochConsensus.class);
@@ -40,6 +42,12 @@ public class BlockChainMemberTest {
         //BlockchainMember.clientTransactions = new HashMap<>();
 
     }
+    @AfterEach
+void tearDown() throws Exception {
+    if (blockchainMember != null) {
+        blockchainMember.cleanup(); // Add a cleanup method in BlockchainMember to release resources
+    }
+}
 
     //Test if its deciding its ok for a lot of decided transactions
     @Test
@@ -57,7 +65,7 @@ public void testHighLoadTransactions() throws Exception {
 private void invokeOnPerfectLinksDeliver(int senderId, String message) throws Exception {
     Method method = BlockchainMember.class.getDeclaredMethod("onPerfectLinksDeliver", int.class, String.class);
     method.setAccessible(true);
-    method.invoke(null, senderId, message);  // Call the static method
+    method.invoke(blockchainMember, senderId, message);  // Call the static method
 }
 
 @Test

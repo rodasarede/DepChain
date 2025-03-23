@@ -52,6 +52,7 @@ public class BlockchainMember {
         });
 
         bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id);
+    
         setBep(bep);
 
         if (DEBUG_MODE == 1) {
@@ -126,5 +127,11 @@ public class BlockchainMember {
 
     public static void setBep(ByzantineEpochConsensus bep) {
         BlockchainMember.bep = bep;
+    }
+    public static List<String> getBlockchain() {
+        return blockchain;
+    }
+    public static Map<Integer, String> getClientTransactions() {
+        return clientTransactions;
     }
 }

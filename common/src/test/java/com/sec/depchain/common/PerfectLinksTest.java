@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.KeyPair;
@@ -25,11 +27,18 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import com.sec.depchain.common.FairLossLinks.DeliverCallback;
 import com.sec.depchain.common.util.Constants;
@@ -42,29 +51,24 @@ public class PerfectLinksTest{
     private FairLossLinks mockFairLossLinksSender;
     private FairLossLinks mockFairLossLinksReceiver;
     private FairLossLinks fairLossLinks;
-    private SystemMembership systemMembership;
-
+    private PrivateKey privateKeySender;
+    private PublicKey publicKeyRec;
     private int nodeId = 1 ;
     private int destId = 2;
-
 
     @BeforeEach
     public void setUp() throws Exception{
 
-       systemMembership = mock(SystemMembership.class);
-       when(systemMembership.getMembershipList()).thenReturn(new HashMap<>());
+        MockitoAnnotations.openMocks(this).close(); 
 
-
-        Field field = PerfectLinks.class.getDeclaredField("systemMembership");
-        field.setAccessible(true);
-        field.set(null, systemMembership);  // Set the static field
         mockFairLossLinksSender = mock(FairLossLinks.class);
         mockFairLossLinksReceiver = mock(FairLossLinks.class);
 
 
-        sender = new PerfectLinks(nodeId, systemMembership, mockFairLossLinksSender);
-        receiver = new PerfectLinks(destId, systemMembership, mockFairLossLinksReceiver);
-
+        sender = new PerfectLinks(nodeId, mockFairLossLinksSender);
+        receiver = new PerfectLinks(destId, mockFairLossLinksReceiver);
+        publicKeyRec = receiver.getPublicKey(2);
+        privateKeySender = sender.getPrivateKey();
         sender.setDeliverCallback((srcId, message) -> {});
         receiver.setDeliverCallback((srcId, message) -> {});
 
@@ -72,12 +76,6 @@ public class PerfectLinksTest{
     @Test
     void testSendMessageSucc() throws Exception{
         DeliverCallback callback = mock(DeliverCallback.class);
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-            keyGen.initialize(256); 
-            KeyPair keyPair = keyGen.generateKeyPair();
-            PublicKey ecPublicKey = keyPair.getPublic();
-
-            when(systemMembership.getPublicKey(anyInt())).thenReturn(ecPublicKey);
 
         sender.send(2, "Hello node 2");
 
@@ -88,12 +86,6 @@ public class PerfectLinksTest{
     public void testMessageRetransmission() throws Exception {
         // Send a message and simulate no ACK being received
 
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-            keyGen.initialize(256); 
-            KeyPair keyPair = keyGen.generateKeyPair();
-            PublicKey ecPublicKey = keyPair.getPublic();
-
-            when(systemMembership.getPublicKey(anyInt())).thenReturn(ecPublicKey);
         sender.send(destId, "testMessage");
 
         // Wait for retransmission to occur
@@ -102,101 +94,94 @@ public class PerfectLinksTest{
         // Verify that the message was retransmitted
         verify(mockFairLossLinksSender, atLeast(2)).send(anyString(), anyInt(), anyString());
     }
-   /*  @Test
-    public void testOutOfOrder() throws Exception{
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-        keyGen.initialize(256); 
-        KeyPair keyPair = keyGen.generateKeyPair();
-        PublicKey ecPublicKey = keyPair.getPublic();
+    //TODO
+  /*   @Test
+public void testOutOfOrderMessages() throws Exception {
+    // Simulate out-of-order messages
+    String msg1 = "Message 1";
+    String msg2 = "Message 2";
 
-        when(systemMembership.getPublicKey(anyInt())).thenReturn(ecPublicKey);
+    // Generate MACs for the messages
+    String mac1 = CryptoUtils.generateMAC(privateKeySender, publicKeyRec, "1|1|" + msg1);
+    String mac2 = CryptoUtils.generateMAC(privateKeySender, publicKeyRec, "1|2|" + msg2);
+    // Set the deliverCallback to a mock object
+    PerfectLinks.DeliverCallback mockDeliverCallbackCollect = mock(PerfectLinks.DeliverCallback.class);
+    receiver.setDeliverCallback(mockDeliverCallbackCollect);
 
-        sender.send(destId, "Msg 1");
-        sender.send(destId, "Msg 2");
-        sender.send(destId, "Msg 3");
-
-        Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
-            "onFairLossDeliver", String.class, int.class, String.class
-        );
-        onFairLossDeliver.setAccessible(true); // Allow access to the private method
-        // Simulate receiving messages out of order
-        onFairLossDeliver.invoke(receiver,"127.0.0.1", 6000, "2|2|Message 2|validMAC");
-        onFairLossDeliver.invoke(receiver,"127.0.0.1", 6000, "1|1|Message 1|validMAC");
-        onFairLossDeliver.invoke(receiver,"127.0.0.1", 6000, "3|3|Message 3|validMAC");
-
-        assertTrue(true);
-    }*/
-    //TODO java.security.InvalidKeyException: Key must be a PublicKey with algorithm EC
-    /*@Test
-    void testDuplicateMessage() throws Exception {
-        // Arrange
-        String duplicateMessage = "1|1|Test Message|validMAC";
-    
-        // Mock the static verifyMac method in CryptoUtils to always return true
-        try (MockedStatic<CryptoUtils> mockedCryptoUtils = Mockito.mockStatic(CryptoUtils.class)) {
-            mockedCryptoUtils.when(() -> CryptoUtils.ver(anyString())).thenReturn(true);
-    
-            // Access the private method via reflection
-            Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
-                "onFairLossDeliver", String.class, int.class, String.class
-            );
-            onFairLossDeliver.setAccessible(true);
-    
-            // Act
-            // First delivery (should process the message)
-            onFairLossDeliver.invoke(sender, "127.0.0.1", 6000, duplicateMessage);
-    
-            // Second delivery (should ignore the duplicate message)
-            onFairLossDeliver.invoke(sender, "127.0.0.1", 6000, duplicateMessage);
-    
-            // Assert
-            // Verify that the message was processed only once
-            verify(mockFairLossLinksSender, times(1)).send(anyString(), anyInt(), anyString());
-        }
-    }*/
-/*@Test //TODO java.security.InvalidKeyException: Key must be a PublicKey with algorithm EC
-void testTamperedMAC() throws Exception {
-    // Simulate receiving a message with a tampered MAC
-    String tamperedMessage = "1|1|Test Message|tamperedMAC";
-
-    // Use reflection to access the private method
     Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
         "onFairLossDeliver", String.class, int.class, String.class
     );
-    onFairLossDeliver.setAccessible(true); // Allow access to the private method
+    onFairLossDeliver.setAccessible(true); // Make the private method accessible
 
-    // Create an instance of PerfectLinks
+    // Deliver messages out of order
+    onFairLossDeliver.invoke(receiver, "127.0.0.1", 6001, "1|2|" + msg2 + "|" + mac2); // Message 2 first
+    onFairLossDeliver.invoke(receiver, "127.0.0.1", 6001, "1|1|" + msg1 + "|" + mac1); // Message 1 second
 
-    // Deliver the tampered message
-    onFairLossDeliver.invoke(sender, "127.0.0.1", 6000, tamperedMessage);
 
-    // Verify that the message was ignored (no ACK sent)
-    verify(mockFairLossLinksSender, never()).send(anyString(), anyInt(), anyString());
+    // Verify that messages are delivered in the correct order
+    InOrder inOrder = inOrder(mockDeliverCallbackCollect);
+    inOrder.verify(mockDeliverCallbackCollect).deliver(1, msg1); // Message 1 first
+    inOrder.verify(mockDeliverCallbackCollect).deliver(1, msg2); // Message 2 second
 }*/
-//TODO java.security.InvalidKeyException: Key must be a PublicKey with algorithm EC
+/* TODO erro
+
+@Test
+public void testDuplicateMessages() throws Exception {
+    // Simulate a valid message
+    String mac = CryptoUtils.generateMAC(privateKeySender, publicKeyRec, "1|1|Message 1");
+    Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
+        "onFairLossDeliver", String.class, int.class, String.class
+    );
+    onFairLossDeliver.setAccessible(true); // Make the private method accessible
+    // Deliver the same message twice
+    onFairLossDeliver.invoke(receiver, "127.0.0.1", 5011, "1|1|" + "Message 1" + "|" + mac); // Message 1 
+    onFairLossDeliver.invoke(receiver, "127.0.0.1", 5001, "1|1|" + "Message 1" + "|" + mac); // Message 1 second
+
+    // Verify that the message is delivered only once
+    verify(receiver.getDeliverCallback(), times(1)).deliver(1, "Message 1");
+} */
+
 /*@Test
-    public void testInvalidMAC() throws Exception{
-        Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
-            "onFairLossDeliver", String.class, int.class, String.class
-        );
-        onFairLossDeliver.setAccessible(true); // Allow access to the private method
-        // Simulate receiving a message with an invalid MAC
-        onFairLossDeliver.invoke(receiver,"127.0.0.1", 6000, "1|1|Invalid Message|invalidMAC");
+public void testInvalidMAC() throws Exception {
+    // Simulate a message with an invalid MAC
+    String invalidMAC = "invalid-mac";
+    Method onFairLossDeliver = PerfectLinks.class.getDeclaredMethod(
+        "onFairLossDeliver", String.class, int.class, String.class
+    );
+    // Deliver the message with an invalid MAC
+    onFairLossDeliver.setAccessible(true); // Make the private method accessible
+    // Deliver the same message twice
+    onFairLossDeliver.invoke(receiver, "127.0.0.1", 5011, "1|1|" + "Message 1" + "|" + invalidMAC); // Message 1 
+    // Verify that the message is not delivered
+    verify(receiver.getDeliverCallback(), never()).deliver(anyInt(), anyString());
+}*/
+/*@Test
+public void testTamperedMAC() throws Exception {
+    // Simulate a valid message
+    String validMAC = CryptoUtils.generateMAC(privateKeySender, publicKeyRec, "1|1|Message 1");
 
-        // Verify that the message was ignored
-        verify(mockFairLossLinksReceiver, never()).send(anyString(), anyInt(), anyString());
-    }*/
+    // Tamper with the MAC
+    String tamperedMAC = validMAC.substring(0, validMAC.length() - 1) + "X"; // Change the last character
 
-    /*@Test
-    void testClose() throws Exception {
-        // Close PerfectLinks
-        sender.close();
+    // Deliver the message with a tampered MAC
+    receiver.onFairLossDeliver("127.0.0.1", 6001, "1|1|Message 1|" + tamperedMAC);
 
-        // Try to send a message after closing
-        assertThrows(Exception.class, () -> {
-            sender.send(destId, "teste");
-        });
-    }*/
+    // Verify that the message is not delivered
+    verify(receiver.getDeliverCallback(), never()).deliver(anyInt(), anyString());
+}*/
 
+/*@Test
+public void testTamperedPayload() throws Exception {
+    // Simulate a valid message
+    String validMAC = CryptoUtils.generateMAC(privateKeySender, publicKeyRec, "1|1|Message 1");
 
+    // Tamper with the payload
+    String tamperedMessage = "1|1|Tampered Message|" + validMAC;
+
+    // Deliver the message with a tampered payload
+    receiver.onFairLossDeliver("127.0.0.1", 6001, tamperedMessage);
+
+    // Verify that the message is not delivered
+    verify(receiver.getDeliverCallback(), never()).deliver(anyInt(), anyString());
+}*/
 }

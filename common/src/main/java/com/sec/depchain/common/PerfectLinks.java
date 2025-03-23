@@ -67,8 +67,9 @@ public class PerfectLinks {
     }
 
     //Constructor for testing
-    public PerfectLinks(int nodeId,SystemMembership systemMembershipA, FairLossLinks fairLossLinks) throws Exception{
-        systemMembership = systemMembershipA;
+    public PerfectLinks(int nodeId,FairLossLinks fairLossLinks) throws Exception{
+        systemMembership = new SystemMembership(
+                Constants.PROPERTIES_PATH);
         this.port = getPort(nodeId);
         this.nodeId = nodeId;
         this.systemMembership = systemMembership;
@@ -123,6 +124,9 @@ public class PerfectLinks {
             new Thread(() -> {
                 while (destWaitingForACK.contains(newSeqNum)) {
                     try {
+                        if (DEBUG_MODE == 1) {
+                            LOGGER.debug("Sending message {} to server {}", authenticatedMsg, destId);
+                        }
                         fairLossLinks.send(destIP, destPort, authenticatedMsg);
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
                         timeout.set((long) (1.5 * timeout.get())); // Flexible timeout increase
@@ -414,5 +418,11 @@ public class PerfectLinks {
 
         receivedSeqNumberUntil.clear();
         LOGGER.info("Finished perfect links shutdown.");
+    }
+    public PublicKey getPublicKey(int index){
+        return this.systemMembership.getPublicKey(index);
+    }
+    public DeliverCallback getDeliverCallback() {
+        return deliverCallback;
     }
 }

@@ -1,5 +1,6 @@
 package com.sec.depchain.server;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -47,6 +48,7 @@ public class ByzantineEpochConsensusTest {
             nodes[i].start();
         }
     }
+    
 @AfterAll
 
     void tearDown() throws Exception {
@@ -112,6 +114,59 @@ public void testDeliverRead_NonLeaderMessage_DoesNotTriggerCollector() throws Ex
     verify(cc, never()).onInit(); // Verify that onInit() is never called
     verify(cc, never()).input(anyString()); // Verify that input() is never called
 }
+
+/*@Test
+public void testSuccessConsensus() throws Exception
+{
+    String message = "<append-request:transaction1>";
+    int clientId = 10;
+
+    // Simulate broadcasting "APPEND" to all nodes
+    for (BlockchainMember node : nodes) {
+        System.out.println("Node " + node.getId() + " processing message: " + message);
+        node.onPerfectLinksDeliver(clientId, message); // Directly call the method
+    }
+}
+    @Test
+    void testWriteQuorum() {
+        bep = nodes[0].getBep();
+        bep.deliverWrite(1, "value1");
+        bep.deliverWrite(2, "value1");
+        bep.deliverWrite(3, "value1");
+
+        // Verify that a quorum was reached
+        assertTrue(bep.getState().getValtsVal().getVal().equals("value1"), "Quorum did not reach expected value");
+
+    }
+
+    @Test
+    void testWithDroppedMessages() throws Exception {
+        bep = nodes[0].getBep();
+    
+        // Simulating WRITE messages, but dropping one
+        bep.deliverWrite(1, "value1");
+        bep.deliverWrite(2, "value1");
+        // Node 3’s message is missing (simulating network delay or loss)
+    
+        // Verify that consensus is still reached
+        assertTrue(bep.getState().getValtsVal().getVal().equals("value1"), "Consensus failed due to dropped messages");
+    }
+
+    @Test
+void testConsensusWithOneIncorrectNode() throws Exception {
+    bep = nodes[0].getBep();
+
+    // Simulating correct WRITE messages from two nodes
+    bep.deliverWrite(1, "value1");
+    bep.deliverWrite(2, "value1");
+
+    // Simulating one node sending an incorrect value
+    bep.deliverWrite(3, "wrong_value");
+
+    // Verify that consensus is still reached on the correct value
+    assertTrue(bep.getState().getValtsVal().getVal().equals("value1"), "Consensus failed due to one incorrect node");
+}*/
 }
      
 
+    

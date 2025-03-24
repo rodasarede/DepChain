@@ -39,18 +39,20 @@ class PerfectLinksTest {
     //     assertEquals(testMessage, receivedMessage, "Message should be delivered correctly");
     // }
 
-    @Test
-    // Test for at most once
-    void testPL2_NoDuplication() throws Exception {
-        String testMessage = "<append:a>";
-        sender.send(receiverId, testMessage);
+    // @Test
+    // // Test for at most once
+    // TODO need to change perfect links in order to be possible send a message with a seqNumber of choice
+    // to show that the message is not delivered twice, no duplication/ REPLAY
+    // void testPL2_NoDuplication() throws Exception {
+    //     String testMessage = "<append-request:a>";
+    //     sender.send(receiverId, testMessage);
         
-        String received1 = receivedMessages.poll(5, TimeUnit.SECONDS);
-        sender.send(receiverId, testMessage);
-        String received2 = receivedMessages.poll(1, TimeUnit.SECONDS);
+    //     String received1 = receivedMessages.poll(5, TimeUnit.SECONDS);
+    //     sender.send(receiverId, testMessage);
+    //     String received2 = receivedMessages.poll(1, TimeUnit.SECONDS);
         
-        String receivedMessage1 = received1.split("\\|")[2];
-        assertEquals(testMessage, receivedMessage1, "First delivery should match");
-        assertNull(received2, "No duplicate messages should be delivered");
-    }
+        
+    //     assertEquals(testMessage, received1, "First delivery should match");
+    //     assertNull(received2, "No duplicate messages should be delivered");
+    // }
 }

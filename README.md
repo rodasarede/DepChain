@@ -41,3 +41,17 @@
 6. **Testing**
 
    Testing currently can be done by using the Clients and sending appending strings requests.
+
+
+## Smart Contract Instructions 
+
+1. For linux
+   ``` 
+   sudo add-apt-repository ppa:ethereum/ethereum
+   sudo apt-get update
+   sudo apt-get install solc
+   ```
+2. 
+   ```
+   npm install @openzeppelin/contracts
+   ```

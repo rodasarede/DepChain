@@ -25,26 +25,32 @@ import java.nio.file.Paths;
 
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
-
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 
 public class ContractsTest {
 
+    private static SimpleWorld simpleWorld;
+    private static Address senderAddress;
+    private static Address contractAddress;
+    private static EVMExecutor executor;
+    private static ByteArrayOutputStream byteArrayOutputStream;
 
-    @Test
-    public void testContract(){
+    @BeforeAll
+    public static void setup() {
         // simpleWorld to maintain account state
-        SimpleWorld simpleWorld = new SimpleWorld();
+        simpleWorld = new SimpleWorld();
 
         // EOT mock account
-        Address senderAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+        senderAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
         simpleWorld.createAccount(senderAddress,0, Wei.fromEth(100));
 
         // contract mock account
-        Address contractAddress = Address.fromHexString("1234567891234567891234567891234567891234");
+        contractAddress = Address.fromHexString("1234567891234567891234567891234567891234");
         simpleWorld.createAccount(contractAddress,0, Wei.fromEth(0));
         MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
+
         // System.out.println("Contract Account");
         // System.out.println("  Address: "+contractAccount.getAddress());
         // System.out.println("  Balance: "+contractAccount.getBalance());
@@ -57,13 +63,12 @@ public class ContractsTest {
         // System.out.println("    Slot SHA3[msg.sender||1] (mapping): "+simpleWorld.get(contractAddress).getStorageValue(UInt256.fromHexString(storageSlotMapping)));
         // System.out.println();
 
-        //initialize execution tracer for return and debug information
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
         StandardJsonTracer tracer = new StandardJsonTracer(printStream, true, true, true, true);
-        
+
         // initialize EVM local node
-        var executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
+        executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
         executor.tracer(tracer);
         //load ISTCoin contract creation bytecode gotten from contract compilation
         String ISTCoinBytecode = loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/ISTCoin.bin");
@@ -75,7 +80,6 @@ public class ContractsTest {
         executor.execute();
             
 
-        
         // Get contract runtime Bytecode from return of executing the contract creation bytecode
         String runtimeBytecode = extractRuntimeBytecode(byteArrayOutputStream);
         // System.out.println("Runtime Bytecode: " + runtimeBytecode);
@@ -83,10 +87,13 @@ public class ContractsTest {
         // Deploy ISTCoin contract
         executor.code(Bytes.fromHexString(runtimeBytecode));
 
+
+    }
+
+    //Test contract parameters
+    @Test
+    public void testSymbol(){
         
-
-
-        //Test contract parameters
         // Token Symbol
         // 95d89b41 -> first 4 bytes of the Keccak-256 hash of the function signature 'symbol()'
         executor.callData(Bytes.fromHexString("95d89b41"));
@@ -94,13 +101,24 @@ public class ContractsTest {
         String tokenSymbol = extractStringFromReturnData(byteArrayOutputStream);
         System.out.println("Output of 'symbol()': " + tokenSymbol);
 
+        assert(tokenSymbol.equals("IST"));
 
+
+    }
+
+    @Test
+    public void testName(){
         //Token Name 
         executor.callData(Bytes.fromHexString("06fdde03"));
         executor.execute();
         String tokenName = extractStringFromReturnData(byteArrayOutputStream);
         System.out.println("Output of 'name()': " + tokenName);
 
+        assert(tokenName.equals("IST Coin"));
+    }
+
+    @Test
+    public void testDecimalsAndSupply(){
 
         // Decimals
         executor.callData(Bytes.fromHexString("313ce567"));
@@ -108,23 +126,58 @@ public class ContractsTest {
         int decimals = extractIntegerFromReturnData(byteArrayOutputStream);
         System.out.println("Output of 'decimals()': " + Integer.toString(decimals));
 
+
         // Total Supply
         executor.callData(Bytes.fromHexString("18160ddd"));
         executor.execute();
         long totalSupply = extractLongFromReturnData(byteArrayOutputStream);
         System.out.println("Output of 'totalSupply()': " + Long.toString(totalSupply));
 
-  
-        assert(tokenSymbol.equals("IST"));
-        assert(tokenName.equals("IST Coin"));
         assert(decimals == 2);
         assert(totalSupply == 100000000* Math.pow(10,decimals));
+    }
 
+    @Test
+    // address who created the contract(sender) has total supply
+    public void testBalanceOf(){
+        // Balance of sender
+        executor.callData(Bytes.fromHexString("70a08231"+padHexStringTo256Bit(senderAddress.toHexString())));
+        executor.execute();
+        long balanceOfSender = extractLongFromReturnData(byteArrayOutputStream);
+        System.out.println("Output of 'balanceOf(sender)': " + Long.toString(balanceOfSender));
+
+        // assert(balanceOfSender == 100000000* Math.pow(10,2));
+    }
+
+    @Test
+    //transfer test from sender(smart contract creator) to contract address
+    public void testTransfer(){
+
+        // Balance of contract
+        String paddedAddress = padHexStringTo256Bit(contractAddress.toHexString());
+        executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));
+        executor.execute();
+        long balanceOfContractBefore = extractLongFromReturnData(byteArrayOutputStream);
+        System.out.println("Output of 'balanceOf(contract)': " + Long.toString(balanceOfContractBefore));
+
+        // Transfer 1000 tokens from sender to contract
+        //sender is still set as the previous address since contract deoploymeent
+        
+        String transferData = "a9059cbb"+padHexStringTo256Bit(contractAddress.toHexString())+convertIntegerToHex256Bit(1000);
+        executor.callData(Bytes.fromHexString(transferData));
+        executor.execute();
+
+        // Balance of contract
+        executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));
+        executor.execute();
+        long balanceOfContractAfter = extractLongFromReturnData(byteArrayOutputStream);
+        System.out.println("Output of 'balanceOf(contract)': " + Long.toString(balanceOfContractAfter));
+
+        assert(balanceOfContractAfter == 1000);
     }
   
 
-
-    public String loadBytecode(String path) {
+    public static String loadBytecode(String path) {
         try {
             //print base path
             // System.out.println(Paths.get(".").toAbsolutePath().normalize().toString());
@@ -135,7 +188,7 @@ public class ContractsTest {
         }
     }
 
-    private String extractRuntimeBytecode(ByteArrayOutputStream byteArrayOutputStream) {
+    private static String extractRuntimeBytecode(ByteArrayOutputStream byteArrayOutputStream) {
         try {
             String[] lines = byteArrayOutputStream.toString().split("\\r?\\n");
             JsonObject jsonObject = JsonParser.parseString(lines[lines.length - 1]).getAsJsonObject();

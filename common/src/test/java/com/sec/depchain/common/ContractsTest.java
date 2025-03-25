@@ -57,23 +57,37 @@ public class ContractsTest {
         // contract mock account
         ISTCoinContractAddress = Address.fromHexString("1234567891234567891234567891234567891234");
         simpleWorld.createAccount(ISTCoinContractAddress,0, Wei.fromEth(0));
-        MutableAccount contractAccount = (MutableAccount) simpleWorld.get(ISTCoinContractAddress);
+        MutableAccount ISTCoinContractAccount = (MutableAccount) simpleWorld.get(ISTCoinContractAddress);
 
+        System.out.println("Contract Account");
+        System.out.println("  Address: " + ISTCoinContractAccount.getAddress());
+        System.out.println("  Balance: " + ISTCoinContractAccount.getBalance());
+        System.out.println("  Nonce: " + ISTCoinContractAccount.getNonce());
+        System.out.println("  Storage:");
+
+        // Get total supply
+        System.out.println("    _totalSupply: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(0)));
+
+        // Get name and symbol
+        System.out.println("    _name: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(1)));
+        System.out.println("    _symbol: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(2)));
+
+        // Retrieve a balance from _balances mapping (example senderAddress)
+        String paddedSenderAddress = helpers.padHexStringTo256Bit(senderAddress.toHexString());
+        String balanceSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedSenderAddress + helpers.convertIntegerToHex256Bit(0))));
+        System.out.println("    _balances[msg.sender]: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.fromHexString(balanceSlotMapping)));
+        System.out.println("    blacklist contract address: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(5)));
+        // Retrieve an allowance from _allowances mapping (example senderAddress and spenderAddress)
+        // String allowancesSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedSenderAddress + helpers.convertIntegerToHex256Bit(1))));
+        // String allowancesFinalSlot = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(allowancesSlotMapping)));
+        // System.out.println("    _allowances[msg.sender]: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.fromHexString(allowancesFinalSlot)).toLong());
+
+
+        //blacklist contract mock account
         BlacklistContractAddress = Address.fromHexString("1234567891234567891234567891234567891235");
         simpleWorld.createAccount(BlacklistContractAddress,0, Wei.fromEth(0));
         MutableAccount blacklistAccount = (MutableAccount) simpleWorld.get(BlacklistContractAddress);
 
-        // System.out.println("Contract Account");
-        // System.out.println("  Address: "+contractAccount.getAddress());
-        // System.out.println("  Balance: "+contractAccount.getBalance());
-        // System.out.println("  Nonce: "+contractAccount.getNonce());
-        // System.out.println("  Storage:");
-        // System.out.println("    Slot 0: "+simpleWorld.get(contractAddress).getStorageValue(UInt256.valueOf(0)));
-        // String paddedAddress = padHexStringTo256Bit(senderAddress.toHexString());
-        // String stateVariableIndex = convertIntegerToHex256Bit(1);
-        // String storageSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedAddress + stateVariableIndex)));
-        // System.out.println("    Slot SHA3[msg.sender||1] (mapping): "+simpleWorld.get(contractAddress).getStorageValue(UInt256.fromHexString(storageSlotMapping)));
-        // System.out.println();
 
         byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
@@ -87,33 +101,53 @@ public class ContractsTest {
         String ISTCoinBytecode = helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/ISTCoin.bin");
         // System.out.println(coinBytecode);
         executor.code(Bytes.fromHexString(ISTCoinBytecode));
-        executor.contract(ISTCoinContractAddress);
         executor.sender(senderAddress);
+        executor.receiver(ISTCoinContractAddress);
         executor.worldUpdater(simpleWorld.updater());
         executor.commitWorldState();
         executor.execute();
+
+
+        System.out.println("Contract Account");
+        System.out.println("  Address: " + ISTCoinContractAccount.getAddress());
+        System.out.println("  Balance: " + ISTCoinContractAccount.getBalance());
+        System.out.println("  Nonce: " + ISTCoinContractAccount.getNonce());
+        System.out.println("  Storage:");
+
+        // Get total supply
+        System.out.println("    _totalSupply: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(2)).toLong());
+
+        // Get name and symbol
+        System.out.println("    _name: " +  helpers.convertHexadecimalToAscii(simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(3)).toString()));
+        System.out.println("    _symbol: " + helpers.convertHexadecimalToAscii(simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(4)).toString()));
+        System.out.println("    _balances[msg.sender]: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.fromHexString(balanceSlotMapping)).toLong());
+        System.out.println("    blacklist contract address: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.valueOf(5)));
+        // Retrieve an allowance from _allowances mapping (example senderAddress and spenderAddress)
+        // allowancesSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedSenderAddress + helpers.convertIntegerToHex256Bit(1))));
+        
+        // System.out.println("    _allowances[msg.sender]: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.fromHexString(allowancesSlotMapping)).toLong());
+
+
         
         // Get contract runtime Bytecode from return of executing the contract creation bytecode
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
-        // System.out.println("Runtime Bytecode: " + runtimeBytecode);
 
-        String BlacklistBytecode = helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/Blacklist.bin");
-        executor.code(Bytes.fromHexString(BlacklistBytecode));
-        executor.contract(BlacklistContractAddress);
-        executor.sender(senderAddress);
-        executor.worldUpdater(simpleWorld.updater());
-        executor.commitWorldState();
-        executor.execute();
+        // // System.out.println("Runtime Bytecode: " + runtimeBytecode);
 
-        String BlacklistRuntimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
+        // String BlacklistBytecode = helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/Blacklist.bin");
+        // executor.code(Bytes.fromHexString(BlacklistBytecode));
+        // executor.sender(senderAddress);
+        // executor.worldUpdater(simpleWorld.updater());
+        // executor.commitWorldState();
+        // executor.execute();
 
-        // System.out.println("Blacklist runtime bytecode: " + BlacklistRuntimeBytecode);
+        // String BlacklistRuntimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
+
+        // // System.out.println("Blacklist runtime bytecode: " + BlacklistRuntimeBytecode);
 
 
-        // Deploy ISTCoin contract
+        // Deploy ISTCoin runtime
         executor.code(Bytes.fromHexString(runtimeBytecode));
-        executor.worldUpdater(simpleWorld.updater());
-        executor.commitWorldState();
         executor.execute();
 
 
@@ -125,12 +159,6 @@ public class ContractsTest {
         // // System.out.println(byteArrayOutputStream.toString());
         // String string = extractStringFromReturnData(byteArrayOutputStream);
         // System.out.println("Output string of 'sayHelloWorld():' " + string);
-
-        
-        
-
-
-
 
     }
 
@@ -211,6 +239,7 @@ public class ContractsTest {
         String transferData = "a9059cbb"+helpers.padHexStringTo256Bit(ISTCoinContractAddress.toHexString())+helpers.convertIntegerToHex256Bit(1000);
         executor.callData(Bytes.fromHexString(transferData));
         executor.execute();
+        // System.out.println(byteArrayOutputStream.toString());
 
         // Balance of contract
         executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));

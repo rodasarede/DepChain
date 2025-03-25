@@ -155,6 +155,13 @@ public class helpers {
         return new String(hexStringToByteArray(hexString), StandardCharsets.UTF_8);
     }
 
+    public static String convertHexadecimalToAscii(String hexString) {
+        if (hexString.startsWith("0x")) {
+            hexString = hexString.substring(2);
+        }
+        return new String(hexStringToByteArray(hexString), StandardCharsets.UTF_8);
+    }
+
     
     public static byte[] hexStringToByteArray(String hexString) {
         int length = hexString.length();

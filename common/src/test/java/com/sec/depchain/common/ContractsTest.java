@@ -53,16 +53,16 @@ public class ContractsTest {
 
         // EOT mock account
         senderAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-        simpleWorld.createAccount(senderAddress,0, Wei.fromEth(100));
+        simpleWorld.createAccount(senderAddress,0, Wei.fromEth(0));
         MutableAccount senderAccount = (MutableAccount) simpleWorld.get(senderAddress);
 
         // EOT client mock account
         clientAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeee");
-        simpleWorld.createAccount(clientAddress,0, Wei.fromEth(100));
+        simpleWorld.createAccount(clientAddress,0, Wei.fromEth(0));
         MutableAccount clientAccount = (MutableAccount) simpleWorld.get(clientAddress);
         System.out.println("Client Account");
         System.out.println("  Address: "+clientAccount.getAddress());
-        System.out.println("  Balance: "+clientAccount.getBalance());
+        System.out.println("  Balance: "+ clientAccount.getBalance().toBigInteger());
         System.out.println("  Nonce: "+clientAccount.getNonce());
         System.out.println();
 
@@ -153,8 +153,7 @@ public class ContractsTest {
 
         
         // Deploy ISTCoin runtime
-        executor.code(Bytes.fromHexString( helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/ISTCoinDeploy.bin")));
-        executor.execute();
+        executor.code(Bytes.fromHexString( runtimeBytecode));
 
         
 

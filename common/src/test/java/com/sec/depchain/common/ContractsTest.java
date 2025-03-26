@@ -150,6 +150,11 @@ public class ContractsTest {
         executor.code(Bytes.fromHexString(runtimeBytecode));
         executor.execute();
 
+        // executor.callData(Bytes.fromHexString("fe575a87"+ helpers.padHexStringTo256Bit(senderAddress.toString())));
+        // executor.execute();
+        // // System.out.println(byteArrayOutputStream.toString());
+        // System.out.println("Is Blacklisted: "+ helpers.extractBooleanFromReturnData(byteArrayOutputStream));
+
 
         // executor.code(Bytes.fromHexString(BlacklistRuntimeBytecode));
         // executor.worldUpdater(simpleWorld.updater());

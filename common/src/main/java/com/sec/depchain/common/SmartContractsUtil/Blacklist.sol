@@ -3,13 +3,7 @@ pragma solidity ^0.8.20;
 
 
 
-interface IBlacklist {
-    function addToBlacklist(address _account) external returns (bool);
-    function removeFromBlacklist(address _account) external returns (bool);
-    function isBlacklisted(address _account) external view returns (bool);
-}
-
-contract Blacklist is IBlacklist {
+contract Blacklist  {
     address public owner;
     mapping(address => bool) private blacklisted;
 
@@ -34,7 +28,7 @@ contract Blacklist is IBlacklist {
         return true;
     }
 
-    function isBlacklisted(address _account) external view returns (bool) {
+    function isBlacklisted(address _account) public view returns (bool) {
         return blacklisted[_account];
     }
 }

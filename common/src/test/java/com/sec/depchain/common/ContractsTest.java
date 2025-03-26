@@ -41,6 +41,7 @@ public class ContractsTest {
     private static SimpleWorld simpleWorld;
     private static Address senderAddress;
     private static Address ISTCoinContractAddress;
+    private static Address clientAddress;
     private static Address BlacklistContractAddress;
     private static EVMExecutor executor;
     private static ByteArrayOutputStream byteArrayOutputStream;
@@ -53,6 +54,17 @@ public class ContractsTest {
         // EOT mock account
         senderAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
         simpleWorld.createAccount(senderAddress,0, Wei.fromEth(100));
+        MutableAccount senderAccount = (MutableAccount) simpleWorld.get(senderAddress);
+
+        // EOT client mock account
+        clientAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeee");
+        simpleWorld.createAccount(clientAddress,0, Wei.fromEth(100));
+        MutableAccount clientAccount = (MutableAccount) simpleWorld.get(clientAddress);
+        System.out.println("Client Account");
+        System.out.println("  Address: "+clientAccount.getAddress());
+        System.out.println("  Balance: "+clientAccount.getBalance());
+        System.out.println("  Nonce: "+clientAccount.getNonce());
+        System.out.println();
 
         // contract mock account
         ISTCoinContractAddress = Address.fromHexString("1234567891234567891234567891234567891234");
@@ -83,10 +95,10 @@ public class ContractsTest {
         // System.out.println("    _allowances[msg.sender]: " + simpleWorld.get(ISTCoinContractAddress).getStorageValue(UInt256.fromHexString(allowancesFinalSlot)).toLong());
 
 
-        //blacklist contract mock account
-        BlacklistContractAddress = Address.fromHexString("1234567891234567891234567891234567891235");
-        simpleWorld.createAccount(BlacklistContractAddress,0, Wei.fromEth(0));
-        MutableAccount blacklistAccount = (MutableAccount) simpleWorld.get(BlacklistContractAddress);
+        // //blacklist contract mock account
+        // BlacklistContractAddress = Address.fromHexString("1234567891234567891234567891234567891235");
+        // simpleWorld.createAccount(BlacklistContractAddress,0, Wei.fromEth(0));
+        // MutableAccount blacklistAccount = (MutableAccount) simpleWorld.get(BlacklistContractAddress);
 
 
         byteArrayOutputStream = new ByteArrayOutputStream();
@@ -131,39 +143,20 @@ public class ContractsTest {
         
         // Get contract runtime Bytecode from return of executing the contract creation bytecode
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
+        // write this runtimeBytecode to a file
+        // System.out.println("Runtime Bytecode: " + runtimeBytecode);
+        try {
+            Files.write(Paths.get("src/main/java/com/sec/depchain/resources/contracts_bytecode/ISTCoinDeploy.bin"), runtimeBytecode.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        // // System.out.println("Runtime Bytecode: " + runtimeBytecode);
-
-        // String BlacklistBytecode = helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/Blacklist.bin");
-        // executor.code(Bytes.fromHexString(BlacklistBytecode));
-        // executor.sender(senderAddress);
-        // executor.worldUpdater(simpleWorld.updater());
-        // executor.commitWorldState();
-        // executor.execute();
-
-        // String BlacklistRuntimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
-
-        // // System.out.println("Blacklist runtime bytecode: " + BlacklistRuntimeBytecode);
-
-
+        
         // Deploy ISTCoin runtime
-        executor.code(Bytes.fromHexString(runtimeBytecode));
+        executor.code(Bytes.fromHexString( helpers.loadBytecode("src/main/java/com/sec/depchain/resources/contracts_bytecode/ISTCoinDeploy.bin")));
         executor.execute();
 
-        // executor.callData(Bytes.fromHexString("fe575a87"+ helpers.padHexStringTo256Bit(senderAddress.toString())));
-        // executor.execute();
-        // // System.out.println(byteArrayOutputStream.toString());
-        // System.out.println("Is Blacklisted: "+ helpers.extractBooleanFromReturnData(byteArrayOutputStream));
-
-
-        // executor.code(Bytes.fromHexString(BlacklistRuntimeBytecode));
-        // executor.worldUpdater(simpleWorld.updater());
-        // executor.commitWorldState();
-        // executor.callData(Bytes.fromHexString("45773e4e"));
-        // executor.execute();
-        // // System.out.println(byteArrayOutputStream.toString());
-        // String string = extractStringFromReturnData(byteArrayOutputStream);
-        // System.out.println("Output string of 'sayHelloWorld():' " + string);
+        
 
     }
 
@@ -242,6 +235,7 @@ public class ContractsTest {
         //sender is still set as the previous address since contract deoploymeent
         
         String transferData = "a9059cbb"+helpers.padHexStringTo256Bit(ISTCoinContractAddress.toHexString())+helpers.convertIntegerToHex256Bit(1000);
+        executor.sender(senderAddress);
         executor.callData(Bytes.fromHexString(transferData));
         executor.execute();
         // System.out.println(byteArrayOutputStream.toString());
@@ -249,11 +243,52 @@ public class ContractsTest {
         // Balance of contract
         executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));
         executor.execute();
+        // System.out.println(byteArrayOutputStream.toString());
         long balanceOfContractAfter = helpers.extractLongFromReturnData(byteArrayOutputStream);
         System.out.println("Output of 'balanceOf(contract)': " + Long.toString(balanceOfContractAfter));
 
-        // assert(balanceOfContractAfter == 1000);
+        // Balance of Sender
+        executor.callData(Bytes.fromHexString("70a08231"+ helpers.padHexStringTo256Bit(senderAddress.toHexString())));
+        executor.execute();
+        long balanceOfSenderAfter = helpers.extractLongFromReturnData(byteArrayOutputStream);
+        System.out.println("Output of 'balanceOf(sender)': " + Long.toString(balanceOfSenderAfter));
+
+        assert(balanceOfContractAfter == 1000);
     }
+    
+    @Test
+    public void unauthorizedAddBlacklistTest(){
+        executor.sender(clientAddress);
+        executor.callData(Bytes.fromHexString("44337ea1"+ helpers.padHexStringTo256Bit(clientAddress.toString())));
+        executor.execute();
+        String result = helpers.extractErrorMessage(byteArrayOutputStream);
+        System.out.println("Returned: "+ result);
+
+        assert(result.equals("Not authorized"));
+    }
+    @Test
+    //test if an address is blacklisted before and after beeing added
+    public void testIsBlacklist(){
+
+        executor.callData(Bytes.fromHexString("fe575a87"+ helpers.padHexStringTo256Bit(clientAddress.toString())));
+        executor.execute();
+        // System.out.println(byteArrayOutputStream.toString());
+        System.out.println(clientAddress + " is Blacklisted: "+ helpers.extractBooleanFromReturnData(byteArrayOutputStream));
+
+        executor.sender(senderAddress);
+        executor.callData(Bytes.fromHexString("44337ea1"+ helpers.padHexStringTo256Bit(clientAddress.toString())));
+        executor.execute();
+
+        executor.callData(Bytes.fromHexString("fe575a87"+ helpers.padHexStringTo256Bit(clientAddress.toString())));
+        executor.execute();
+        // System.out.println(byteArrayOutputStream.toString());
+        Boolean isBlacklisted = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+        System.out.println(clientAddress + " is Blacklisted: "+ isBlacklisted);
+
+        assert(isBlacklisted);
+    }
+
+
 }
 
     

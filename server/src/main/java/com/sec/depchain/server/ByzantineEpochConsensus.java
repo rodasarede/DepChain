@@ -34,7 +34,7 @@ public class ByzantineEpochConsensus {
     private int countWrites=0;
     private boolean writeQuorumReached = false;
     private boolean acceptQuorumReached = false;
-    private static final int DEBUG_MODE = 1;
+    private static final int DEBUG_MODE = 0;
     private BlockchainMember blockchainMember;
 
 

@@ -24,7 +24,7 @@ public class BlockchainMember {
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
-    private static final int DEBUG_MODE = 1; // Set to 1 to enable debug messages
+    private int DEBUG_MODE = 0;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {

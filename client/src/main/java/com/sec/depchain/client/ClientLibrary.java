@@ -87,15 +87,14 @@ public class ClientLibrary {
     public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
     }
-    public void close()
-    {
-        LOGGER.info("Shutting down client resources...");
-        if (perfectLinks != null){
-        perfectLinks.close();
-    }
-    messageResponses.clear();
-    processedTransactions.clear();
-    LOGGER.info("Finished shutitng down client resources...");
+    public void close() {
+            LOGGER.info("Shutting down client resources...");
+            if (perfectLinks != null){
+            perfectLinks.close();
+        }
+        messageResponses.clear();
+        processedTransactions.clear();
+        LOGGER.info("Finished shutitng down client resources...");
 
     }
 }

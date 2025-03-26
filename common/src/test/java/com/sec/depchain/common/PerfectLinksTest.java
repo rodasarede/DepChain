@@ -43,18 +43,21 @@ import org.mockito.MockitoAnnotations;
 import com.sec.depchain.common.FairLossLinks.DeliverCallback;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 
 public class PerfectLinksTest{
-    private PerfectLinks sender;
-    private PerfectLinks receiver;
-
     private FairLossLinks mockFairLossLinksSender;
     private FairLossLinks mockFairLossLinksReceiver;
-    private FairLossLinks fairLossLinks;
-    private PrivateKey privateKeySender;
-    private PublicKey publicKeyRec;
-    private int nodeId = 1 ;
-    private int destId = 2;
+
+    private PerfectLinks senderPerfectLinks;
+    private PerfectLinks receiverPerfectLinks;
+
+    private int senderNodeId = 1 ;
+    private int receiverNodeId = 2;
+
+    //private PrivateKey senderPrivateKey;
+    //private PublicKey ReceiverPublicKey;
 
     @BeforeEach
     public void setUp() throws Exception{
@@ -64,29 +67,32 @@ public class PerfectLinksTest{
         mockFairLossLinksSender = mock(FairLossLinks.class);
         mockFairLossLinksReceiver = mock(FairLossLinks.class);
 
+        senderPerfectLinks = new PerfectLinks(senderNodeId, mockFairLossLinksSender);
+        receiverPerfectLinks = new PerfectLinks(receiverNodeId, mockFairLossLinksReceiver);
 
-        sender = new PerfectLinks(nodeId, mockFairLossLinksSender);
-        receiver = new PerfectLinks(destId, mockFairLossLinksReceiver);
-        publicKeyRec = receiver.getPublicKey(2);
-        privateKeySender = sender.getPrivateKey();
-        sender.setDeliverCallback((srcId, message) -> {});
-        receiver.setDeliverCallback((srcId, message) -> {});
+        senderPerfectLinks.setDeliverCallback((srcId, message) -> {});
+        receiverPerfectLinks.setDeliverCallback((srcId, message) -> {});
 
+        //privateKeySender = senderPerfectLinks.getPrivateKey();
+        //publicKeyRec = receiverPerfectLinks.getPublicKey(2);
     }
+
     @Test
     void testSendMessageSucc() throws Exception{
-        DeliverCallback callback = mock(DeliverCallback.class);
 
-        sender.send(2, "Hello node 2");
+        senderPerfectLinks.send(receiverNodeId, "Hello from the other side.");
 
-        verify(mockFairLossLinksSender, atLeastOnce()).send(anyString(), anyInt(), anyString());
-
+        // fairLossLinks.send(...) is called in a new thread, wait for it
+        Awaitility.await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            verify(mockFairLossLinksSender, atLeastOnce()).send(anyString(), anyInt(), anyString());
+        });
     }
+
     @Test
     public void testMessageRetransmission() throws Exception {
         // Send a message and simulate no ACK being received
 
-        sender.send(destId, "testMessage");
+        senderPerfectLinks.send(receiverNodeId, "testMessage");
 
         // Wait for retransmission to occur
         Thread.sleep(2000); // Allow time for retransmission

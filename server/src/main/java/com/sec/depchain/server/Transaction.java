@@ -5,19 +5,20 @@ import java.math.BigInteger;
 import org.checkerframework.checker.units.qual.s;
 
 public class Transaction {
-    private String sender; 
-    private String receiver; //to destination address (external or contract)
+    private String from; // the address of the sender, that will be signing the transaction. This will be an externally-owned account as contract accounts cannot send transactions
+    private String to; //the receiving address (if an externally-owned account, the transaction will transfer value. If a contract account, the transaction will execute the contract code)
     private BigInteger value; //how much ether to transfer
-    private String data; //payload (func name, args, etc...)
-    private long nonce; //transaction sequence number (from sender)
+    private String data; //payload (func name, args, etc...); – optional field to include arbitrary data
+    private long nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
     private long timeStamp;
-    private String signature; // ECDSA signature args?
-    private BigInteger gasLimit; // Max gas caller willing to spend; Call aborts if exceeded; No refunds !
+    private String signature; //  the identifier of the sender. This is generated when the sender's private key signs the transaction and confirms the sender has authorized this transaction
+    private BigInteger gasLimit; //  the maximum amount of gas units that can be consumed by the transaction. The EVM specifies the units of gas required by each computational step
     private BigInteger gasPrice; //how much caller pays for the gas, In ether; Miners collect gas fees, prioritize higher prices. Extra-low price may never run
+    //https://ethereum.org/en/developers/docs/transactions/
 
-    public Transaction(String sender, String receiver, BigInteger value, BigInteger gasLimit, BigInteger gasPrice, String data, long nonce, long timestamp, String signature) {
-        this.sender = sender;
-        this.receiver = receiver;
+    public Transaction(String to, String from, BigInteger value, BigInteger gasLimit, BigInteger gasPrice, String data, long nonce, long timestamp, String signature) {
+        this.to = to;
+        this.from = from;
         this.value = value;
         this.gasLimit = gasLimit;
         this.gasPrice = gasPrice;
@@ -38,11 +39,11 @@ public class Transaction {
     public long getNonce() {
         return nonce;
     }
-    public String getReceiver() {
-        return receiver;
+    public String getFrom() {
+        return from;
     }
-    public String getSender() {
-        return sender;
+    public String getTo() {
+        return to;
     }
     public String getSignature() {
         return signature;
@@ -65,11 +66,11 @@ public class Transaction {
     public void setNonce(long nonce) {
         this.nonce = nonce;
     }
-    public void setReceiver(String receiver) {
-        this.receiver = receiver;
+    public void setFrom(String from) {
+        this.from = from;
     }
-    public void setSender(String sender) {
-        this.sender = sender;
+    public void setTo(String to) {
+        this.to = to;
     }
     public void setSignature(String signature) {
         this.signature = signature;

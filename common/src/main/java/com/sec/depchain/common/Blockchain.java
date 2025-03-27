@@ -39,5 +39,10 @@ public class Blockchain {
     public  Block getLatestBlock() {
         return chain.get(chain.size() - 1);
     }
+    public  Map<Address, AccountState> getCurrentState() {
+        return currentState;
+    }
+
+
 }
 

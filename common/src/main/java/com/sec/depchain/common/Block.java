@@ -37,7 +37,7 @@ public class Block {
     public String calculateHash() {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String data = previousBlockHash + transactions.toString() + state.toString() + nonce;
+            String data = transactions.toString() ;
             byte[] hashBytes = digest.digest(data.getBytes(StandardCharsets.UTF_8));
             StringBuilder hexString = new StringBuilder();
             for (byte b : hashBytes) {

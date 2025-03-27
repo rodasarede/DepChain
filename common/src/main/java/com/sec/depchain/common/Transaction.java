@@ -1,4 +1,4 @@
-package com.sec.depchain.server;
+package com.sec.depchain.common;
 
 import java.math.BigInteger;
 

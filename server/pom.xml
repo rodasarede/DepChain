@@ -17,9 +17,42 @@
     <properties>
         <skipTests>true</skipTests>
     </properties>
+    
+    <repositories>
+        <repository>
+            <id>hyperledger-besu</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
+        </repository>
+        
+    </repositories>
+
+
     <dependencies>
         <!-- Example of adding dependencies -->
         <!-- Add any necessary dependencies here if the common module needs them -->
+        
+        <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.12.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>evm</artifactId>
+            <version>24.12.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>besu-datatypes</artifactId>
+            <version>24.12.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>web3j-maven-plugin</artifactId>
+            <version>4.13.0</version>
+            <type>maven-plugin</type>
+        </dependency>
         <dependency>
             <groupId>com.sec.depchain</groupId>
             <artifactId>common</artifactId>

@@ -8,9 +8,7 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Map;
-import java.util.NavigableMap;
 
-import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -18,7 +16,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.hyperledger.besu.evm.fluent.SimpleWorld;
@@ -29,7 +26,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.web3j.abi.datatypes.Bool;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
@@ -48,7 +44,7 @@ public class GenesisTest {
     private static Address clientAddress = Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeee");
 
     @BeforeAll
-    //loads the genesis file and creates the accounts in perfect world
+    //loads the genesis file and creates the accounts in simple world
     public static void setup() {
         byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);

@@ -31,9 +31,7 @@ import org.junit.jupiter.api.Test;
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 
 
-// Depcoin conversao com ISTCoin gerida pelo contrato ISTCoin, certo?
-// como gerir as transfers de Depcoin entre addresses (smartcontract??)
-//  
+
 
 
 public class ContractsTest {

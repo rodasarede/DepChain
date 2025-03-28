@@ -1,9 +1,13 @@
 package com.sec.depchain.common.util;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECPoint;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.KeyAgreement;
@@ -92,4 +96,49 @@ public class CryptoUtils {
 
         return signature.verify(signatureBytes);
     }
+    public static String deriveEthAddress(PublicKey publicKey)
+    {
+        ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
+        ECPoint point = ecPublicKey.getW();
+        byte[] x = to32Bytes(point.getAffineX().toByteArray());
+        byte[] y = to32Bytes(point.getAffineY().toByteArray());
+
+        byte[] uncompressedPubKey = new byte[65];
+        uncompressedPubKey[0] = 0x04; // Uncompressed prefix
+        System.arraycopy(x, 0, uncompressedPubKey, 1, 32);
+        System.arraycopy(y, 0, uncompressedPubKey, 33, 32);
+
+        byte[] hash = keccak256(uncompressedPubKey);
+        byte[] addressBytes = Arrays.copyOfRange(hash, hash.length - 20, hash.length);
+    
+        // 4. Convert to hex (with "0x" prefix)
+        return "0x" + bytesToHex(addressBytes);
+        
+    }
+    /**
+ * Converts a BigInteger byte array to exactly 32 bytes, padding with zeros if needed
+ */
+private static byte[] to32Bytes(byte[] bytes) {
+    byte[] result = new byte[32];
+    int start = Math.max(0, 32 - bytes.length); // Calculate padding start
+    System.arraycopy(bytes, 0, result, start, Math.min(bytes.length, 32));
+    return result;
+}
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+    private static byte[] keccak256(byte[] input) {
+    // This is a simplified version. For production, use Bouncy Castle or a proper Keccak lib.
+    try {
+        MessageDigest digest = MessageDigest.getInstance("SHA3-256");
+        return digest.digest(input);
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException("SHA3-256 not supported", e);
+    }
+}
+
 }

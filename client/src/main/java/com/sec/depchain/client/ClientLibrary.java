@@ -10,6 +10,7 @@ import java.util.Set;
 
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 
 public class ClientLibrary {
@@ -20,19 +21,22 @@ public class ClientLibrary {
     private final Map<String, Set<Integer>> messageResponses = new HashMap<>();
     private final Set<String> processedTransactions = new HashSet<>();
     private static final int DEBUG_MODE = 1;
+    private final Wallet wallet;
 
     public interface DeliverCallback {
         void deliverAppendResponse(boolean result, String transaction, String position);
     }
 
-    public ClientLibrary(int clientId) throws Exception {
+    public ClientLibrary(int clientId, Wallet wallet) throws Exception {
         this.perfectLinks = new PerfectLinks(clientId);
         this.perfectLinks.setDeliverCallback(this::onPerfectLinksDeliver);
+        this.wallet = wallet;
         systemMembership = new SystemMembership(Constants.PROPERTIES_PATH);
     }
 
-    public void sendAppendRequest(String string) {
-        String formattedMessage = "<append-request:" + string + ">";
+    public void sendTransferRequest(Transaction tx) {
+        
+        String formattedMessage = "<tx-request:" + serializeTransaction(tx) + ">";
 
         for (int nodeId : systemMembership.getMembershipList().keySet()) {
             if (DEBUG_MODE == 1) {
@@ -82,5 +86,17 @@ public class ClientLibrary {
 
     public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
+    }
+    private String serializeTransaction(Transaction tx) {
+        // Using colon separator with field prefixes
+        return String.format(
+            "from:%s:to:%s:value:%s:data:%s:signature:%s:nonce:%d",
+            tx.getFrom(),
+            tx.getTo(),
+            tx.getValue().toString(),
+            tx.getData(),
+            tx.getSignature(),
+            tx.getNonce()
+        );
     }
 }

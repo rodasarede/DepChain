@@ -1,17 +1,30 @@
 package com.sec.depchain.common.util;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPrivateKeySpec;
+import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 
 public class KeyLoader {
@@ -99,5 +112,17 @@ public class KeyLoader {
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(binaryKey);
         return keyFactory.generatePrivate(keySpec);
     }
+
+    public static String loadPrivateKeyFromFile(String filePath) throws IOException{
+    String content = new String(Files.readAllBytes(Paths.get(filePath)));
+        
+    // Clean the content - remove whitespace, newlines, and "0x" prefix if present
+    String privateKeyHex = content.trim()
+        .replaceAll("\\s+", "")
+        .replaceAll("0x", "");
+        
+    return privateKeyHex;
+}
+    
 
 }

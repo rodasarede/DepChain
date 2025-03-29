@@ -1,5 +1,6 @@
 package com.sec.depchain.common.util;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -13,6 +14,14 @@ import java.util.Base64;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.utils.Numeric;
+
+import com.sec.depchain.common.Transaction;
 
 public class CryptoUtils {
     private CryptoUtils() {
@@ -138,6 +147,33 @@ private static byte[] to32Bytes(byte[] bytes) {
         return digest.digest(input);
     } catch (NoSuchAlgorithmException e) {
         throw new RuntimeException("SHA3-256 not supported", e);
+    }
+}
+public static boolean verifySignature(Transaction tx) {
+    try {
+        // 1. Recover the public key from signature
+        byte[] rawTxData = tx.getRawDataForSigning();
+        System.out.println("Transação para dar hash" + rawTxData );
+        byte[] txHash = Hash.sha3(rawTxData);
+        byte[] signatureBytes = Numeric.hexStringToByteArray(tx.getSignature());
+        
+        // Extract r, s, v
+        byte[] r = Arrays.copyOfRange(signatureBytes, 0, 32);
+        byte[] s = Arrays.copyOfRange(signatureBytes, 32, 64);
+        byte v = signatureBytes[64];
+        
+        // 2. Recover the public key
+        
+        BigInteger publicKey = Sign.signedMessageHashToKey(
+            txHash,
+            new Sign.SignatureData(v, r, s)
+        );        
+        // 3. Compare with sender's address
+        String recoveredAddress = "0x" + Keys.getAddress(publicKey);
+
+        return recoveredAddress.equalsIgnoreCase(tx.getFrom());
+    } catch (Exception e) {
+        return false;
     }
 }
 

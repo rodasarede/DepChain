@@ -50,7 +50,7 @@ public class ClientApplication {
 
     private void setupInputLoop(ClientLibrary clientLibrary) throws Exception {
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("[INFO] Enter 'transfer <to> <value> <data>' to transfer , or 'exit' to quit:");
+            System.out.println("[INFO] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
 
             while (true) {
                 System.out.print("> ");
@@ -75,14 +75,15 @@ public class ClientApplication {
 
     private void handleTransactionRequest(String[] caseArgs, ClientLibrary clientLibrary) throws Exception {
         System.out.println(caseArgs.length);
-        if (caseArgs.length < 4) { //transfer <to> <balance> <data>
+        if (caseArgs.length < 3) { //transfer <to> <balance> [data]
             System.out.println("[ERROR] Please provide a string to append.");
             return;
         }
 
         String toId = caseArgs[1];
         BigInteger value = new BigInteger(caseArgs[2]);
-        String data = caseArgs[3];
+        String data = (caseArgs.length == 4) ? caseArgs[3] : "";
+        
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
@@ -96,8 +97,7 @@ public class ClientApplication {
         if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
 
         Transaction tx = new Transaction(wallet.getAddress(), toId, value, data, nonce++, 0, null); //TS?
-        //clientLibrary.sendAppendRequest(appendString);
-        //byte [] signedTransaaction
+        
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
         clientLibrary.sendTransferRequest(tx);

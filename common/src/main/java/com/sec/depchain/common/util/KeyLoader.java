@@ -123,6 +123,10 @@ public class KeyLoader {
         
     return privateKeyHex;
 }
+public static String loadPrivateKeyEth(String filePath) throws IOException {
+    String content = new String(Files.readAllBytes(Paths.get(filePath))).trim();
+    return content.startsWith("0x") ? content.substring(2) : content;
+}
     
 
 }

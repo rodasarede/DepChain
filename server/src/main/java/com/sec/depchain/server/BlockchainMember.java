@@ -1,5 +1,7 @@
 package com.sec.depchain.server;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sec.depchain.common.SystemMembership;
+import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
+import com.sec.depchain.common.util.CryptoUtils;
+import com.sec.depchain.common.util.KeyLoader;
 import com.sec.depchain.common.PerfectLinks;
 
 /**
@@ -71,13 +76,18 @@ public class BlockchainMember {
         String messageType = elements[0];
 
         switch (messageType) {
-            case "append-request":
+            case "tx-request":
                 String transaction = elements[1];
+                Transaction tx = deserializeTransaction(elements);
+                if(CryptoUtils.verifySignature(tx)) //TODO if transaction signature is valid what is the next step?
+                {
+                    clientTransactions.put(senderId, transaction);
+                }
                 clientTransactions.put(senderId, transaction);
                 bep.propose(transaction);
                 break;
             case "READ":
-                bep.deliverRead(senderId);
+                bep.deliverRead(senderId);  
                 break;
             case "WRITE":
                 if (DEBUG_MODE == 1) {
@@ -126,5 +136,17 @@ public class BlockchainMember {
 
     public static void setBep(ByzantineEpochConsensus bep) {
         BlockchainMember.bep = bep;
+    }
+    private static Transaction deserializeTransaction(String tx[])
+    {
+        String senderAddress = tx[1];
+        String toAddress = tx[2];
+        BigInteger value = new BigInteger(tx[3]);
+        String data = tx[4].equals("empty") ? "" : tx[4];
+
+        String signature = tx[5];
+        long nonce = Long.parseLong(tx[6]);
+        return new Transaction(senderAddress, toAddress, value, data, nonce, 0, signature);
+        //from:to:value:data:signature:nonce
     }
 }

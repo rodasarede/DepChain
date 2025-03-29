@@ -1,45 +1,18 @@
 #!/bin/bash
 
-# Enhanced ECC Key Pair Generator Script (secp256k1 for Ethereum compatibility)
-
 # Configuration
-KEY_DIR="common/src/main/java/com/sec/depchain/resources/clientKey"
-KEY_ALGORITHM="secp256r1"  # Ethereum uses secp256k1, not secp256r1
-KEY_COUNT=100
-COMBINE_PUBLIC_KEYS=true
-VERBOSE=true
+KEY_DIR="common/src/main/java/com/sec/depchain/resources/keys/eth_keys"
+mkdir -p "$KEY_DIR"
+NUM_KEYS=100
 
-# Create directory if it doesn't exist
-mkdir -p "$KEY_DIR" || { echo "Failed to create directory $KEY_DIR"; exit 1; }
+echo "Generating $NUM_KEYS Ethereum private keys..."
+echo "-------------------------------------------"
 
-# Generate key pairs
-for ((i=1; i<=KEY_COUNT; i++))
-do
-  if [ "$VERBOSE" = true ]; then
-    echo -n "Generating key pair $i/$KEY_COUNT..."
-  fi
-
-  # Private key generation
-  private_key_file="$KEY_DIR/private_key_$i.pem"
-  openssl ecparam -genkey -name "$KEY_ALGORITHM" 2>/dev/null | 
-    openssl pkcs8 -topk8 -nocrypt -out "$private_key_file" 2>/dev/null
+for ((i=1; i<=NUM_KEYS; i++)); do
+  # Generate secure Ethereum private key (hex format)
+  PRIVATE_KEY="0x$(openssl rand -hex 32 | tr '[:upper:]' '[:lower:]')"
   
-  if [ ! -s "$private_key_file" ]; then
-    echo "Failed to generate private key $i"
-    continue
-  fi
-
-  # Public key generation
-  public_key_file="$KEY_DIR/public_key_$i.pem"
-  openssl ec -in "$private_key_file" -pubout -out "$public_key_file" 2>/dev/null
-  
-  if [ ! -s "$public_key_file" ]; then
-    echo "Failed to generate public key $i"
-    rm -f "$private_key_file"
-    continue
-  fi
-
-  if [ "$VERBOSE" = true ]; then
-    echo " done"
-  fi
+  # Save to individual files
+  echo "$PRIVATE_KEY" > "$KEY_DIR/private_key_$i.hex"
+  echo "Generated private key $i"
 done

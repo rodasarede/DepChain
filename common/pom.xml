@@ -24,6 +24,19 @@
             <type>pom</type>
             <scope>import</scope>
          </dependency>
+         <!-- Bouncy Castle for ECC operations -->
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcprov-jdk15on</artifactId>
+    <version>1.70</version>
+</dependency>
+
+<!-- Keccak (SHA3) implementation -->
+<dependency>
+    <groupId>org.web3j</groupId>
+    <artifactId>crypto</artifactId>
+    <version>4.9.8</version>
+</dependency>
         </dependencies>
     </dependencyManagement>
     <repositories>

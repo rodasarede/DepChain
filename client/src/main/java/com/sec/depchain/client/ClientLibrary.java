@@ -88,13 +88,14 @@ public class ClientLibrary {
         this.deliverCallback = callback;
     }
     private String serializeTransaction(Transaction tx) {
+        String data = tx.getData().equals("") ? "empty" : tx.getData(); // how to deal with empty data? //TODO
         // Using colon separator with field prefixes
-        return String.format(
-            "from:%s:to:%s:value:%s:data:%s:signature:%s:nonce:%d",
+        return String.format( //from:to:value:data:signature:nonce
+            "%s:%s:%s:%s:%s:%d",
             tx.getFrom(),
             tx.getTo(),
             tx.getValue().toString(),
-            tx.getData(),
+            data,
             tx.getSignature(),
             tx.getNonce()
         );

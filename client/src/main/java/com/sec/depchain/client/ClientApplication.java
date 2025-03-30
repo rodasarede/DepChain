@@ -3,6 +3,9 @@ package com.sec.depchain.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sec.depchain.common.Transaction;
+
+import java.math.BigInteger;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -10,7 +13,9 @@ import java.util.concurrent.ExecutionException;
 public class ClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
     private static final int DEBUG_MODE = 1;
-
+    private final Wallet wallet;
+    private int nonce = 0;
+    private ClientLibrary clientLibrary;
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
             System.err.println("Usage: <clientId>");
@@ -18,16 +23,21 @@ public class ClientApplication {
         }
 
         int clientId = parseClientId(args[0]);
-        ClientLibrary clientLibrary = new ClientLibrary(clientId);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Shutdown hook triggered. Exiting gracefully...");
-            exitApplication(null, clientLibrary);
-        }));
-
-        setupInputLoop(clientLibrary);
+        ClientApplication app = new ClientApplication(clientId);
     }
 
+    public ClientApplication(int clientId) throws Exception{
+        this.wallet = new Wallet(clientId);
+        this.clientLibrary = new ClientLibrary(clientId, wallet);
+        if (DEBUG_MODE == 1) 
+        {
+            LOGGER.debug("Starting: '{}'", clientId);
+            LOGGER.debug("Address: '{}'", wallet.getAddress());
+
+        }
+        setupInputLoop(clientLibrary);
+    }
     private static int parseClientId(String clientIdArg) {
         try {
             return Integer.parseInt(clientIdArg);
@@ -38,24 +48,23 @@ public class ClientApplication {
         }
     }
 
-    private static void setupInputLoop(ClientLibrary clientLibrary) {
+    private void setupInputLoop(ClientLibrary clientLibrary) throws Exception {
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("[INFO] Enter 'append <string>' to append, or 'exit' to quit:");
+            System.out.println("[INFO] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
 
             while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine().trim();
-                String[] caseArgs = input.split(" ", 2);
+                String[] caseArgs = input.split(" ", 4);
 
                 switch (caseArgs[0].toLowerCase()) {
                     case "exit":
                         exitApplication(scanner, clientLibrary);
                         return;
 
-                    case "append":
-                        handleAppendRequest(caseArgs, clientLibrary);
+                    case "transfer":
+                        handleTransactionRequest(caseArgs, clientLibrary);
                         break;
-
                     default:
                         System.out.println("[ERROR] Invalid command. Use 'append <string>' or 'exit'.");
                         break;
@@ -64,13 +73,17 @@ public class ClientApplication {
         }
     }
 
-    private static void handleAppendRequest(String[] caseArgs, ClientLibrary clientLibrary) {
-        if (caseArgs.length < 2) {
+    private void handleTransactionRequest(String[] caseArgs, ClientLibrary clientLibrary) throws Exception {
+        System.out.println(caseArgs.length);
+        if (caseArgs.length < 3) { //transfer <to> <balance> [data]
             System.out.println("[ERROR] Please provide a string to append.");
             return;
         }
 
-        String appendString = caseArgs[1];
+        String toId = caseArgs[1];
+        BigInteger value = new BigInteger(caseArgs[2]);
+        String data = (caseArgs.length == 4) ? caseArgs[3] : "";
+        
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
@@ -81,10 +94,13 @@ public class ClientApplication {
             futureResponse.complete(result);
         });
 
-        if (DEBUG_MODE == 1) LOGGER.debug("Sending append request: '{}'", appendString);
+        if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
 
-        clientLibrary.sendAppendRequest(appendString);
-
+        Transaction tx = new Transaction(wallet.getAddress(), toId, value, data, nonce++, 0, null); //TS?
+        
+        String signature = wallet.signTransaction(tx);
+        tx.setSignature(signature);
+        clientLibrary.sendTransferRequest(tx);
         try {
             futureResponse.get();
         } catch (InterruptedException e) {

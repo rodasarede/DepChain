@@ -242,7 +242,7 @@ public class PerfectLinks {
 
         if (deliverCallbackCollect != null || deliverCallback != null) {
 
-            if (messageType.equals("append-request") ||
+            if (messageType.equals("tx-request") ||
                     messageType.equals("append-response") ||
                     messageType.equals("READ") ||
                     messageType.equals("WRITE") ||

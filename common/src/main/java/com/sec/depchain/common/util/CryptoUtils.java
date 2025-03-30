@@ -1,14 +1,27 @@
 package com.sec.depchain.common.util;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECPoint;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.utils.Numeric;
+
+import com.sec.depchain.common.Transaction;
 
 public class CryptoUtils {
     private CryptoUtils() {
@@ -92,4 +105,76 @@ public class CryptoUtils {
 
         return signature.verify(signatureBytes);
     }
+    public static String deriveEthAddress(PublicKey publicKey)
+    {
+        ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
+        ECPoint point = ecPublicKey.getW();
+        byte[] x = to32Bytes(point.getAffineX().toByteArray());
+        byte[] y = to32Bytes(point.getAffineY().toByteArray());
+
+        byte[] uncompressedPubKey = new byte[65];
+        uncompressedPubKey[0] = 0x04; // Uncompressed prefix
+        System.arraycopy(x, 0, uncompressedPubKey, 1, 32);
+        System.arraycopy(y, 0, uncompressedPubKey, 33, 32);
+
+        byte[] hash = keccak256(uncompressedPubKey);
+        byte[] addressBytes = Arrays.copyOfRange(hash, hash.length - 20, hash.length);
+    
+        // 4. Convert to hex (with "0x" prefix)
+        return "0x" + bytesToHex(addressBytes);
+        
+    }
+    /**
+ * Converts a BigInteger byte array to exactly 32 bytes, padding with zeros if needed
+ */
+private static byte[] to32Bytes(byte[] bytes) {
+    byte[] result = new byte[32];
+    int start = Math.max(0, 32 - bytes.length); // Calculate padding start
+    System.arraycopy(bytes, 0, result, start, Math.min(bytes.length, 32));
+    return result;
+}
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+    private static byte[] keccak256(byte[] input) {
+    // This is a simplified version. For production, use Bouncy Castle or a proper Keccak lib.
+    try {
+        MessageDigest digest = MessageDigest.getInstance("SHA3-256");
+        return digest.digest(input);
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException("SHA3-256 not supported", e);
+    }
+}
+public static boolean verifySignature(Transaction tx) {
+    try {
+        // 1. Recover the public key from signature
+        byte[] rawTxData = tx.getRawDataForSigning();
+        System.out.println("Transação para dar hash" + rawTxData );
+        byte[] txHash = Hash.sha3(rawTxData);
+        byte[] signatureBytes = Numeric.hexStringToByteArray(tx.getSignature());
+        
+        // Extract r, s, v
+        byte[] r = Arrays.copyOfRange(signatureBytes, 0, 32);
+        byte[] s = Arrays.copyOfRange(signatureBytes, 32, 64);
+        byte v = signatureBytes[64];
+        
+        // 2. Recover the public key
+        
+        BigInteger publicKey = Sign.signedMessageHashToKey(
+            txHash,
+            new Sign.SignatureData(v, r, s)
+        );        
+        // 3. Compare with sender's address
+        String recoveredAddress = "0x" + Keys.getAddress(publicKey);
+
+        return recoveredAddress.equalsIgnoreCase(tx.getFrom());
+    } catch (Exception e) {
+        return false;
+    }
+}
+
 }

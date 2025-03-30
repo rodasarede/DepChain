@@ -1,5 +1,8 @@
 package com.sec.depchain.server;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,6 +18,8 @@ import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 
 public class ByzantineEpochConsensus {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ByzantineEpochConsensus.class);
+
     private static int N;
     private static int f;
     private static int position=1;
@@ -35,9 +40,11 @@ public class ByzantineEpochConsensus {
     private boolean writeQuorumReached = false;
     private boolean acceptQuorumReached = false;
     private static final int DEBUG_MODE = 1;
+    private BlockchainMember blockchainMember;
+
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
-                                   int nodeId) throws Exception {
+                                   int nodeId, BlockchainMember blockchainMember) throws Exception {
         this.leaderId = leaderId;
         this.ets = ets;
         this.perfectLinks = perfectLinks;
@@ -48,8 +55,9 @@ public class ByzantineEpochConsensus {
         this.cc.setDeliverCallback(this::onCollectedDelivery);
         this.nodeId = nodeId;
 
+        this.blockchainMember = blockchainMember;
         if (DEBUG_MODE == 1) {
-            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
+            LOGGER.debug("Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
         }
     }
 
@@ -62,26 +70,29 @@ public class ByzantineEpochConsensus {
         countWrites = 0;
 
         if (DEBUG_MODE == 1) {
-            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Initialized epoch state.");
+            LOGGER.debug("Initialized epoch state.");
         }
     }
 
     public void propose(String v) {
         toPropose = v;
 
-        if (DEBUG_MODE == 1) {
-            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: I am proposing value " + v);
-        }
-
         if (nodeId == leaderId) {
+            if (DEBUG_MODE == 1) {
+                LOGGER.debug("I am proposing value " + v);
+            }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = formatReadMessage(ets);
 
                 if (DEBUG_MODE == 1) {
-                    System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Leader " + leaderId + " sending READ message to " + nodeId);
+                    LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
                 }
 
                 perfectLinks.send(nodeId, message);
+            }
+        } else {
+            if (DEBUG_MODE == 1) {
+                LOGGER.debug("I am not the leader, not doing much for now...");
             }
         }
     }
@@ -90,7 +101,7 @@ public class ByzantineEpochConsensus {
         if (senderId == leaderId) {
             String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
-                System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: Sending STATE " + message + " to conditional collect");
+                LOGGER.debug("Sending STATE " + message + " to conditional collect");
             }
             cc.onInit();
             cc.input(message);
@@ -99,9 +110,9 @@ public class ByzantineEpochConsensus {
 
     public void collected(String[] states) {
         if (DEBUG_MODE == 1) {
-            System.out.println("[DEBUG] BYZANTINE EPOCH CONSENSUS: collected states: ");
+            LOGGER.debug("collected states: ");
             for (String state : states) {
-                System.out.println("- " + state);
+                LOGGER.debug("- " + state);
             }
         }
         String tmpval = null;
@@ -244,7 +255,7 @@ public class ByzantineEpochConsensus {
             accepted = new String[N]; // clear accepted
             acceptQuorumReached = true;
             position++;
-            BlockchainMember.decide(v);
+            blockchainMember.decide(v);
 
         }else{
             if (quorumAcceptTimer != null) {
@@ -403,6 +414,10 @@ public class ByzantineEpochConsensus {
         long entryTs = Long.parseLong(parts[1]);
         String entryVal = parts[2];
         return new TSvaluePair(entryTs, entryVal);
+    }
+
+    public void setCc(ConditionalCollect cc) {
+        this.cc = cc;
     }
 
 }

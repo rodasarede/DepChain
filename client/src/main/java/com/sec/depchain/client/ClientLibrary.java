@@ -17,7 +17,7 @@ public class ClientLibrary {
     private DeliverCallback deliverCallback;
     private final PerfectLinks perfectLinks;
     private static SystemMembership systemMembership;
-    private final Map<String, Set<Integer>> messageResponses = new HashMap<>();
+    private Map<String, Map<String, Set<Integer>>> messageResponses = new HashMap<>();
     private final Set<String> processedTransactions = new HashSet<>();
     private static final int DEBUG_MODE = 1;
 
@@ -59,8 +59,12 @@ public class ClientLibrary {
                 return;
             }
 
-            messageResponses.putIfAbsent(transaction, new HashSet<>());
-            Set<Integer> respondingNodes = messageResponses.get(transaction);
+            messageResponses.putIfAbsent(transaction, new HashMap<>());
+
+            Map<String, Set<Integer>> positionResponses = messageResponses.get(transaction);
+
+            positionResponses.putIfAbsent(position, new HashSet<>());
+            Set<Integer> respondingNodes = positionResponses.get(position);
             respondingNodes.add(nodeId);
 
             if (respondingNodes.size() >= (f + 1)) {
@@ -82,5 +86,15 @@ public class ClientLibrary {
 
     public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
+    }
+    public void close() {
+            LOGGER.info("Shutting down client resources...");
+            if (perfectLinks != null){
+            perfectLinks.close();
+        }
+        messageResponses.clear();
+        processedTransactions.clear();
+        LOGGER.info("Finished shutitng down client resources...");
+
     }
 }

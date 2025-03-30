@@ -58,7 +58,7 @@ public class SystemMembership {
     }
 
     public void setMaximumNumberOfByzantineNodes(int numberOfNodes) {
-        this.maximumNumberOfByzantineNodes = (numberOfNodes - 1) / 3; 
+        this.maximumNumberOfByzantineNodes = (int) Math.floor((numberOfNodes - 1) / 3.0);
     }
 
     public int getNumberOfNodes() {

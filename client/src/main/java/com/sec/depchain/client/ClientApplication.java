@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutionException;
 
 public class ClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
-    private static final int DEBUG_MODE = 0;
+    private static final int DEBUG_MODE = 1;
 
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
@@ -19,6 +19,12 @@ public class ClientApplication {
 
         int clientId = parseClientId(args[0]);
         ClientLibrary clientLibrary = new ClientLibrary(clientId);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Shutdown hook triggered. Exiting gracefully...");
+            exitApplication(null, clientLibrary);
+        }));
+
         setupInputLoop(clientLibrary);
     }
 
@@ -43,7 +49,7 @@ public class ClientApplication {
 
                 switch (caseArgs[0].toLowerCase()) {
                     case "exit":
-                        exitApplication();
+                        exitApplication(scanner, clientLibrary);
                         return;
 
                     case "append":
@@ -89,8 +95,16 @@ public class ClientApplication {
         }
     }
 
-    private static void exitApplication() {
+    private static void exitApplication(Scanner scanner, ClientLibrary clientLibrary) {
         LOGGER.info("Client is exiting");
+        if(scanner != null)
+        {
+        scanner.close();
+        }
+        clientLibrary.close();
+        LOGGER.info("Client library closed.");
+        Runtime.getRuntime().halt(0);
+
         System.exit(0);
     }
 }

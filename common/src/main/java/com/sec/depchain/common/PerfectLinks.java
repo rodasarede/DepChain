@@ -26,8 +26,6 @@ public class PerfectLinks {
     private final ConcurrentHashMap<Integer, AtomicInteger> higestSeqNumberSent;
     //private final ConcurrentHashMap<Integer, Map.Entry<Deque<Integer>, Integer>> deliveredHistory;
 
-    //private final ConcurrentHashMap<String, Boolean> sentMessages; ///TODO not a good practice // guardar mensagens infinitamente -> mudar para sequence number
-    //private final ConcurrentHashMap<String, Boolean> delivered; // Store delivered messages to avoid duplicates
 
     private final ConcurrentHashMap<Integer, Deque<Integer>> deliveredHistory;
     private final ConcurrentHashMap<Integer, AtomicInteger> receivedSeqNumberUntil;
@@ -38,7 +36,7 @@ public class PerfectLinks {
 
     private final PrivateKey privateKey;
 
-    private static final int DEBUG_MODE = 1;
+    private static final int DEBUG_MODE = 0;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
@@ -66,6 +64,23 @@ public class PerfectLinks {
 
         this.privateKey = KeyLoader.loadPrivateKey(
                 "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
+    }
+
+    //Constructor for testing
+    public PerfectLinks(int nodeId,FairLossLinks fairLossLinks) throws Exception{
+        systemMembership = new SystemMembership(
+                Constants.PROPERTIES_PATH);
+        this.port = getPort(nodeId);
+        this.nodeId = nodeId;
+        this.systemMembership = systemMembership;
+        this.fairLossLinks = fairLossLinks;
+        this.waitingForACK = new ConcurrentHashMap<>();
+        this.higestSeqNumberSent = new ConcurrentHashMap<>();
+        this.deliveredHistory = new ConcurrentHashMap<>();
+        this.receivedSeqNumberUntil = new ConcurrentHashMap<>();
+
+        this.privateKey = KeyLoader.loadPrivateKey(
+            "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
     }
 
     // Set the callback to notify when a message is delivered
@@ -109,16 +124,21 @@ public class PerfectLinks {
             new Thread(() -> {
                 while (destWaitingForACK.contains(newSeqNum)) {
                     try {
+                        if (DEBUG_MODE == 1) {
+                            LOGGER.debug("Sending message {} to server {}", authenticatedMsg, destId);
+                        }
                         fairLossLinks.send(destIP, destPort, authenticatedMsg);
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
                         timeout.set((long) (1.5 * timeout.get())); // Flexible timeout increase
                     } catch (Exception e) {
+                        //Thread.currentThread().interrupt(); // Preserve interruption status
+                        LOGGER.warn("Thread interrupted while resending message to {}", destId);
                         e.printStackTrace();
                     }
                 }
             }).start();
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(); 
         }
     }
 
@@ -380,8 +400,29 @@ public class PerfectLinks {
         }
         return Constants.UNKNOWN;
     }
-    public void close() {
-        fairLossLinks.close();
-    }
+    public void close(){
+        LOGGER.info("Shutting down PerfectLinks resources...");
+        if(fairLossLinks != null)
+        {
+            LOGGER.info("Closing FairLossLinks...");
 
+         fairLossLinks.close();
+         LOGGER.info("FairLossLinks closed.");
+
+        }
+        waitingForACK.clear();
+
+        higestSeqNumberSent.clear();
+
+        deliveredHistory.clear();
+
+        receivedSeqNumberUntil.clear();
+        LOGGER.info("Finished perfect links shutdown.");
+    }
+    public PublicKey getPublicKey(int index){
+        return this.systemMembership.getPublicKey(index);
+    }
+    public DeliverCallback getDeliverCallback() {
+        return deliverCallback;
+    }
 }

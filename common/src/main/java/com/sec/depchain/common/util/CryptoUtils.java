@@ -171,7 +171,7 @@ public static boolean verifySignature(Transaction tx) {
         // 3. Compare with sender's address
         String recoveredAddress = "0x" + Keys.getAddress(publicKey);
 
-        return recoveredAddress.equalsIgnoreCase(tx.getFrom());
+        return recoveredAddress.equalsIgnoreCase(tx.getFrom().toHexString());
     } catch (Exception e) {
         return false;
     }

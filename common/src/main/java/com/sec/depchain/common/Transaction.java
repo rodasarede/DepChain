@@ -1,13 +1,12 @@
 package com.sec.depchain.common;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.nio.charset.StandardCharsets;
 
 import org.checkerframework.checker.units.qual.s;
 import org.hyperledger.besu.datatypes.Address;
-import org.identityconnectors.common.ByteUtil;
 import org.web3j.utils.Numeric;
 
 public class Transaction {
@@ -16,13 +15,12 @@ public class Transaction {
     private BigInteger value; //how much ether to transfer
     private String data; //payload (func name, args, etc...); – optional field to include arbitrary data
     private long nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
-    //index, gets incremented every time transaction gets mined
     private long timeStamp;
     private String signature; //  the identifier of the sender. This is generated when the sender's private key signs the transaction and confirms the sender has authorized this transaction
     
     //https://ethereum.org/en/developers/docs/transactions/
 
-    public Transaction(String from, String to, BigInteger value, String data, long nonce, long timestamp, String signature) {
+    public Transaction(Address to, Address from, BigInteger value, String data, long nonce, long timestamp, String signature) {
         this.to = to;
         this.from = from;
         this.value = value;
@@ -73,134 +71,90 @@ public class Transaction {
     public void setValue(BigInteger value) {
         this.value = value;
     }
+
+    // Method to validate the transaction
+    public boolean isValid(Map<Address, AccountState> currentState) {
+        // Check if the sender has enough balance
+        AccountState senderState = currentState.get(from);
+        if (senderState == null || senderState.getBalance().compareTo(value) < 0) {
+            return false; // Insufficient balance
+        }
+
+        // Check if the receiver exists in the current state
+        AccountState receiverState = currentState.get(to);
+        if (receiverState == null) {
+            return false; // Receiver does not exist
+        }
+
+        // Additional checks if needed(signature verification)
+
+        return true; // Transaction is valid
+    }
+
+
+    public boolean execute(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain) {
+        // Check if the transaction is valid
+        if (!isValid(currentState)) {
+            return false;
+        }
+
+        // Update the state of the sender and receiver
+        AccountState senderState = currentState.get(from);
+        AccountState receiverState = currentState.get(to);
+
+        // Update sender's balance
+        senderState.setBalance(senderState.getBalance().subtract(value));
+
+        // Update receiver's balance
+        receiverState.setBalance(receiverState.getBalance().add(value));
+
+        // Add the transaction to the list of transactions
+        transactions.add(this);
+        
+        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
+        // newBlock.printBlockDetails();
+        blockchain.getChain().add(newBlock);
+
+        return true;
+    }
+
+
+
+
     public byte[] getRawDataForSigning() {
-    // Convert all transaction fields to bytes
-    byte[] fromBytes = Numeric.hexStringToByteArray(this.from);
-    byte[] toBytes = Numeric.hexStringToByteArray(this.to);
-    byte[] valueBytes = this.value.toByteArray();
-    byte[] dataBytes = this.data.getBytes(StandardCharsets.UTF_8);
-    byte[] nonceBytes = BigInteger.valueOf(this.nonce).toByteArray();
-    byte[] timestampBytes = BigInteger.valueOf(this.timeStamp).toByteArray();
+        // Convert all transaction fields to bytes
+        byte[] fromBytes = Numeric.hexStringToByteArray(this.from.toHexString());
+        byte[] toBytes = Numeric.hexStringToByteArray(this.to.toHexString());
+        byte[] valueBytes = this.value.toByteArray();
+        byte[] dataBytes = this.data.getBytes(StandardCharsets.UTF_8);
+        byte[] nonceBytes = BigInteger.valueOf(this.nonce).toByteArray();
+        byte[] timestampBytes = BigInteger.valueOf(this.timeStamp).toByteArray();
 
-    // Calculate total length
-    int totalLength = fromBytes.length + toBytes.length + valueBytes.length 
-                   + dataBytes.length + nonceBytes.length + timestampBytes.length;
-    
-    // Create destination array
-    byte[] result = new byte[totalLength];
-    int offset = 0;
-    
-    // Manual merging
-    System.arraycopy(fromBytes, 0, result, offset, fromBytes.length);
-    offset += fromBytes.length;
-    System.arraycopy(toBytes, 0, result, offset, toBytes.length);
-    offset += toBytes.length;
-    System.arraycopy(valueBytes, 0, result, offset, valueBytes.length);
-    offset += valueBytes.length;
-    System.arraycopy(dataBytes, 0, result, offset, dataBytes.length);
-    offset += dataBytes.length;
-    System.arraycopy(nonceBytes, 0, result, offset, nonceBytes.length);
-    offset += nonceBytes.length;
-    System.arraycopy(timestampBytes, 0, result, offset, timestampBytes.length);
-    
-    return result;
-}
-
-    // Method to validate the transaction
-    public boolean isValid(Map<Address, AccountState> currentState) {
-        // Check if the sender has enough balance
-        AccountState senderState = currentState.get(from);
-        if (senderState == null || senderState.getBalance().compareTo(value) < 0) {
-            return false; // Insufficient balance
-        }
-
-        // Check if the receiver exists in the current state
-        AccountState receiverState = currentState.get(to);
-        if (receiverState == null) {
-            return false; // Receiver does not exist
-        }
-
-        // Additional checks if needed(signature verification)
-
-        return true; // Transaction is valid
-    }
-
-
-    public boolean execute(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain) {
-        // Check if the transaction is valid
-        if (!isValid(currentState)) {
-            return false;
-        }
-
-        // Update the state of the sender and receiver
-        AccountState senderState = currentState.get(from);
-        AccountState receiverState = currentState.get(to);
-
-        // Update sender's balance
-        senderState.setBalance(senderState.getBalance().subtract(value));
-
-        // Update receiver's balance
-        receiverState.setBalance(receiverState.getBalance().add(value));
-
-        // Add the transaction to the list of transactions
-        transactions.add(this);
+        // Calculate total length
+        int totalLength = fromBytes.length + toBytes.length + valueBytes.length 
+                    + dataBytes.length + nonceBytes.length + timestampBytes.length;
         
-        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
-        // newBlock.printBlockDetails();
-        blockchain.getChain().add(newBlock);
-
-        return true;
-    }
-
-
-
-    // Method to validate the transaction
-    public boolean isValid(Map<Address, AccountState> currentState) {
-        // Check if the sender has enough balance
-        AccountState senderState = currentState.get(from);
-        if (senderState == null || senderState.getBalance().compareTo(value) < 0) {
-            return false; // Insufficient balance
-        }
-
-        // Check if the receiver exists in the current state
-        AccountState receiverState = currentState.get(to);
-        if (receiverState == null) {
-            return false; // Receiver does not exist
-        }
-
-        // Additional checks if needed(signature verification)
-
-        return true; // Transaction is valid
-    }
-
-
-    public boolean execute(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain) {
-        // Check if the transaction is valid
-        if (!isValid(currentState)) {
-            return false;
-        }
-
-        // Update the state of the sender and receiver
-        AccountState senderState = currentState.get(from);
-        AccountState receiverState = currentState.get(to);
-
-        // Update sender's balance
-        senderState.setBalance(senderState.getBalance().subtract(value));
-
-        // Update receiver's balance
-        receiverState.setBalance(receiverState.getBalance().add(value));
-
-        // Add the transaction to the list of transactions
-        transactions.add(this);
+        // Create destination array
+        byte[] result = new byte[totalLength];
+        int offset = 0;
         
-        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
-        // newBlock.printBlockDetails();
-        blockchain.getChain().add(newBlock);
-
-        return true;
+        // Manual merging
+        System.arraycopy(fromBytes, 0, result, offset, fromBytes.length);
+        offset += fromBytes.length;
+        System.arraycopy(toBytes, 0, result, offset, toBytes.length);
+        offset += toBytes.length;
+        System.arraycopy(valueBytes, 0, result, offset, valueBytes.length);
+        offset += valueBytes.length;
+        System.arraycopy(dataBytes, 0, result, offset, dataBytes.length);
+        offset += dataBytes.length;
+        System.arraycopy(nonceBytes, 0, result, offset, nonceBytes.length);
+        offset += nonceBytes.length;
+        System.arraycopy(timestampBytes, 0, result, offset, timestampBytes.length);
+        
+        return result;
     }
 
-
+   
 
 }
 

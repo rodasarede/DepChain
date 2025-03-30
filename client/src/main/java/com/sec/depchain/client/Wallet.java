@@ -60,8 +60,8 @@ public class Wallet {
     private String createSigningData(Transaction tx) {
         // Create deterministic string representation for signing
         return String.join(":",
-            tx.getFrom(),
-            tx.getTo(),
+            tx.getFrom().toHexString(),
+            tx.getTo().toHexString(),
             tx.getValue().toString(),
             tx.getData(),
             String.valueOf(tx.getNonce())

@@ -1,5 +1,6 @@
 package com.sec.depchain.client;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,8 @@ public class ClientApplication {
 
         if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
 
-        Transaction tx = new Transaction(wallet.getAddress(), toId, value, data, nonce++, 0, null); //TS?
+        //TODO id logic right now is to address
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data, nonce++, 0, null); //TS?
         
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);

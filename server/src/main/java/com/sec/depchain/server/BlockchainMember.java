@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,7 +178,7 @@ public class BlockchainMember {
 
         String signature = tx[5];
         long nonce = Long.parseLong(tx[6]);
-        return new Transaction(senderAddress, toAddress, value, data, nonce, 0, signature);
+        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
         //from:to:value:data:signature:nonce
     }
 }

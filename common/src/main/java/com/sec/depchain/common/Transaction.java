@@ -14,7 +14,7 @@ public class Transaction {
     private Address to; //the receiving address (if an externally-owned account, the transaction will transfer value. If a contract account, the transaction will execute the contract code)
     private BigInteger value; //how much ether to transfer
     private String data; //payload (func name, args, etc...); – optional field to include arbitrary data
-    private long nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
+    private BigInteger nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
     private long timeStamp;
     private String signature; //  the identifier of the sender. This is generated when the sender's private key signs the transaction and confirms the sender has authorized this transaction
     
@@ -32,7 +32,7 @@ public class Transaction {
     public String getData() {
         return data;
     }
-    public long getNonce() {
+    public BigInteger getNonce() {
         return nonce;
     }
     public Address getFrom() {
@@ -53,7 +53,7 @@ public class Transaction {
     public void setData(String data) {
         this.data = data;
     }
-    public void setNonce(long nonce) {
+    public void setNonce(BigInteger nonce) {
         this.nonce = nonce;
     }
     public void setFrom(Address from) {
@@ -76,14 +76,20 @@ public class Transaction {
     public boolean isValid(Map<Address, AccountState> currentState) {
         // Check if the sender has enough balance
         AccountState senderState = currentState.get(from);
-        if (senderState == null || senderState.getBalance().compareTo(value) < 0) {
+        if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {
             return false; // Insufficient balance
         }
-
+        
         // Check if the receiver exists in the current state
         AccountState receiverState = currentState.get(to);
         if (receiverState == null) {
             return false; // Receiver does not exist
+        }
+        
+        //Replay attacks 
+        if(senderState.getNonce().compareTo(getNonce())!= 0) //
+        {
+            return false;
         }
 
         // Additional checks if needed(signature verification)

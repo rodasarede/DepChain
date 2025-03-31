@@ -9,6 +9,12 @@
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeee": {
       "balance": "50000"
     },
+    "0xb8124c42749e5f1908ab8c5afde9358005320306": {
+      "balance": "1000"
+    },
+    "0x336f5f589a81811b47d582d4853af252bfb7c5e2": {
+      "balance": "1000"
+    },
     "0x1234567891234567891234567891234567891234": {
       "contract_name": "ISTCoinContract",
       "balance": 0,

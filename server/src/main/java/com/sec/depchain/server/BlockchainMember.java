@@ -143,7 +143,10 @@ public class BlockchainMember {
         }  
 
         int index = blockchain_1.getChainSize();
+        blockchain_1.getLatestBlock().printBlockDetails();
+
         LOGGER.info("Transaction {} committed at index {}.", val, index);
+        blockchain_1.getLatestBlock().printBlockDetails();
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
             if (entry.getValue().equals(val)) {
@@ -204,4 +207,6 @@ public class BlockchainMember {
         return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
         //from:to:value:data:signature:nonce
     }
+
+    
 }

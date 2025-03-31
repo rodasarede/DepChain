@@ -19,7 +19,7 @@ public class Block {
     private List<Transaction> transactions;
     private Map<Address, AccountState> state;
     // private long timestamp;
-    private int nonce;
+    // private int nonce;
 
     public Block(String genesisFilename){
         // Load the genesis block from the json file

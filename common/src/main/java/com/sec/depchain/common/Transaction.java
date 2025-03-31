@@ -9,6 +9,8 @@ import org.checkerframework.checker.units.qual.s;
 import org.hyperledger.besu.datatypes.Address;
 import org.web3j.utils.Numeric;
 
+import com.sec.depchain.common.util.CryptoUtils;
+
 public class Transaction {
     private Address from; // the address of the sender, that will be signing the transaction. This will be an externally-owned account as contract accounts cannot send transactions
     private Address to; //the receiving address (if an externally-owned account, the transaction will transfer value. If a contract account, the transaction will execute the contract code)
@@ -74,6 +76,13 @@ public class Transaction {
 
     // Method to validate the transaction
     public boolean isValid(Map<Address, AccountState> currentState) {
+
+
+        if(!CryptoUtils.verifySignature(this))
+        {
+             return false;
+        }
+         
         // Check if the sender has enough balance
         AccountState senderState = currentState.get(from);
         if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {

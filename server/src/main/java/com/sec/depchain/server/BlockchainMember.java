@@ -16,6 +16,7 @@ import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
+import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
 
 /**
@@ -30,6 +31,7 @@ public class BlockchainMember {
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
+    private static Blockchain blockchain_1;
     private int DEBUG_MODE = 1;
 
     public static void main(String[] args) throws Exception {
@@ -45,6 +47,7 @@ public class BlockchainMember {
     public BlockchainMember(int id) throws Exception{
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
+        this.blockchain_1 = new Blockchain();
         if (DEBUG_MODE == 1) {
             LOGGER.debug("Initialized with ID {}, Leader: {}", id, isLeader);
         }
@@ -82,13 +85,19 @@ public class BlockchainMember {
 
         switch (messageType) {
             case "tx-request":
-                String transaction = elements[1];
+                String transaction = message.replace(":", "_");
                 Transaction tx = deserializeTransaction(elements);
                 if(CryptoUtils.verifySignature(tx)) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
                 }
-                clientTransactions.put(senderId, transaction);
+                else{
+                    LOGGER.error("Invalid transaction signature from client {}: {}", senderId, transaction);
+                    String responseMessage = "<append-response:" + transaction + ":0:fail>";
+                    perfectLinks.send(senderId, responseMessage);
+                    break;
+                }
+                
                 if (DEBUG_MODE == 1) {
                     LOGGER.debug("append: bep.propose(senderId:{}, value:{})", senderId, elements[1]);
                 }
@@ -118,8 +127,22 @@ public class BlockchainMember {
     }
 
     public void decide(String val) {
-        blockchain.add(val);
-        int index = blockchain.size();
+        //TODO change the decide logic to add a new block with the val decided( for now a single transaction, list of transactions if we have time)
+        // blockchain.add(val);
+        // int index = blockchain.size();
+
+        System.out.println("Decided transaction: " + val);
+        String[] transaction = val.split("_");
+        Transaction tx = deserializeTransaction(transaction);
+        if(tx.execute(blockchain_1.getCurrentState(), blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
+            System.out.println("Transaction executed successfully");
+            System.out.println("Updating world state");
+            blockchain_1.updateSimpleWorldState();
+        }else{
+            System.out.println("Transaction execution failed");
+        }  
+
+        int index = blockchain_1.getChainSize();
         LOGGER.info("Transaction {} committed at index {}.", val, index);
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {

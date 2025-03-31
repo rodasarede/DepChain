@@ -23,6 +23,7 @@ public class Block {
 
     public Block(String genesisFilename){
         // Load the genesis block from the json file
+        // System.out.println("System is in this path: " + System.getProperty("user.dir"));
         loadFromJson(genesisFilename);
     }
 
@@ -65,6 +66,7 @@ public class Block {
     }
 
     public void loadFromJson(String filename) {
+        
         try (FileReader reader = new FileReader(filename)) {
             Gson gson = new Gson();
             JsonBlockData data = gson.fromJson(reader, JsonBlockData.class);

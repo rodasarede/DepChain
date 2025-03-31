@@ -20,7 +20,7 @@ public class Transaction {
     
     //https://ethereum.org/en/developers/docs/transactions/
 
-    public Transaction(Address to, Address from, BigInteger value, String data, long nonce, long timestamp, String signature) {
+    public Transaction(Address from, Address to, BigInteger value, String data, long nonce, long timestamp, String signature) {
         this.to = to;
         this.from = from;
         this.value = value;

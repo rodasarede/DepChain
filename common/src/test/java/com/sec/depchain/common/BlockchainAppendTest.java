@@ -36,6 +36,7 @@ public class BlockchainAppendTest {
     private static ByteArrayOutputStream byteArrayOutputStream;
     
     @BeforeAll
+    // all server nodes will do this to initialize simpleworld with genesis
     public static void setup(){
         System.out.println("Load first block(genesis block) in json into the blockchain");
 
@@ -53,12 +54,14 @@ public class BlockchainAppendTest {
         executor.tracer(tracer);
         
         simpleWorld = new SimpleWorld();
+        //updates simple world with current blockchain state 
         updateSimpleWorldState();
         // get ISTCoin contract creation bytecode 
         String Bytecode = simpleWorld.get(Address.fromHexString("0x1234567891234567891234567891234567891234")).getCode().toHexString();
        
 
         executor.code(Bytes.fromHexString(Bytecode));
+        //contract admin with all supply
         executor.sender(Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
         executor.receiver(Address.fromHexString("1234567891234567891234567891234567891234"));
         executor.worldUpdater(simpleWorld.updater());
@@ -97,8 +100,8 @@ public class BlockchainAppendTest {
         
         //mock transaction to be appended 
         Transaction tx = new Transaction(
-            Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeee"), // to
             Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"), // from
+            Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeee"), // to
             BigInteger.valueOf(100), // value
             "", // data
             1, // nonce

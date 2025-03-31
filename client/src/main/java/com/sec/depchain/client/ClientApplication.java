@@ -67,7 +67,7 @@ public class ClientApplication {
                         handleTransactionRequest(caseArgs, clientLibrary);
                         break;
                     default:
-                        System.out.println("[ERROR] Invalid command. Use 'append <string>' or 'exit'.");
+                        System.out.println("[ERROR] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
                         break;
                 }
             }

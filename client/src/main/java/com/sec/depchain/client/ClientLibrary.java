@@ -85,6 +85,8 @@ public class ClientLibrary {
                     }
                 }
             }
+        }else if ("<append-response".equals(type) && "fail>".equals(status)) {
+            //TODO send to client that transaction failed
         }
     }
 

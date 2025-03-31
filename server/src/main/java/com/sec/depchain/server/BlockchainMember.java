@@ -30,7 +30,7 @@ public class BlockchainMember {
     private List<String> blockchain = new ArrayList<>();
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
-    private Map<String, Transaction> mempool = new ConcurrentHashMap<>();
+    private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
     private static Blockchain blockchain_1;
     private int DEBUG_MODE = 1;
 
@@ -87,8 +87,7 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_");
                 Transaction tx = deserializeTransaction(elements);
-
-                if(tx.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
+                if(CryptoUtils.verifySignature(tx)) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
                 }
@@ -211,22 +210,4 @@ public class BlockchainMember {
     }
 
     
-
-    /*   // Method to add a transaction to the mempool
-      public void addTransactionToMempool(Transaction tx) {
-        // 1. Serialize the transaction data
-        byte[] serializedTx = tx.serializeTransaction
-
-        // 2. Hash the serialized transaction data (Keccak-256)
-        byte[] txHash = Hash.sha3(serializedTx);
-
-        // 3. Convert the transaction hash to a hexadecimal string
-        String txHashHex = bytesToHex(txHash);
-
-        // 4. Store the transaction in the mempool using the transaction hash as the key
-        memPool.put(txHashHex, tx);
-
-        // Log the transaction being added
-        System.out.println("Transaction added to memPool: " + txHashHex);
-    }*/
 }

@@ -92,8 +92,11 @@ public class Block {
         Map<String, AccountState> state;
     }
 
+
+
     public void printBlockDetails() {
         
+    
         System.out.println("Block Details:");
         System.out.println("Hash: " + this.blockHash);
         System.out.println("Previous Hash: " + this.previousBlockHash);

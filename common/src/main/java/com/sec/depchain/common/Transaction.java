@@ -96,7 +96,7 @@ public class Transaction {
     }
 
 
-    public boolean execute(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain) {
+    public boolean executeNativeTransfer(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain) {
         // Check if the transaction is valid
         if (!isValid(currentState)) {
             return false;
@@ -118,6 +118,14 @@ public class Transaction {
         Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
         // newBlock.printBlockDetails();
         blockchain.getChain().add(newBlock);
+
+        return true;
+    }
+
+    public boolean executeSmartContractCall(Map<Address, AccountState> currentState, List<Transaction> transactions,Blockchain blockchain){
+        
+
+
 
         return true;
     }

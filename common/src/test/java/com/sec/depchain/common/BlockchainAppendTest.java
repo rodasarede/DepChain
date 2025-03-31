@@ -109,7 +109,7 @@ public class BlockchainAppendTest {
             "signature" // signature
         );
 
-        if(tx.execute(blockchain.getCurrentState(), blockchain.getLatestBlock().getTransactions(), blockchain)){
+        if(tx.executeNativeTransfer(blockchain.getCurrentState(), blockchain.getLatestBlock().getTransactions(), blockchain)){
             System.out.println("Transaction executed successfully");
             System.out.println("Updating world state");
             updateSimpleWorldState();

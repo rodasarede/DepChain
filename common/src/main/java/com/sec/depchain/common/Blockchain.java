@@ -69,8 +69,9 @@ public class Blockchain {
         executor.commitWorldState();
         executor.execute();
 
+        
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
-        //runtime bytecode
+        //runtime bytecode of the ISTCoin smartcontract
         executor.code(Bytes.fromHexString(runtimeBytecode));
 
         //test call smart contract
@@ -95,6 +96,18 @@ public class Blockchain {
     }
     public int getChainSize() {
         return chain.size();
+    }
+    public EVMExecutor getExecutor(){
+        return executor;
+    }
+
+    public String callSmartContract(String data){
+        // call the specific bytecode associated to contractAddress
+        // Address contractAddress
+        // executor.code(contractbytecode)
+        executor.callData(Bytes.fromHexString(data));
+        executor.execute();
+        return byteArrayOutputStream.toString();
     }
 
     public void updateSimpleWorldState() {

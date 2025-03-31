@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +92,8 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_");
                 Transaction tx = deserializeTransaction(elements);
-
-                if(tx.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
+                
+                if(tx.isValid(blockchain_1.getCurrentState())) 
                 {
                     clientTransactions.put(senderId, transaction);
                     mempool.addTransactionToMempool(tx);
@@ -140,15 +141,25 @@ public class BlockchainMember {
         System.out.println("Decided transaction: " + val);
         String[] transaction = val.split("_");
         Transaction tx = deserializeTransaction(transaction);
-        if(tx.execute(blockchain_1.getCurrentState(), blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
-            System.out.println("Transaction executed successfully");
-            System.out.println("Updating world state");
-            blockchain_1.updateSimpleWorldState();
-        }else{
-            //TODO if exection fails send fail message
-            System.out.println("Transaction execution failed");
-        }  
+        // check if transaction is to a smart contract address 
 
+        if(tx.getTo().equals(Address.fromHexString("0x1234567891234567891234567891234567891234"))  ){
+            // invocation of IST smart contract / a bit hardcoded for now
+            String result = blockchain_1.callSmartContract(tx.getData());
+            // parse the tracer result depending on the type of call can return string, boolean
+
+        }else{
+
+            if(tx.executeNativeTransfer(blockchain_1.getCurrentState(), blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
+                System.out.println("Transaction executed successfully");
+                System.out.println("Updating world state");
+                blockchain_1.updateSimpleWorldState();
+            }else{
+                //TODO if exection fails send fail message
+                System.out.println("Transaction execution failed");
+            }  
+
+        }
         int index = blockchain_1.getChainSize();
         blockchain_1.getLatestBlock().printBlockDetails();
 

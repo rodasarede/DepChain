@@ -66,6 +66,11 @@ public class ClientApplication {
                     case "transfer":
                         handleTransactionRequest(caseArgs, clientLibrary);
                         break;
+
+                    case "execute":
+                        // change smart contract execute logic to here?
+                        // for now done in transfer
+                        break;                        
                     default:
                         System.out.println("[ERROR] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
                         break;
@@ -81,7 +86,7 @@ public class ClientApplication {
             return;
         }
 
-        String toId = caseArgs[1];
+        String to = caseArgs[1];
         BigInteger value = new BigInteger(caseArgs[2]);
         String data = (caseArgs.length == 4) ? caseArgs[3] : "";
         
@@ -95,10 +100,10 @@ public class ClientApplication {
             futureResponse.complete(result);
         });
 
-        if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
+        if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",to);
 
         //TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), null); //TS?
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(to), value, data,  nonce.add(BigInteger.ONE), null); //TS?
         
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);

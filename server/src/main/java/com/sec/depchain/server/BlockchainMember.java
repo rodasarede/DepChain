@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.web3j.utils.Numeric;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.Transaction;
@@ -30,7 +31,9 @@ public class BlockchainMember {
     private List<String> blockchain = new ArrayList<>();
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
-    private Map<String, Transaction> mempool = new ConcurrentHashMap<>();
+    private Mempool mempool;
+    private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
+
     private static Blockchain blockchain_1;
     private int DEBUG_MODE = 1;
 
@@ -48,6 +51,7 @@ public class BlockchainMember {
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain_1 = new Blockchain();
+        this.mempool = new Mempool();
         if (DEBUG_MODE == 1) {
             LOGGER.debug("Initialized with ID {}, Leader: {}", id, isLeader);
         }
@@ -91,6 +95,7 @@ public class BlockchainMember {
                 if(tx.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
+                    mempool.addTransactionToMempool(tx);
                 }
                 else{
                     LOGGER.error("Invalid transaction signature from client {}: {}", senderId, transaction);
@@ -210,23 +215,5 @@ public class BlockchainMember {
         //from:to:value:data:signature:nonce
     }
 
-    
 
-    /*   // Method to add a transaction to the mempool
-      public void addTransactionToMempool(Transaction tx) {
-        // 1. Serialize the transaction data
-        byte[] serializedTx = tx.serializeTransaction
-
-        // 2. Hash the serialized transaction data (Keccak-256)
-        byte[] txHash = Hash.sha3(serializedTx);
-
-        // 3. Convert the transaction hash to a hexadecimal string
-        String txHashHex = bytesToHex(txHash);
-
-        // 4. Store the transaction in the mempool using the transaction hash as the key
-        memPool.put(txHashHex, tx);
-
-        // Log the transaction being added
-        System.out.println("Transaction added to memPool: " + txHashHex);
-    }*/
 }

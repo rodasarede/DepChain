@@ -1,5 +1,6 @@
 package com.sec.depchain.common;
 
+import com.sec.depchain.common.util.CryptoUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -91,9 +92,11 @@ public class Transaction {
         {
             return false;
         }
-
-        // Additional checks if needed(signature verification)
-
+        // signature verification
+        if(CryptoUtils.verifySignature(this))
+        {
+            return false;
+        }
         return true; // Transaction is valid
     }
 
@@ -123,9 +126,6 @@ public class Transaction {
 
         return true;
     }
-
-
-
 
     public byte[] getRawDataForSigning() {
         // Convert all transaction fields to bytes

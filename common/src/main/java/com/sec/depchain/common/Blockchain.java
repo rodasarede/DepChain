@@ -17,6 +17,7 @@ import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
 import com.sec.depchain.common.SmartContractsUtil.helpers;
+import com.sec.depchain.common.util.Constants;
 
 
 
@@ -24,31 +25,37 @@ import com.sec.depchain.common.SmartContractsUtil.helpers;
 public class Blockchain {
 
     private static final int DEBUG_MODE = 1;
-    private static final String GENESIS_BLOCK_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/Genesis.json";
-    private static List<Block> chain = new ArrayList<>();
-    private static List<Transaction> pendingTransactions = new ArrayList<>();
-    private static Map<Address, AccountState> currentState = new HashMap<>();
-    private static SimpleWorld simpleWorld;
-    private static EVMExecutor executor;
-    private static ByteArrayOutputStream byteArrayOutputStream;
+
+    private final List<Block> chain;
+    private final List<Transaction> pendingTransactions;
+    private final Map<Address, AccountState> currentState;
+    private final SimpleWorld simpleWorld;
+    private final EVMExecutor executor;
+    private final ByteArrayOutputStream byteArrayOutputStream;
 
     public Blockchain() {
        
+        this.chain = new ArrayList<>();
+        this.pendingTransactions = new ArrayList<>();
+        this.currentState = new HashMap<>();
+        this.simpleWorld = new SimpleWorld();
+
         //node tracer
-        byteArrayOutputStream = new ByteArrayOutputStream();
+        this.byteArrayOutputStream = new ByteArrayOutputStream();
+
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
         StandardJsonTracer tracer = new StandardJsonTracer(printStream, true, true, true, true);
 
         //initialize local EVM node
-        executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
+        this.executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
         executor.tracer(tracer);
         
-        Block genesisBlock = new Block(GENESIS_BLOCK_FILE);
-        chain.add(genesisBlock);
-        currentState.putAll(genesisBlock.getState());
+        Block genesisBlock = new Block(Constants.GENESIS_BLOCK_FILE);
+        this.chain.add(genesisBlock);
+        this.currentState.putAll(genesisBlock.getState());
 
         // initialize simpleworld state and update it with currentstate
-        simpleWorld = new SimpleWorld();
+
         updateSimpleWorldState();
 
         // ISTCoin contract creation bytecode from contract address code
@@ -66,23 +73,16 @@ public class Blockchain {
         //runtime bytecode
         executor.code(Bytes.fromHexString(runtimeBytecode));
 
-
         //test call smart contract
         // executor.callData(Bytes.fromHexString("95d89b41"));
         // executor.execute();
         // String tokenSymbol = helpers.extractStringFromReturnData(byteArrayOutputStream);
         // System.out.println("Output of 'symbol()': " + tokenSymbol);
-
-
-
     }
-
-    
 
     public  void addTransaction(Transaction tx) {
         pendingTransactions.add(tx);
     }
-
 
     public  List<Block> getChain() {
         return chain;
@@ -141,6 +141,22 @@ public class Blockchain {
 
     }
 
+    /*public Block mineBlock(){
+        //TODO
+        Block latestBlock = getLatestBlock();
+        Map<Address, AccountState> newState = new HashMap<>(currentState);
+        for(Transaction tx: pendingTransactions){
+            //apply transactions
+        }
+        Block newBlock = new Block(null, pendingTransactions, newState);
 
+        this.chain.add(newBlock);
+
+        currentState.clear();
+        currentState.putAll(newState);
+        pendingTransactions.clear();
+        updateSimpleWorldState();
+        return newBlock;
+    }*/
 }
 

@@ -211,7 +211,7 @@ public class BlockchainMember {
 
         String signature = tx[5];
         BigInteger nonce = new BigInteger(tx[6]);
-        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
+        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce,signature);
         //from:to:value:data:signature:nonce
     }
 

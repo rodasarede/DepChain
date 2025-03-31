@@ -27,11 +27,12 @@ public class Block {
         loadFromJson(genesisFilename);
     }
 
-    public Block(String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state) {
+    public Block(/*String blockHash*/String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state) {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
         this.state = state;
         // this.timestamp = System.currentTimeMillis();
+        this.blockHash = blockHash; //TODO
         this.blockHash = calculateHash();
     }
 

@@ -105,7 +105,7 @@ public class BlockchainAppendTest {
             BigInteger.valueOf(100), // value
             "", // data
             BigInteger.valueOf(1), // nonce
-            System.currentTimeMillis(), // timestamp
+             // timestamp
             "signature" // signature
         );
 

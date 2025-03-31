@@ -15,7 +15,7 @@ public class ClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
     private static final int DEBUG_MODE = 1;
     private final Wallet wallet;
-    private BigInteger nonce = new BigInteger("0");
+    private BigInteger nonce = new BigInteger("0"); //TODO how do I get the nonce
     private ClientLibrary clientLibrary;
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {

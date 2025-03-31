@@ -68,6 +68,11 @@ public class Transaction {
 
     // Method to validate the transaction
     public boolean isValid(Map<Address, AccountState> currentState) {
+                // signature verification
+                if(CryptoUtils.verifySignature(this))
+                {
+                    return false;
+                }
         // Check if the sender has enough balance
         AccountState senderState = currentState.get(from);
         if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {
@@ -85,11 +90,7 @@ public class Transaction {
         {
             return false;
         }
-        // signature verification
-        if(CryptoUtils.verifySignature(this))
-        {
-            return false;
-        }
+
         return true; // Transaction is valid
     }
 

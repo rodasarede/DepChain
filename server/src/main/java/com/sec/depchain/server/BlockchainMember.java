@@ -139,6 +139,7 @@ public class BlockchainMember {
             System.out.println("Updating world state");
             blockchain_1.updateSimpleWorldState();
         }else{
+            //TODO if exection fails send fail message
             System.out.println("Transaction execution failed");
         }  
 
@@ -203,7 +204,7 @@ public class BlockchainMember {
         String data = tx[4].equals("empty") ? "" : tx[4];
 
         String signature = tx[5];
-        long nonce = Long.parseLong(tx[6]);
+        BigInteger nonce = new BigInteger(tx[6]);
         return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
         //from:to:value:data:signature:nonce
     }

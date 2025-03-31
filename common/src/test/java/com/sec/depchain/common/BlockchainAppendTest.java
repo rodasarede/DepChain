@@ -104,7 +104,7 @@ public class BlockchainAppendTest {
             Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeee"), // to
             BigInteger.valueOf(100), // value
             "", // data
-            1, // nonce
+            BigInteger.valueOf(1), // nonce
             System.currentTimeMillis(), // timestamp
             "signature" // signature
         );

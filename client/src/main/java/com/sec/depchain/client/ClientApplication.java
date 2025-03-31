@@ -15,7 +15,7 @@ public class ClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
     private static final int DEBUG_MODE = 1;
     private final Wallet wallet;
-    private int nonce = 0;
+    private BigInteger nonce = new BigInteger("0");
     private ClientLibrary clientLibrary;
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
@@ -98,7 +98,7 @@ public class ClientApplication {
         if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
 
         //TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data, nonce++, 0, null); //TS?
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), 0, null); //TS?
         
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);

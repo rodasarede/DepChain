@@ -20,7 +20,7 @@ public class Transaction {
     
     //https://ethereum.org/en/developers/docs/transactions/
 
-    public Transaction(Address from, Address to, BigInteger value, String data, long nonce, long timestamp, String signature) {
+    public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, long timestamp, String signature) {
         this.to = to;
         this.from = from;
         this.value = value;
@@ -87,7 +87,7 @@ public class Transaction {
         }
         
         //Replay attacks 
-        if(senderState.getNonce().compareTo(getNonce())!= 0) //
+        if(senderState.getNonce()!=null && senderState.getNonce().compareTo(getNonce())!= 0) //
         {
             return false;
         }
@@ -133,7 +133,7 @@ public class Transaction {
         byte[] toBytes = Numeric.hexStringToByteArray(this.to.toHexString());
         byte[] valueBytes = this.value.toByteArray();
         byte[] dataBytes = this.data.getBytes(StandardCharsets.UTF_8);
-        byte[] nonceBytes = BigInteger.valueOf(this.nonce).toByteArray();
+        byte[] nonceBytes = this.nonce.toByteArray();
         byte[] timestampBytes = BigInteger.valueOf(this.timeStamp).toByteArray();
 
         // Calculate total length

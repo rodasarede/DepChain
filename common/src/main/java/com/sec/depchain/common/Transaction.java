@@ -1,6 +1,7 @@
 package com.sec.depchain.common;
 
 import com.sec.depchain.common.util.CryptoUtils;
+import com.sec.depchain.common.util.CryptoUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -69,7 +70,7 @@ public class Transaction {
     // Method to validate the transaction
     public boolean isValid(Map<Address, AccountState> currentState) {
                 // signature verification
-                if(CryptoUtils.verifySignature(this))
+        if(!CryptoUtils.verifySignature(this))
                 {
                     return false;
                 }

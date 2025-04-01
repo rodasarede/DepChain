@@ -143,10 +143,7 @@ public class ConditionalCollect {
                 // System.out.println("Process ID: " + processId);
                 perfectLinks.send(processId, formattedMessage);
             }
-
-
         }
-
     }
 
     public static String[] unformatArray(String input) {
@@ -175,10 +172,15 @@ public class ConditionalCollect {
     }
 
     private void processCollected(int senderId, String collectedMessage) throws Exception {
-        // System.out.println("Received COLLECTED message: " + collectedMessage);
+        System.out.println("Received COLLECTED message: " + collectedMessage);
+
+
         String[][] result = splitCollectedMessage(collectedMessage);
         String[] collectedMessages = result[0];
         String[] collectedSignatures = result[1];
+        System.out.println("Received COLLECTED message: " + collectedMessage);
+        System.out.println("Received COLLECTED signature: " + collectedSignatures);
+
 
 
         // System.out.println("Collected Messages:");

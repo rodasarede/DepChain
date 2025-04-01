@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import org.hyperledger.besu.datatypes.Address;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
@@ -45,6 +47,7 @@ public class Block {
         this.blockHash = calculateHash();
         this.height = height;
     }
+
 
     public String calculateHash() {
         try {
@@ -131,14 +134,29 @@ public class Block {
     public int getHeight() {
         return height;
     }
-    public String serialize() {
-        Gson gson = new Gson();
-        return gson.toJson(this);
+    public static String serializeBlock(Block block) {
+    JSONObject blockJson = new JSONObject();
+    blockJson.put("previousBlockHash", block.getPreviousBlockHash());
+    blockJson.put("transactions", serializeTransactions(block.getTransactions()));
+    blockJson.put("height", block.getHeight());
+    blockJson.put("blockHash", block.getBlockHash());
+    return blockJson.toString();
+}
+
+private static JSONArray serializeTransactions(List<Transaction> transactions) {
+    JSONArray txArray = new JSONArray();
+    for (Transaction tx : transactions) {
+        JSONObject txJson = new JSONObject();
+        txJson.put("from", tx.getFrom().toString());
+        txJson.put("to", tx.getTo().toString());
+        txJson.put("value", tx.getValue().toString());
+        txJson.put("data", tx.getData());
+        txJson.put("nonce", tx.getNonce().toString());
+        txJson.put("signature", tx.getSignature());
+
+        txArray.add(txJson);
     }
-    
-    public static Block deserialize(String data) {
-        Gson gson = new Gson();
-        return gson.fromJson(data, Block.class);
-    }
+    return txArray;
+}
     
 }

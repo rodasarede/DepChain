@@ -1,5 +1,6 @@
 package com.sec.depchain.server;
 
+import com.sec.depchain.common.Block;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
+import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
 
@@ -32,6 +34,8 @@ public class BlockchainMember {
     private List<String> blockchain = new ArrayList<>();
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
+    private ByzantineEpochConsensusBlock bepBlock;
+
     private Mempool mempool;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
 
@@ -74,9 +78,12 @@ public class BlockchainMember {
         });
         
         this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+        this.bepBlock =  new ByzantineEpochConsensusBlock(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+
     }
     public void start() throws Exception{
-        bep.init();
+        //bep.init();
+        bepBlock.init();
     }
     //TODO mudei para public
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
@@ -108,10 +115,20 @@ public class BlockchainMember {
                 if (DEBUG_MODE == 1) {
                     LOGGER.debug("append: bep.propose(senderId:{}, value:{})", senderId, elements[1]);
                 }
-                bep.propose(transaction);
+                if(mempool.size() >= Constants.THRESHOLD)
+                {
+                    //bep.propose(transaction);
+                   
+                    //
+                    List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
+
+                    bepBlock.propose(newBlocK);
+                }
                 break;
             case "READ":
-                bep.deliverRead(senderId);  
+                //bep.deliverRead(senderId);
+                bepBlock.deliverRead(senderId);  
                 break;
             case "WRITE":
                 if (DEBUG_MODE == 1) {
@@ -226,5 +243,7 @@ public class BlockchainMember {
         //from:to:value:data:signature:nonce
     }
 
-
+public static Blockchain getBlockchain_1() {
+    return blockchain_1;
+}
 }

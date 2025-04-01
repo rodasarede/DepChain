@@ -7,6 +7,7 @@ import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
 import com.sec.depchain.common.Transaction;
+import com.sec.depchain.common.util.CryptoUtils;
 
 public class Mempool {
     private final ConcurrentHashMap <String, Transaction> transactions; 
@@ -18,24 +19,16 @@ public class Mempool {
 
     public void addTransactionToMempool(Transaction tx)
     {
-        byte[] serializedTx = tx.getRawDataForSigning();
+        byte[] txHash = CryptoUtils.hashTransaction(tx);
 
-        // 2. Hash the serialized transaction data (Keccak-256)
-        byte[] txHash = Hash.sha3(serializedTx);
-
-        // 3. Convert the transaction hash to a hexadecimal string
         String txHashHex =  Numeric.toHexString(txHash);
 
         transactions.putIfAbsent(txHashHex, tx);
     }
 
     public void removeTransactionFromMempool(Transaction tx){
-
-        byte[] serializedTx = tx.getRawDataForSigning();
-
-        // 2. Hash the serialized transaction data (Keccak-256)
-        byte[] txHash = Hash.sha3(serializedTx);
-
+        
+        byte[] txHash = CryptoUtils.hashTransaction(tx);
         // 3. Convert the transaction hash to a hexadecimal string
         String txHashHex =  Numeric.toHexString(txHash);
 

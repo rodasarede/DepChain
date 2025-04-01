@@ -42,11 +42,7 @@ public class Wallet {
 
  public String signTransaction(Transaction tx) throws Exception {
         // 1. Create raw transaction
-        byte[] rawTxData = tx.getRawDataForSigning();
-        System.out.println("Transação para dar hash" + rawTxData );
-
-        byte[] txHash = Hash.sha3(rawTxData); // Keccak-256
-        System.out.println("Transa Hashed" + txHash);
+        byte[] txHash = CryptoUtils.hashTransaction(tx);
 
         Sign.SignatureData signatureData = Sign.signMessage(txHash, ecPair, false);
 
@@ -67,5 +63,6 @@ public class Wallet {
             String.valueOf(tx.getNonce())
         );
     }
+
 
 }

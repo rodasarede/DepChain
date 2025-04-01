@@ -1,8 +1,5 @@
 package com.sec.depchain.server;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,7 +15,6 @@ import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 
 public class ByzantineEpochConsensus {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ByzantineEpochConsensus.class);
 
     private static int N;
     private static int f;
@@ -57,7 +53,7 @@ public class ByzantineEpochConsensus {
 
         this.blockchainMember = blockchainMember;
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
+            System.out.println("BEP - DEBUG: Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
         }
     }
 
@@ -70,7 +66,7 @@ public class ByzantineEpochConsensus {
         countWrites = 0;
 
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Initialized epoch state.");
+            System.out.println("BEP - DEBUG: Initialized epoch state.");
         }
     }
 
@@ -79,20 +75,20 @@ public class ByzantineEpochConsensus {
 
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("I am proposing value " + v);
+                System.out.println("BEP - DEBUG: I am proposing value " + v);
             }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = formatReadMessage(ets);
 
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
+                    System.out.println("BEP - DEBUG: Leader " + leaderId + " sending READ message to " + nodeId);
                 }
 
                 perfectLinks.send(nodeId, message);
             }
         } else {
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("I am not the leader, not doing much for now...");
+                System.out.println("BEP - DEBUG: I am not the leader, not doing much for now...");
             }
         }
     }
@@ -101,7 +97,7 @@ public class ByzantineEpochConsensus {
         if (senderId == leaderId) {
             String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("Sending STATE " + message + " to conditional collect");
+                System.out.println("BEP - DEBUG: Sending STATE " + message + " to conditional collect");
             }
             cc.onInit();
             cc.input(message);
@@ -110,9 +106,9 @@ public class ByzantineEpochConsensus {
 
     public void collected(String[] states) {
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("collected states: ");
+            System.out.println("BEP - DEBUG: collected states: ");
             for (String state : states) {
-                LOGGER.debug("- " + state);
+                System.out.println("BEP - DEBUG: - " + state);
             }
         }
         String tmpval = null;

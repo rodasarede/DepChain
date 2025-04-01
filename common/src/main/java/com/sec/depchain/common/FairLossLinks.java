@@ -2,15 +2,11 @@ package com.sec.depchain.common;
 
 import java.net.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FairLossLinks {
     private DatagramSocket socket;
     private int port;
     private DeliverCallback deliverCallback;
     private volatile boolean running = true;
-    private static final Logger LOGGER = LoggerFactory.getLogger(FairLossLinks.class);
 
 
     // Interface funcional para definir a callback
@@ -58,19 +54,19 @@ public class FairLossLinks {
                     e.printStackTrace();  // Only print if not shutting down
                 }
             } catch (Exception e) {
-                System.out.println("Error in deliver");
+                System.out.println("FAIR LOSS - INFO: Error in deliver");
                 e.printStackTrace();
                 return;
             }
         }).start();
     }
     public void close(){
-        LOGGER.info("Shutting down FairLossLinks...");
+        System.out.println("FAIR LOSS - INFO: Shutting down FairLossLinks...");
         running = false;
         if(socket != null && !socket.isClosed())
         {
             socket.close();
-            System.out.println("[INFO] FairLossLinks socket closed.");
+            System.out.println("FAIR LOSS - INFO: FairLossLinks socket closed.");
         }
     }
 }

@@ -1,8 +1,6 @@
 package com.sec.depchain.client;
 
 import org.hyperledger.besu.datatypes.Address;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sec.depchain.common.Transaction;
 
@@ -12,7 +10,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class ClientApplication {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientApplication.class);
     private static final int DEBUG_MODE = 1;
     private final Wallet wallet;
     private BigInteger nonce = new BigInteger("0");
@@ -33,9 +30,8 @@ public class ClientApplication {
         this.clientLibrary = new ClientLibrary(clientId, wallet);
         if (DEBUG_MODE == 1) 
         {
-            LOGGER.debug("Starting: '{}'", clientId);
-            LOGGER.debug("Address: '{}'", wallet.getAddress());
-
+            System.out.println("CLIENT APP - DEBUG: Starting: {" + clientId + "}");
+            System.out.println("CLIENT APP - DEBUG: Address: {"+ wallet.getAddress() + "}");
         }
         setupInputLoop(clientLibrary);
     }
@@ -51,7 +47,7 @@ public class ClientApplication {
 
     private void setupInputLoop(ClientLibrary clientLibrary) throws Exception {
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("[INFO] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
+            System.out.println("Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
 
             while (true) {
                 System.out.print("> ");
@@ -95,7 +91,7 @@ public class ClientApplication {
             futureResponse.complete(result);
         });
 
-        if (DEBUG_MODE == 1) LOGGER.debug("Sending transaquion request: '{}'",toId);
+        if (DEBUG_MODE == 1) System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId+ "}");
 
         //TODO id logic right now is to address
         Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), 0, null); //TS?
@@ -114,13 +110,13 @@ public class ClientApplication {
     }
 
     private static void exitApplication(Scanner scanner, ClientLibrary clientLibrary) {
-        LOGGER.info("Client is exiting");
+        System.out.println("CLIENT APP - INFO: Client is exiting");
         if(scanner != null)
         {
         scanner.close();
         }
         clientLibrary.close();
-        LOGGER.info("Client library closed.");
+        System.out.println("CLIENT APP - INFO: Client library closed.");
         Runtime.getRuntime().halt(0);
 
         System.exit(0);

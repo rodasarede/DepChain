@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.besu.datatypes.Address;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.Transaction;
@@ -23,7 +21,6 @@ import com.sec.depchain.common.PerfectLinks;
  * Represents a blockchain member node in the Byzantine fault-tolerant system.
  */
 public class BlockchainMember {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BlockchainMember.class);
     private int id;
     private boolean isLeader = false; // Should start as false
     private static SystemMembership systemMembership;
@@ -36,7 +33,7 @@ public class BlockchainMember {
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
-            LOGGER.error("Usage: <id>");
+            System.out.println("BLOCKCHAIN MEMBER - ERROR: Usage: <id>");
             return;
         }
         int nodeId = Integer.parseInt(args[0]);
@@ -49,7 +46,7 @@ public class BlockchainMember {
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain_1 = new Blockchain();
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Initialized with ID {}, Leader: {}", id, isLeader);
+            System.out.println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {"+id+"}, Leader: {"+isLeader+"}");
         }
         this.perfectLinks = new PerfectLinks(id);
 
@@ -57,14 +54,14 @@ public class BlockchainMember {
             try {
                 onPerfectLinksDeliver(nodeId, message);
             } catch (Exception e) {
-                LOGGER.error("Exception in deliverCallbackCollect", e);
+                System.out.println("BLOCKCHAIN MEMBER - ERROR: Exception in deliverCallbackCollect: " + e);
             }
         });
         perfectLinks.setDeliverCallback((nodeId, message) -> {
             try {
                 onPerfectLinksDeliver(nodeId, message);
             } catch (Exception e) {
-                LOGGER.error("Exception in deliverCallback", e);
+                System.out.println("BLOCKCHAIN MEMBER - ERROR: Exception in deliverCallback:" + e);
             }
         });
         
@@ -76,7 +73,7 @@ public class BlockchainMember {
     //TODO mudei para public
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Received message from {} -> {}", senderId, message);
+            System.out.println("BLOCKCHAIN MEMBER - DEBUG: Received message from {"+senderId+"} -> {"+message+"}");
         }
 
         message = message.substring(1, message.length() - 1);
@@ -92,14 +89,14 @@ public class BlockchainMember {
                     clientTransactions.put(senderId, transaction);
                 }
                 else{
-                    LOGGER.error("Invalid transaction signature from client {}: {}", senderId, transaction);
+                    System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
                     String responseMessage = "<append-response:" + transaction + ":0:fail>";
                     perfectLinks.send(senderId, responseMessage);
                     break;
                 }
                 
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("append: bep.propose(senderId:{}, value:{})", senderId, elements[1]);
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
                 }
                 bep.propose(transaction);
                 break;
@@ -108,19 +105,19 @@ public class BlockchainMember {
                 break;
             case "WRITE":
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("WRITE: bep.deliverWrite(senderId:{}, value:{})", senderId, elements[2]);
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
                 }
                 bep.deliverWrite(senderId, elements[2]);
                 break;
             case "ACCEPT":
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("ACCEPT: bep.deliverAccept(senderId:{}, value:{})", senderId, elements[2]);
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
                 }
                 bep.deliverAccept(senderId, elements[2]);
                 break;
             default:
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Unknown message type -> {}", message);
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Unknown message type -> {"+message+"}");
                 }
                 break;
         }
@@ -146,7 +143,7 @@ public class BlockchainMember {
         int index = blockchain_1.getChainSize();
         blockchain_1.getLatestBlock().printBlockDetails();
 
-        LOGGER.info("Transaction {} committed at index {}.", val, index);
+        System.out.println("BLOCKCHAIN MEMBER - INFO: Transaction {"+val+"} committed at index {" + index + "}.");
         blockchain_1.getLatestBlock().printBlockDetails();
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
@@ -155,7 +152,7 @@ public class BlockchainMember {
                 String responseMessage = "<append-response:" + val + ":" + index + ":success>";
 
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Sending response to client {} -> {}", clientId, responseMessage);
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {"+clientId+"} -> {"+responseMessage+"}");
                 }
 
                 perfectLinks.send(clientId, responseMessage);

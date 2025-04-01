@@ -1,8 +1,5 @@
 package com.sec.depchain.common;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Deque;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +14,6 @@ import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 
 public class PerfectLinks {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PerfectLinks.class);
     private DeliverCallback deliverCallbackCollect; // Callback to deliver to the class above
     private DeliverCallback deliverCallback; // Callback to deliver to the class above
     private final FairLossLinks fairLossLinks;
@@ -95,7 +91,7 @@ public class PerfectLinks {
     // Send a message Perfectly (keep resending)
     public void send(int destId, String message) {
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Sending message {} to server {}", message, destId);
+            System.out.println("PERFECT LINKS - DEBUG: Sending message {"+ message +"} to server {"+ destId +"}");
         }
         String destIP = getIP(destId);
         int destPort = getPort(destId);
@@ -125,14 +121,14 @@ public class PerfectLinks {
                 while (destWaitingForACK.contains(newSeqNum)) {
                     try {
                         if (DEBUG_MODE == 1) {
-                            LOGGER.debug("Sending message {} to server {}", authenticatedMsg, destId);
+                            System.out.println("PERFECT LINKS - DEBUG: Sending message {"+authenticatedMsg+"} to server {"+ destId+"}");
                         }
                         fairLossLinks.send(destIP, destPort, authenticatedMsg);
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
                         timeout.set((long) (1.5 * timeout.get())); // Flexible timeout increase
                     } catch (Exception e) {
                         //Thread.currentThread().interrupt(); // Preserve interruption status
-                        LOGGER.warn("Thread interrupted while resending message to {}", destId);
+                        System.out.println("PERFECT LINKS - INFO: Thread interrupted while resending message to {"+destId+"}");
                         e.printStackTrace();
                     }
                 }
@@ -146,7 +142,7 @@ public class PerfectLinks {
         String[] parts = receivedACK.split("\\|");
 
         if (parts.length != 4) {
-            LOGGER.warn("Invalid ACK format: {}", receivedACK);
+            System.out.println("PERFECT LINKS - INFO: Invalid ACK format: {"+receivedACK+"}");
             return false;
         }
 
@@ -156,22 +152,22 @@ public class PerfectLinks {
         String receivedMac = parts[3];
 
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Extracted components:");
-            LOGGER.debug("- Received srcID: {}", receivedSrcId);
-            LOGGER.debug("- Received seqNum: {}", receivedSeqNum);
-            LOGGER.debug("- Received message without MAC: {}", receivedWithoutMac);
-            LOGGER.debug("- Received MAC: {}", receivedMac);
+            System.out.println("PERFECT LINKS - DEBUG: Extracted components:");
+            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {"+ receivedSrcId +"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {" + receivedSeqNum +"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received message without MAC: {"+receivedWithoutMac+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {"+ receivedMac+"}");
         }
 
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
             if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
-                LOGGER.warn("MAC verification failed for message: {}", receivedWithoutMac);
+                System.out.println("PERFECT LINKS - INFO: MAC verification failed for message: {"+receivedWithoutMac+"}");
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.error("Exception during MAC verification", e);
+            System.out.println("PERFECT LINKS - ERROR: Exception during MAC verification: " + e);
             return false;
         }
         return true;
@@ -181,7 +177,7 @@ public class PerfectLinks {
         String[] parts = receivedMessage.split("\\|");
 
         if (parts.length != 4) {
-            LOGGER.warn("Invalid message format: {}", receivedMessage);
+            System.out.println("PERFECT LINKS - INFO: Invalid message format: {"+ receivedMessage+"}");
             return false;
         }
 
@@ -192,23 +188,23 @@ public class PerfectLinks {
         String receivedMac = parts[3];
 
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Extracted components:");
-            LOGGER.debug("- Received srcID: {}", receivedSrcId);
-            LOGGER.debug("- Received seqNum: {}", receivedSeqNum);
-            LOGGER.debug("- Received message without MAC: {}", receivedWithoutMac);
-            LOGGER.debug("- Received Payload: {}", receivedPayload);
-            LOGGER.debug("- Received MAC: {}", receivedMac);
+            System.out.println("PERFECT LINKS - DEBUG: Extracted components:");
+            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {"+receivedSrcId+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {"+receivedSeqNum+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received message without MAC: {"+receivedWithoutMac+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received Payload: {"+receivedPayload+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {"+receivedMac+"}");
         }
 
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
             if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
-                LOGGER.warn("MAC verification failed for message: {}", receivedWithoutMac);
+                System.out.println("PERFECT LINKS - INFO: MAC verification failed for message: {"+receivedWithoutMac+"}");
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.error("Exception during MAC verification", e);
+            System.out.println("PERFECT LINKS - ERROR: Exception during MAC verification:" + e);
             return false;
         }
         return true;
@@ -227,17 +223,17 @@ public class PerfectLinks {
             fairLossLinks.send(destIP, destPort, ackMessageWithoutMAC + "|" + ackMAC);
 
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("Sent ACK message: {}", ackMessageWithoutMAC);
+                System.out.println("PERFECT LINKS - DEBUG: Sent ACK message: {"+ackMessageWithoutMAC+"}");
             }
         } catch (Exception e) {
-            LOGGER.error("Exception while sending ACK", e);
+            System.out.println("PERFECT LINKS - ERROR: Exception while sending ACK: "+ e);
         }
     }
 
     private void deliverMessage(int srcId, String message) {
         String messageType = getMessageType(message);
         if (DEBUG_MODE == 1) {
-            LOGGER.debug("Message type identified: {}", messageType);
+            System.out.println("PERFECT LINKS - DEBUG: Message type identified: {"+messageType+"}");
         }
 
         if (deliverCallbackCollect != null || deliverCallback != null) {
@@ -257,8 +253,8 @@ public class PerfectLinks {
     private void onFairLossDeliver(String srcIP, int srcPort, String receivedMessage) {
         if (receivedMessage.startsWith("ACK")) {
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("Received ACK: {}", receivedMessage);
-                LOGGER.debug("Received ACK: ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+                System.out.println("PERFECT LINKS - DEBUG: Received ACK: {"+receivedMessage+"}");
+                System.out.println("PERFECT LINKS - DEBUG: Received ACK: ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
             }
 
             if (checkReceivedACK(receivedMessage)) {
@@ -270,19 +266,19 @@ public class PerfectLinks {
                 Deque<Integer> srcWaitingForACK = waitingForACK.get(srcId);
                 srcWaitingForACK.remove(seqNumber);
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Stopping to resend the message with seq num: {}", seqNumber);
+                    System.out.println("PERFECT LINKS - DEBUG: Stopping to resend the message with seq num: {"+seqNumber+"}");
                 }
                 return;
             } else {
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Check of the received ACK failed. Ignoring message.");
+                    System.out.println("PERFECT LINKS - DEBUG: Check of the received ACK failed. Ignoring message.");
                 }
                 return;
             }
         } else {
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("Received message: {}", receivedMessage);
-                LOGGER.debug("Received message: <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+                System.out.println("PERFECT LINKS - DEBUG: Received message: {"+receivedMessage+"}");
+                System.out.println("PERFECT LINKS - DEBUG: Received message: <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
             }
 
             if (checkReceivedMessage(receivedMessage)) {
@@ -293,7 +289,7 @@ public class PerfectLinks {
                 String payload = parts[2];
 
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Sending ACK to the following message: {}", receivedMessage);
+                    System.out.println("PERFECT LINKS - DEBUG: Sending ACK to the following message: {"+receivedMessage+"}");
                 }
                 sendACK(srcId, seqNumber);
 
@@ -302,7 +298,7 @@ public class PerfectLinks {
 
                 if (deliveredHistory.get(srcId).contains(seqNumber) || seqNumber < receivedSeqNumberUntil.get(srcId).get()) {
                     if (DEBUG_MODE == 1) {
-                        LOGGER.debug("Message already delivered: {}", receivedMessage);
+                        System.out.println("PERFECT LINKS - DEBUG: Message already delivered: {"+receivedMessage+"}");
                     }
                     return;
                 }
@@ -321,7 +317,7 @@ public class PerfectLinks {
                 return;
             } else {
                 if (DEBUG_MODE == 1) {
-                    LOGGER.debug("Check of the received message failed. Ignoring message.");
+                    System.out.println("PERFECT LINKS - DEBUG: Check of the received message failed. Ignoring message.");
                 }
                 return;
             }
@@ -401,13 +397,13 @@ public class PerfectLinks {
         return Constants.UNKNOWN;
     }
     public void close(){
-        LOGGER.info("Shutting down PerfectLinks resources...");
+        System.out.println("PERFECT LINK - INFO: Shutting down PerfectLinks resources...");
         if(fairLossLinks != null)
         {
-            LOGGER.info("Closing FairLossLinks...");
+            System.out.println("PERFECT LINK - INFO: Closing FairLossLinks...");
 
          fairLossLinks.close();
-         LOGGER.info("FairLossLinks closed.");
+         System.out.println("PERFECT LINK - INFO: FairLossLinks closed.");
 
         }
         waitingForACK.clear();
@@ -417,7 +413,7 @@ public class PerfectLinks {
         deliveredHistory.clear();
 
         receivedSeqNumberUntil.clear();
-        LOGGER.info("Finished perfect links shutdown.");
+        System.out.println("PERFECT LINK - INFO: Finished perfect links shutdown.");
     }
     public PublicKey getPublicKey(int index){
         return this.systemMembership.getPublicKey(index);

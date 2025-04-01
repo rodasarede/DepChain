@@ -1,13 +1,14 @@
 package com.sec.depchain.common;
 
-import com.sec.depchain.common.util.CryptoUtils;
+import com.google.gson.Gson;
 import com.sec.depchain.common.util.CryptoUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.checkerframework.checker.units.qual.s;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.web3j.utils.Numeric;
 
@@ -71,24 +72,30 @@ public class Transaction {
     public boolean isValid(Map<Address, AccountState> currentState) {
                 // signature verification
         if(!CryptoUtils.verifySignature(this))
-                {
+            {
+                System.out.println("signature failed");
                     return false;
                 }
         // Check if the sender has enough balance
         AccountState senderState = currentState.get(from);
         if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {
+            System.out.println("invalid balance");
+
             return false; // Insufficient balance
         }
         
         // Check if the receiver exists in the current state
         AccountState receiverState = currentState.get(to);
         if (receiverState == null) {
+            System.out.println("receiver does not exist");
+
             return false; // Receiver does not exist
         }
         
         //Replay attacks 
         if(senderState.getNonce()!=null && senderState.getNonce().compareTo(getNonce())!= 0) //
         {
+            System.out.println("replay attacks nonce");
             return false;
         }
 
@@ -115,7 +122,7 @@ public class Transaction {
         // Add the transaction to the list of transactions
         transactions.add(this);
         
-        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
+        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState, blockchain.getLatestBlock().getHeight() + 1);
         // newBlock.printBlockDetails();
         blockchain.getChain().add(newBlock);
 
@@ -161,7 +168,8 @@ public class Transaction {
         return result;
     }
 
+}
    
 
-}
+
 

@@ -18,6 +18,7 @@ public class Block {
     private String previousBlockHash;
     private List<Transaction> transactions;
     private Map<Address, AccountState> state;
+    private int height;
     // private long timestamp;
     //private int nonce;
 
@@ -27,13 +28,22 @@ public class Block {
         loadFromJson(genesisFilename);
     }
 
-    public Block(/*String blockHash*/String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state) {
+    public Block(/*String blockHash*/String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state, int height) {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
         this.state = state;
         // this.timestamp = System.currentTimeMillis();
-        this.blockHash = blockHash; //TODO
         this.blockHash = calculateHash();
+        this.height = height;
+    }
+
+    public Block(/*String blockHash*/String previousBlockHash, List<Transaction> transactions, int height) {
+        this.previousBlockHash = previousBlockHash;
+        this.transactions = transactions;
+        //this.state = state;
+        // this.timestamp = System.currentTimeMillis();
+        this.blockHash = calculateHash();
+        this.height = height;
     }
 
     public String calculateHash() {
@@ -118,9 +128,17 @@ public class Block {
             
         }
     }
+    public int getHeight() {
+        return height;
+    }
+    public String serialize() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
+    }
     
-
-
-
-
+    public static Block deserialize(String data) {
+        Gson gson = new Gson();
+        return gson.fromJson(data, Block.class);
+    }
+    
 }

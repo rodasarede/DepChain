@@ -38,12 +38,13 @@ public class ClientLibrary {
         
         String formattedMessage = "<tx-request:" + serializeTransaction(tx) + ">";
 
-        for (int nodeId : systemMembership.getMembershipList().keySet()) {
+        perfectLinks.send(systemMembership.getLeaderId(), formattedMessage); //only send to the leader
+        /*for (int nodeId : systemMembership.getMembershipList().keySet()) {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("Sending request: {} to server {}", formattedMessage, nodeId);
             }
             perfectLinks.send(nodeId, formattedMessage);
-        }
+        }*/
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {

@@ -146,10 +146,14 @@ public class ByzantineEpochConsensus {
         }
         if (!firstConditionMet) {
             String leaderEntry = collectedMessages.get(systemMembership.getLeaderId() - 1);
-            String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
+    
             String entryVal = null;
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
-                entryVal = parts[2];
+                JSONObject json = new JSONObject(leaderEntry);
+                JSONObject valuePair = json.getJSONObject("value_pair");
+                String value = valuePair.getString("value");  // Extracts "string to propose"
+                entryVal = value;
+
             }
             toPropose = entryVal;
             
@@ -308,7 +312,7 @@ public class ByzantineEpochConsensus {
         return true;
     }
 
-    private static boolean binds(long ts, String v, List<String> states) {
+private static boolean binds(long ts, String v, List<String> states) {
         return (states.size() >= N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
     }
 
@@ -323,7 +327,7 @@ public class ByzantineEpochConsensus {
                 JSONObject valuePair = entryJson.getJSONObject("value_pair");
         
                 long entryTs = valuePair.getLong("timestamp");
-                String entryVal = valuePair.isNull("value") ? null : entryJson.getString("value");
+                String entryVal = valuePair.isNull("value") ? null : valuePair.getString("value");
 
         // Safe null comparison
         boolean valuesMatch = (entryVal == null && v == null) || 

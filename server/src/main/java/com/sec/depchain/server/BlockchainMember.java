@@ -91,7 +91,7 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
-                if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) //TODO if transaction signature is valid what is the next step?
+                if(tx.isValid(blockchain_1.getCurrentState()) /*&& id == systemMembership.getLeaderId()*/) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
                     //bep.propose(transaction);

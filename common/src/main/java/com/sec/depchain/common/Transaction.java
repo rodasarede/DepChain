@@ -19,7 +19,8 @@ public class Transaction {
     private BigInteger nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
     private long timeStamp;
     private String signature; //  the identifier of the sender. This is generated when the sender's private key signs the transaction and confirms the sender has authorized this transaction
-    
+    private int DEBUG_MODE = 1;
+
     //https://ethereum.org/en/developers/docs/transactions/
 
     public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, long timestamp, String signature) {
@@ -80,24 +81,47 @@ public class Transaction {
 
         if(!CryptoUtils.verifySignature(this))
         {
-             return false;
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Signature verification failed");
+            }
+            return false;
+        }
+        else {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Signature verification successfull");
+            }
         }
          
         // Check if the sender has enough balance
         AccountState senderState = currentState.get(from);
+        if (senderState == null) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: senderState = null");
+            }
+            return false;
+        }
         if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Insufficient balance");
+            }
             return false; // Insufficient balance
         }
         
         // Check if the receiver exists in the current state
         AccountState receiverState = currentState.get(to);
         if (receiverState == null) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Receiver does not exist");
+            }
             return false; // Receiver does not exist
         }
         
         //Replay attacks 
         if(senderState.getNonce()!=null && senderState.getNonce().compareTo(getNonce())!= 0) //
         {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: What is this verification?");
+            }
             return false;
         }
 

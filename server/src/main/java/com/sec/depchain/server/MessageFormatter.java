@@ -20,27 +20,27 @@ public class MessageFormatter {
         return message.toString();
     }
 
-    public static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
-
-        JSONObject message = new JSONObject(formatBaseMessage(MessagaTypes.READ, ets));
+    public static JSONObject formatStateMessage(long ets, TSvaluePair valtsVal, Set<TSvaluePair> writeSet) {
+        JSONObject message = new JSONObject();
+        message.put("ets", ets);
 
         // Value-Timestamp pair
         JSONObject valuePair = new JSONObject();
-        valuePair.put("value", valtsVAl.getVal() != null ? valtsVAl.getVal() : JSONObject.NULL);
-        valuePair.put("timestamp", valtsVAl.getTimestamp());
+        valuePair.put("value", valtsVal.getVal() != null ? valtsVal.getVal() : JSONObject.NULL);
+        valuePair.put("timestamp", valtsVal.getTimestamp());
         message.put("value_pair", valuePair);
         
         // WriteSet as array
         JSONArray writeSetArray = new JSONArray();
         for (TSvaluePair pair : writeSet) {
             JSONObject pairObj = new JSONObject();
-            valuePair.put("value", valtsVAl.getVal() != null ? valtsVAl.getVal() : JSONObject.NULL);
+            pairObj.put("value", pair.getVal() != null ? pair.getVal() : JSONObject.NULL);
             pairObj.put("timestamp", pair.getTimestamp());
             writeSetArray.put(pairObj);
         }
         message.put("write_set", writeSetArray);
 
-        return message.toString();
+        return message;
     }
 
     public static String formatWriteMessage(String value, long ets) {

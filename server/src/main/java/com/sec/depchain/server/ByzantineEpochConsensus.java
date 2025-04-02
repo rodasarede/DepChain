@@ -1,6 +1,12 @@
 package com.sec.depchain.server;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -10,13 +16,12 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.JSONObject;
-
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 
 public class ByzantineEpochConsensus {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ByzantineEpochConsensus.class);
 
     private static int N;
     private static int f;
@@ -55,7 +60,7 @@ public class ByzantineEpochConsensus {
 
         this.blockchainMember = blockchainMember;
         if (DEBUG_MODE == 1) {
-            System.out.println("BEP - DEBUG: Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
+            LOGGER.debug("Initialized with Leader ID " + leaderId + ", Node ID " + nodeId);
         }
     }
 
@@ -68,7 +73,7 @@ public class ByzantineEpochConsensus {
         countWrites = 0;
 
         if (DEBUG_MODE == 1) {
-            System.out.println("BEP - DEBUG: Initialized epoch state.");
+            LOGGER.debug("Initialized epoch state.");
         }
     }
 
@@ -77,29 +82,30 @@ public class ByzantineEpochConsensus {
 
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
-                System.out.println("BEP - DEBUG: I am proposing value " + v);
+                LOGGER.debug("I am proposing value " + v);
             }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = MessageFormatter.formatReadMessage(ets, position);
+            
 
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BEP - DEBUG: Leader " + leaderId + " sending READ message to " + nodeId);
+                    LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
                 }
 
                 perfectLinks.send(nodeId, message);
             }
         } else {
             if (DEBUG_MODE == 1) {
-                System.out.println("BEP - DEBUG: I am not the leader, not doing much for now...");
+                LOGGER.debug("I am not the leader, not doing much for now...");
             }
         }
     }
 
     public void deliverRead(int senderId) throws Exception {
         if (senderId == leaderId) {
-            String message = MessageFormatter.formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
+            JSONObject message = MessageFormatter.formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
-                System.out.println("BEP - DEBUG: Sending STATE " + message + " to conditional collect");
+                LOGGER.debug("Sending STATE " + message + " to conditional collect");
             }
             cc.onInit();
             cc.input(message);
@@ -108,17 +114,15 @@ public class ByzantineEpochConsensus {
 
     public void collected(String[] states) {
         if (DEBUG_MODE == 1) {
-            System.out.println("BEP - DEBUG: collected states: ");
+            LOGGER.debug("collected states: ");
             for (String state : states) {
-                System.out.println("BEP - DEBUG: - " + state);
+                LOGGER.debug("- " + state);
             }
         }
         String tmpval = null;
 
-        List<String> CollectedMessages = new ArrayList<>();
-        for (String state : states) {
-            CollectedMessages.add(state);
-        }
+        
+        List<String> collectedMessages = new ArrayList<>(Arrays.asList(states));
         boolean firstConditionMet = false;
         for (String entry : states) {
             // System.out.println("Entry: " + entry);
@@ -126,9 +130,10 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            
 
             if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
-                    && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
+                    && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), collectedMessages)) {
                 // System.out.println("First condition met");
                 tmpval = parsedEntry.getVal();
                 firstConditionMet = true;
@@ -144,7 +149,7 @@ public class ByzantineEpochConsensus {
             // }
             
             //System.out.println("Leader value to propose: " + toPropose);
-            if (unbound(CollectedMessages) && toPropose != null) {
+            if (unbound(collectedMessages) && toPropose != null) {
                 tmpval = toPropose;
             }
         }
@@ -166,7 +171,7 @@ public class ByzantineEpochConsensus {
             state.getWriteSet().add(tsValuePair);
 
             // BRODCAST WRITE message to all nodes
-            for (int nodeId : systemMembership.getMembershipList().keySet()) 
+            for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
                 String message = MessageFormatter.formatWriteMessage(tmpval, ets);
@@ -187,9 +192,10 @@ public class ByzantineEpochConsensus {
     }
 
     private void check_write_quorom(String v) {
-        // System.out.println("Checking write quorum for value: " + v);
+        System.out.println("Checking write quorum for value: " + v);
         int count = 0;
         for (String writtenEntry : written) {
+            System.out.println(writtenEntry);
             if (writtenEntry != null && writtenEntry.equals(v)) {
                 count++;
             }
@@ -285,8 +291,12 @@ public class ByzantineEpochConsensus {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
 
-            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-            if (parsedEntry.getTimestamp() != 0) {
+            JSONObject entryJson = new JSONObject(entry);
+            JSONObject valuePair = entryJson.getJSONObject("value_pair");
+
+            long entryTs = valuePair.getLong("timestamp");
+            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
+            if (entryTs != 0) {
                 return false;
             }
         }
@@ -302,19 +312,22 @@ public class ByzantineEpochConsensus {
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-            JSONObject json = new JSONObject(entry);
-            JSONObject valuePair = json.getJSONObject("value_pair");
-            long entryTs = valuePair.getLong("timestamp");
+                
+                JSONObject entryJson = new JSONObject(entry);
 
-            
-            Object valueObj = valuePair.opt("value"); // Returns null if key doesn't exist or value is JSON null
-            String entryVal = (valueObj != null) ? valueObj.toString() : null;
+                JSONObject valuePair = entryJson.getJSONObject("value_pair");
+        
+                long entryTs = valuePair.getLong("timestamp");
+                String entryVal = valuePair.isNull("value") ? null : entryJson.getString("value");
 
-            if (entryTs < ts || (entryTs == ts && entryVal.equals(v))) {
+        // Safe null comparison
+        boolean valuesMatch = (entryVal == null && v == null) || 
+                            (entryVal != null && entryVal.equals(v));
+
+            if (entryTs < ts || (entryTs == ts && valuesMatch)) {
                 count++;
             }
         }
-        // System.out.println("Count: " + count + " N + f: " + (N + f) / 2);
         return count > (N + f) / 2;
     }
 
@@ -323,31 +336,29 @@ public class ByzantineEpochConsensus {
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-            String[] parts = entry.replace("<", "").replace(">", "").split(":");
-
-            String writeSetString = parts[2];
-
-            Set<TSvaluePair> writeSet = parseWriteSet(writeSetString);
-
-            for (TSvaluePair writeSetEntry : writeSet) {
-                if (writeSetEntry.getTimestamp() >= ts && writeSetEntry.getVal().equals(v)) {
+                
+            JSONObject entryJson = new JSONObject(entry);
+            JSONArray writeSetArray = entryJson.getJSONArray("write_set");
+    
+            for (int i = 0; i < writeSetArray.length(); i++) {
+                JSONObject writeSetEntry = writeSetArray.getJSONObject(i);
+                long entryTs = writeSetEntry.getLong("timestamp");
+                String entryVal = writeSetEntry.getString("value");
+                
+                if (entryTs >= ts && entryVal.equals(v)) {
                     count++;
                 }
             }
         }
-        // System.out.println("Count: " + count + " f: " + f);
         return count > f;
     }
 
     public boolean sound(List<String> S) {
-        System.out.println(S);
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-
+            System.out.println(entry);
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-            System.out.println(parsedEntry.getTimestamp());
-            System.out.println(parsedEntry.getVal());
 
             if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {
                 // dont we have to change something?
@@ -367,51 +378,6 @@ public class ByzantineEpochConsensus {
         return count;
     }
 
-
-    private static String formatReadMessage(long ets) {
-        JSONObject readMessage = new JSONObject();
-        readMessage.put("type", "READ");
-        readMessage.put("ets", ets);
-        readMessage.put("position", position);
-        return readMessage.toString();
-    }
-
-    private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
-        // TODO write the writeset into the message
-        // System.out.println("WriteSet: " + writeSet); 
-        return ets + ":" + valtsVAl.getTimestamp() + ":" + valtsVAl.getVal() + ":" + writeSet;
-    }
-
-    private static String formatWriteMessage(String tmpval, long ets) {
-        JSONObject writeMessage = new JSONObject();
-        writeMessage.put("type", "WRITE");
-        writeMessage.put("ets", ets);
-        writeMessage.put("value", tmpval);
-        return writeMessage.toString();
-    }
-
-    private static String formatAcceptMessage(String val, long ets) {
-        JSONObject acceptedMessage = new JSONObject();
-        acceptedMessage.put("type", "WRITE");
-        acceptedMessage.put("ets", ets);
-        acceptedMessage.put("value", val);
-        return acceptedMessage.toString();
-    }
-
-    public static Set<TSvaluePair> parseWriteSet(String writeSetString) {
-        Set<TSvaluePair> writeSet = new HashSet<>();
-        Pattern pattern = Pattern.compile("\\((\\d+),([A-Za-z0-9]+)\\)");
-        Matcher matcher = pattern.matcher(writeSetString);
-
-        while (matcher.find()) {
-            long timestamp = Long.parseLong(matcher.group(1));
-            String val = matcher.group(2);
-            writeSet.add(new TSvaluePair(timestamp, val));
-        }
-
-        return writeSet;
-    }
-
     public EpochSate getState() {
         return state;
     }
@@ -426,12 +392,17 @@ public class ByzantineEpochConsensus {
 
     }
 
-    private static TSvaluePair getValsValFromStateMessage(String entry) {
-        JSONObject json = new JSONObject(entry);
-        JSONObject valuePair = json.getJSONObject("value_pair");
-        long entryTs = valuePair.getLong("timestamp");
-        String entryVal = valuePair.optString("value", ""); 
-        return new TSvaluePair(entryTs, entryVal);
+    private TSvaluePair getValsValFromStateMessage(String entry) {
+        JSONObject entryJson = new JSONObject(entry);
+
+        JSONObject valuePair = entryJson.getJSONObject("value_pair");
+        Object valueObj = valuePair.get("value");
+
+        String value = (valueObj == JSONObject.NULL || valueObj == null) ? null : valueObj.toString();
+        return new TSvaluePair(
+            valuePair.getLong("timestamp"),
+            value
+        );
     }
 
     public void setCc(ConditionalCollect cc) {

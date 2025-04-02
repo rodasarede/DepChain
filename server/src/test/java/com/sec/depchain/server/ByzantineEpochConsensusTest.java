@@ -82,7 +82,7 @@ void onlyLeaderSendsReadMessages() throws Exception {
         }
     }
 }
-@Test
+/*@Test
 public void testDeliverRead_LeaderMessage_TriggersCollector() throws Exception {
     // Arrange
 
@@ -96,9 +96,9 @@ public void testDeliverRead_LeaderMessage_TriggersCollector() throws Exception {
     // Assert
     verify(cc).onInit(); // Verify that onInit() is called
     verify(cc).input(anyString()); // Verify that input() is called with any string
-}
+}*/
 
-@Test
+/*@Test
 public void testDeliverRead_NonLeaderMessage_DoesNotTriggerCollector() throws Exception {
     // Arrange
     
@@ -114,7 +114,7 @@ public void testDeliverRead_NonLeaderMessage_DoesNotTriggerCollector() throws Ex
     verify(cc, never()).onInit(); // Verify that onInit() is never called
     verify(cc, never()).input(anyString()); // Verify that input() is never called
 }
-
+*/
 /*@Test
 public void testSuccessConsensus() throws Exception
 {

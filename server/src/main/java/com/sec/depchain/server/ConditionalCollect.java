@@ -1,5 +1,6 @@
 package com.sec.depchain.server;
 
+import com.google.gson.JsonObject;
 import com.sec.depchain.common.PerfectLinks;
 
 import java.security.PrivateKey;
@@ -12,7 +13,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
-import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 
@@ -27,7 +27,6 @@ public class ConditionalCollect {
 
     private static SystemMembership systemMembership;
     private static int nodeId;
-    private static final int DEBUG_MODE = 1;
     private int TAMPER_MESSAGE = 0;
 
     public interface DeliverCallback {
@@ -75,33 +74,21 @@ public class ConditionalCollect {
 
     }
 
-        public void input(String message) throws Exception {
+    public void input(JSONObject stateMessage) throws Exception {
+        PrivateKey privateKey = this.perfectLinks.getPrivateKey();
+        
+        // Convert the state message to string for signing
+        JSONObject envelope = new JSONObject();
+        envelope.put("type", "STATE");
+        envelope.put("content", stateMessage);  // stateMessage doesn't contain type
+        String signature = CryptoUtils.signMessage(privateKey, stateMessage.toString());
+  
+        envelope.put("signature", signature);  // Fixed typo "signature" (was "signature")
+    
+        int leaderId = systemMembership.getLeaderId();
 
-            PrivateKey privateKey = this.perfectLinks.getPrivateKey();
-
-            String signature = CryptoUtils.signMessage(privateKey, message);
-
-            String formatted_message = "<STATE:" + message + ":" + signature + ">";
-            JSONObject stateRequest = new JSONObject();
-
-            stateRequest.put("type", "STATE");
-            stateRequest.put("state", serializeStateToJson(message,signature));
-            int leaderId = systemMembership.getLeaderId();
-            // System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
-            perfectLinks.send(leaderId, stateRequest.toString());
-        }
-
-    private static String[] getMessageArgs(String message) {
-        if (message.startsWith("<") && message.endsWith(">")) {
-            String content = message.substring(1, message.length() - 1);
-
-            String[] parts = content.split(":");
-
-            return parts;
-        }
-        return new String[] { Constants.UNKNOWN };
+        perfectLinks.send(leaderId, envelope.toString());
     }
-
     private static int getNumberOfMessages() {
         int counter = 0;
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
@@ -113,35 +100,24 @@ public class ConditionalCollect {
         return counter;
     }
 
-    private void processSend(int senderId, String sendMessage) throws Exception {
+    private void processSend(int senderId, JSONObject sendMessage) throws Exception {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
                     "Unexpected: non leader received SEND message: " + sendMessage + " from node: " + senderId);
             return;
         }
 
-        if (DEBUG_MODE == 1) {
-            System.out.println("CONDITIONAL COLLECT - DEBUG: received SEND message: " + sendMessage + " from node: " + senderId);
-        }
-       /* String[] args = getMessageArgs(sendMessage);
-        String message = String.join(":", Arrays.copyOfRange(args, 1, args.length - 1));
-        String signature = args[args.length - 1]; */
+        JSONObject content = sendMessage.getJSONObject("content");
+        String signature = sendMessage.getString("signature");
 
-        JSONObject received = new JSONObject(sendMessage);
-
-        JSONObject state = received.getJSONObject("state");
-
-        String message = state.getString("message");
-        String signature = state.getString("signature");
-
-        if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
-            messages.set(senderId - 1, message);
+        if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), content.toString(), signature)) {
+            messages.set(senderId - 1, content.toString());
             signatures.set(senderId - 1, signature);
         }
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 
-    public void checkAndBrodcastCollectedMessages(String sendMessage, int senderId) {
+    public void checkAndBrodcastCollectedMessages(JSONObject sendMessage, int senderId) {
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
                     "Unexpected: non leader received SEND message: " + sendMessage + " from node: " + senderId);
@@ -154,40 +130,15 @@ public class ConditionalCollect {
                 int index = 0;
                 messages.set(index, "1" + messages.get(index).substring(1));
             }
-            
-        JSONObject jsonMessage = new JSONObject();
-        jsonMessage.put("type", "COLLECTED");
-        
-        // Convert ArrayList<String> to JSONArray
-        JSONArray messagesArray = new JSONArray();
-        for (String msg : messages) {
-            messagesArray.put(msg);
-        }
-        jsonMessage.put("messages", messagesArray);
-        
-        // Convert signatures (assuming it's also ArrayList<String>)
-        JSONArray signaturesArray = new JSONArray();
-        for (String sig : signatures) {
-            signaturesArray.put(sig);
-        }
-        jsonMessage.put("signatures", signaturesArray);
-        
-            String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
+            JSONObject collectedMessage = new JSONObject();
+            collectedMessage.put("type", "COLLECTED");
+            collectedMessage.put("messages", new JSONArray(messages));
+            collectedMessage.put("signatures", new JSONArray(signatures));
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 // System.out.println("Process ID: " + processId);
-                //perfectLinks.send(processId, formattedMessage);
-                perfectLinks.send(processId, jsonMessage.toString());
-
+                perfectLinks.send(processId, collectedMessage.toString());
             }
         }
-    }
-
-    public static String[] unformatArray(String input) {
-        if (input.startsWith("[") && input.endsWith("]")) {
-            input = input.substring(1, input.length() - 1);
-        }
-
-        return input.isEmpty() ? new String[0] : input.split("\\s*,\\s*");
     }
 
     private static boolean verifyAllSignatures(String[] collectedMessages, String[] collectedSignatures)
@@ -207,74 +158,45 @@ public class ConditionalCollect {
         return true;
     }
 
-    private void processCollected(int senderId, String collectedMessageJson) throws Exception {
-        if (DEBUG_MODE == 1) {
-            System.out.println("CONDITIONAL COLLECT - Received COLLECTED message: " + collectedMessageJson);
-            System.out.println("CONDITIONAL COLLECT - Processing COLLECTED message");
-        }
+    private void processCollected(int senderId, JSONObject collectedMessage) throws Exception {
+        // System.out.println("Received COLLECTED message: " + collectedMessage);
+        JSONArray collectedMessages = collectedMessage.getJSONArray("messages");
+        JSONArray collectedSignatures = collectedMessage.getJSONArray("signatures");
 
-        JSONObject json = new JSONObject(collectedMessageJson);
-        
-        // 1. Extract messages array
-        JSONArray messagesArray = json.getJSONArray("messages");
-        String[] collectedMessages = new String[messagesArray.length()];
-        for (int i = 0; i < messagesArray.length(); i++) {
-            collectedMessages[i] = messagesArray.getString(i);
-            if (DEBUG_MODE == 1) {
-                System.out.println("CONDITIONAL COLLECT - collectedMessage["+i + "] = " + collectedMessages[i]);
-            }
-        }
-        
-        // 2. Extract signatures array
-        JSONArray signaturesArray = json.getJSONArray("signatures");
-        String[] collectedSignatures = new String[signaturesArray.length()];
-        for (int i = 0; i < signaturesArray.length(); i++) {
-            collectedSignatures[i] = 
-                signaturesArray.getString(i);
-        }
-        
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
 
-        List<String> messageList = new ArrayList<>(Arrays.asList(collectedMessages));
+        List<String> messageList = new ArrayList<>();
+        for (int i = 0; i < collectedMessages.length(); i++) {
+            messageList.add(collectedMessages.getString(i));
+        }
 
-        // TODO: N -f ???
-        if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
-                && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate.test(messageList)) {
+        if (!collected && 
+        getNumberOfMessagesDiffFromUNDEFINED(messageList.toArray(new String[0])) >= N - f &&
+        verifyAllSignatures(messageList.toArray(new String[0]), 
+                          collectedSignatures.toString().replaceAll("[\\[\\]\"]", "").split(",")) &&
+        outputPredicate.test(messageList)) {
             collected = true;
             // System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
             if (deliverCallback != null) {
                 //System.out.println("ConditionalCollect delivering messages up: " + collectedMessages[0]);
-                deliverCallback.deliver(collectedMessages);
+                deliverCallback.deliver(messageList.toArray(new String[0]));
             }
         }
     }
 
-    private String getMessageType(String message) {
-        if (message.startsWith("<") && message.endsWith(">")) {
-            String content = message.substring(1, message.length() - 1);
-
-            String[] parts = content.split(":");
-
-            return parts[0];
-        }
-        return "UNKNOWN";
-    }
-
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
-        if (DEBUG_MODE == 1) {
-            System.out.println("CONDITIONAL COLLECT - DEBUG: Message received {" + message + "}");
-        }
 
-        JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
-        String type = json.getString("type");
-        System.out.println(type);
-        switch (json.getString("type")) {
+        //String messageType = getMessageType(message);
+        // System.out.println("Message: " + message + ". Message Type: " + messageType);
+        JSONObject messageObj = new JSONObject(message);
+        String messageType = messageObj.getString("type");
+        switch (messageType) {
             case "STATE":
-                processSend(senderId, message);
+                processSend(senderId, messageObj);
                 break;
             case "COLLECTED":
-                processCollected(senderId, message);
+                processCollected(senderId, messageObj);
                 break;
             case "append-request":
                 // not supose to happen only for debug purposes
@@ -301,61 +223,5 @@ public class ConditionalCollect {
 
     public void setSystemMembership(SystemMembership systemMembership) {
         this.systemMembership = systemMembership;
-    }
-
-    public static String[][] collectedParser(String input) {
-        // Regular expression to extract top-level content inside brackets []
-        Pattern outerBracketPattern = Pattern.compile("\\[([^\\[\\]]*)\\]");
-        Matcher matcher = outerBracketPattern.matcher(input);
-
-        String[] messages = new String[0]; // Placeholder for messages
-        String[] signatures = new String[0]; // Placeholder for signatures
-
-        int index = 0;
-        while (matcher.find()) {
-            String content = matcher.group(1).trim(); // Extract content inside []
-
-            if (index == 0) {
-                // Extract messages, but preserve inner brackets in individual items
-                messages = content.split(",\\s*(?=\\d+:|UNDEFINED)"); // Ensure we split correctly
-            } else if (index == 1) {
-                // Extract signatures
-                signatures = content.isEmpty() ? new String[0] : content.split(",\\s*");
-            }
-            index++;
-        }
-
-        return new String[][] { messages, signatures }; // Return as a 2D array
-    }
-
-    public static String[][] splitCollectedMessage(String input) {
-        // Remove starting "<COLLECTED:" and ending ">"
-        if (input.startsWith("<COLLECTED:") && input.endsWith(">")) {
-            input = input.substring(11, input.length() - 1);
-        }
-
-        // Split the message into two parts using "]:" as delimiter
-        String[] parts = input.split("\\]:", 2);
-
-        if (parts.length != 2) {
-            return new String[][] { {}, {} }; // Return empty arrays if the format is incorrect
-        }
-
-        // Add back the closing bracket "]" to the first part (since it was removed by
-        // the split)
-        parts[0] += "]";
-
-        // Split messages and signatures into separate arrays
-        String[] messages = parts[0].substring(1, parts[0].length() - 1).split(",\\s*"); // Remove outer [] and split
-        String[] signatures = parts[1].substring(1, parts[1].length() - 1).split(",\\s*"); // Remove outer [] and split
-
-        return new String[][] { messages, signatures };
-    }
-    private JSONObject serializeStateToJson(String message, String signature) {
-        JSONObject jsonState = new JSONObject();
-        jsonState.put("message", message);
-        jsonState.put("signature", signature);
-        // add any other relevant fields
-        return jsonState;
     }
 }

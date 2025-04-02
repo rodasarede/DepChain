@@ -94,8 +94,9 @@ public class BlockchainMember {
                 if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
-                    bep.propose(transaction);
-                    mempool.addTransactionToMempool(tx);
+                    //bep.propose(transaction);
+                    bep.propose("string to propose");
+                    //mempool.addTransactionToMempool(tx);
                 }
                 else{
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
@@ -127,10 +128,13 @@ public class BlockchainMember {
                 bep.deliverWrite(senderId, value);
                 break;
             case "ACCEPT":
+                value = json.getString("value");
+
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
+                    
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+value+"})");
                 }
-                bep.deliverAccept(senderId, elements[2]);
+                bep.deliverAccept(senderId, value);
                 break;
             default:
                 if (DEBUG_MODE == 1) {

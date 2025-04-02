@@ -36,7 +36,10 @@ public class ClientLibrary {
             if (DEBUG_MODE == 1) {
                 System.out.println("CLIENT LIBRARY: Sending " + formattedMessage + " to server " + nodeId + ".");
             }
-            perfectLinks.send(nodeId, formattedMessage);
+            if(nodeId == 1){
+
+                perfectLinks.send(nodeId, formattedMessage);
+            }
         }
     }
 

@@ -78,10 +78,10 @@ public class ByzantineEpochConsensus {
         // System.out.println("Node id: " + nodeId + " leader id: " + leaderId);
         if (nodeId == leaderId) // is leader
         {
-            // if (getState().getValtsVal().getVal() == null) {
-            //     TSvaluePair tsValuePair = new TSvaluePair(ets, null);
-            //     getState().setValtsVal(tsValuePair);
-            // }
+            if (getState().getValtsVal().getVal() == null) {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, toPropose);
+                getState().setValtsVal(tsValuePair);
+            }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = formatReadMessage(ets);
                 System.out.println("Leader sending " + message + " to " + nodeId);
@@ -124,13 +124,13 @@ public class ByzantineEpochConsensus {
             }
         }
         if (!firstConditionMet) {
-            // String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
-            // String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
-            // String entryVal = null;
-            // if (!leaderEntry.equals(Constants.UNDEFINED)) {
-            //     entryVal = parts[2];
-            // }
-            
+            String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
+            String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
+            String entryVal = null;
+            if (!leaderEntry.equals(Constants.UNDEFINED)) {
+                entryVal = parts[2];
+            }
+            toPropose = entryVal;
             System.out.println("Leader value to propose: " + toPropose);
             if (unbound(CollectedMessages) && toPropose != null) {
                 tmpval = toPropose;

@@ -65,13 +65,15 @@ public class BlockchainMember {
                     bep.propose(transaction);
                     break;
                 case "READ":
-                    // System.out.println("Received READ message from " + senderId + " with message: " + message);
+                    System.out.println("Received READ message from " + senderId + " with message: " + message);
                     bep.deliverRead(senderId);
                     break;
                 case "WRITE":
+                    System.out.println("Received WRITE message from " + senderId + " with message: " + message);
                     bep.deliverWrite(senderId, messageElements[2]);
                     break;
                 case "ACCEPT":
+                    System.out.println("Received ACCEPT message from " + senderId + " with message: " + message);
                     bep.deliverAccept(senderId, messageElements[2]);
                     break;
                 default: 
@@ -90,7 +92,7 @@ public class BlockchainMember {
                 int clientId = entry.getKey();
                 String responseMessage = "<append:" + val + ":" + index +  ":success>";
     
-                // System.out.println("Sending response to client: " + clientId);
+                System.out.println("Sending response to client: " + clientId);
                 perfectLinks.send(clientId, responseMessage);
                 
                 clientTransactions.remove(clientId);

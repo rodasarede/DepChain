@@ -37,6 +37,13 @@ public class Block {
         this.blockHash = calculateHash();
         this.height = height;
     }
+    public Block(String previousBlockHash, List<Transaction> transactions, int height) {
+        this.previousBlockHash = previousBlockHash;
+        this.transactions = transactions;
+        // this.timestamp = System.currentTimeMillis();
+        this.blockHash = calculateHash();
+        this.height = height;
+    }
 
     public String calculateHash() {
         try {

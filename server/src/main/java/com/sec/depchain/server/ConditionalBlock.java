@@ -16,7 +16,7 @@ import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 
-public class ConditionalCollect {
+public class ConditionalBlock {
     private DeliverCallback deliverCallback;
     private final PerfectLinks perfectLinks;
     private static ArrayList<String> messages;
@@ -37,7 +37,7 @@ public class ConditionalCollect {
         this.deliverCallback = callback;
     }
 
-    public ConditionalCollect(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership,
+    public ConditionalBlock(int nodeId, PerfectLinks perfectLinks, SystemMembership systemMembership,
             Predicate<List<String>> outputPredicate) throws Exception {
         setNodeId(nodeId);
         this.perfectLinks = perfectLinks;

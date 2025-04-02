@@ -44,9 +44,10 @@ public class ClientLibrary {
             if (DEBUG_MODE == 1) {
                 System.out.println("CLIENT LIBRARY - DEBUG: Sending request: {"+ jsonMessage +"} to server { "+ systemMembership.getLeaderId()+ "}");
             }
-            for(int nodeId : systemMembership.getMembershipList().keySet()){
+            /*for(int nodeId : systemMembership.getMembershipList().keySet()){
                 perfectLinks.send(nodeId, jsonMessage); // only send to the leader
-            } 
+            } */
+            perfectLinks.send(systemMembership.getLeaderId(), jsonMessage);
         
     }
 

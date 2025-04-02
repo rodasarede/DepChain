@@ -1,5 +1,6 @@
 package com.sec.depchain.server;
 
+import com.sec.depchain.common.Transaction;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -12,7 +13,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
-import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
@@ -34,6 +34,7 @@ public class BlockchainMember {
     private static Blockchain blockchain_1;
     private Mempool mempool;
     private int DEBUG_MODE = 1;
+    private ByzantineBlock bepBlock;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -49,6 +50,7 @@ public class BlockchainMember {
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain_1 = new Blockchain();
+        this.mempool = new Mempool();
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {"+id+"}, Leader: {"+isLeader+"}");
         }
@@ -70,9 +72,11 @@ public class BlockchainMember {
         });
         
         this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+        this.bepBlock = new ByzantineBlock(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
     }
     public void start() throws Exception{
-        bep.init();
+        //bep.init();
+        bepBlock.init();
     }
     //TODO mudei para public
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
@@ -95,8 +99,8 @@ public class BlockchainMember {
                 {
                     clientTransactions.put(senderId, transaction);
                     //bep.propose(transaction);
-                    bep.propose("string to propose");
-                    //mempool.addTransactionToMempool(tx);
+                    //bep.propose("string to propose");
+                    mempool.addTransactionToMempool(tx);
                 }
                 else{
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
@@ -110,15 +114,16 @@ public class BlockchainMember {
                 }
                 if(mempool.size() >= Constants.THRESHOLD){
                    
-                    /*List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+                    List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
                     Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
 
-                    bepBlock.propose(newBlocK);*/
-                }
+                    bepBlock.propose(newBlocK);
+                } 
                
                 break;
             case "READ":
-                bep.deliverRead(senderId);  
+                //bep.deliverRead(senderId);  
+                bepBlock.deliverRead(senderId);  
                 break;
             case "WRITE":
                 String value = json.getString("value");
@@ -143,7 +148,10 @@ public class BlockchainMember {
                 break;
         }
     }
-
+    public void decideBlock(Block block)
+    {
+        System.out.println("block decided");
+    }
     public void decide(String val) {
         //TODO change the decide logic to add a new block with the val decided( for now a single transaction, list of transactions if we have time)
         // blockchain.add(val);
@@ -301,5 +309,8 @@ private JSONObject serializeBlock(Block block) {
     //add transactions to json
     // add any other relevant fields
     return jsonTx;
+}
+public static Blockchain getBlockchain_1() {
+    return blockchain_1;
 }
 }

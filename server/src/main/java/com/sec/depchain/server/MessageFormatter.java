@@ -20,9 +20,10 @@ public class MessageFormatter {
         return message.toString();
     }
 
-    public static String formatStateMessage(long ets,TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
+    public static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
+
         JSONObject message = new JSONObject(formatBaseMessage(MessagaTypes.READ, ets));
-        
+
         // Value-Timestamp pair
         JSONObject valuePair = new JSONObject();
         valuePair.put("value", valtsVAl.getVal() != null ? valtsVAl.getVal() : JSONObject.NULL);

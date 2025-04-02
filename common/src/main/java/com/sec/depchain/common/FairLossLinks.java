@@ -36,7 +36,7 @@ public class FairLossLinks {
     public void deliver() {
         new Thread(() -> {
             try {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[2048];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
     
                 while (running) {  // Only run while true

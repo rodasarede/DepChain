@@ -89,7 +89,7 @@ public class BlockchainMember {
         }
         switch (json.getString("type")) {
             case "tx-request":
-                String transaction = message.replace(":", "_");
+                String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
                 if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) //TODO if transaction signature is valid what is the next step?
                 {
@@ -120,10 +120,11 @@ public class BlockchainMember {
                 bep.deliverRead(senderId);  
                 break;
             case "WRITE":
+                String value = json.getString("value");
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+value+"})");
                 }
-                bep.deliverWrite(senderId, elements[2]);
+                bep.deliverWrite(senderId, value);
                 break;
             case "ACCEPT":
                 if (DEBUG_MODE == 1) {

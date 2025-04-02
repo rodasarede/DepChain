@@ -27,6 +27,7 @@ public class ConditionalCollect {
 
     private static SystemMembership systemMembership;
     private static int nodeId;
+    private static final int DEBUG_MODE = 1;
     private int TAMPER_MESSAGE = 0;
 
     public interface DeliverCallback {
@@ -118,6 +119,10 @@ public class ConditionalCollect {
                     "Unexpected: non leader received SEND message: " + sendMessage + " from node: " + senderId);
             return;
         }
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - DEBUG: received SEND message: " + sendMessage + " from node: " + senderId);
+        }
        /* String[] args = getMessageArgs(sendMessage);
         String message = String.join(":", Arrays.copyOfRange(args, 1, args.length - 1));
         String signature = args[args.length - 1]; */
@@ -203,15 +208,21 @@ public class ConditionalCollect {
     }
 
     private void processCollected(int senderId, String collectedMessageJson) throws Exception {
-        System.out.println("Received COLLECTED message: " + collectedMessageJson);
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - Received COLLECTED message: " + collectedMessageJson);
+            System.out.println("CONDITIONAL COLLECT - Processing COLLECTED message");
+        }
+
         JSONObject json = new JSONObject(collectedMessageJson);
         
         // 1. Extract messages array
         JSONArray messagesArray = json.getJSONArray("messages");
         String[] collectedMessages = new String[messagesArray.length()];
         for (int i = 0; i < messagesArray.length(); i++) {
-            collectedMessages[i] = 
-                messagesArray.getString(i);
+            collectedMessages[i] = messagesArray.getString(i);
+            if (DEBUG_MODE == 1) {
+                System.out.println("CONDITIONAL COLLECT - collectedMessage["+i + "] = " + collectedMessages[i]);
+            }
         }
         
         // 2. Extract signatures array
@@ -227,6 +238,7 @@ public class ConditionalCollect {
 
         List<String> messageList = new ArrayList<>(Arrays.asList(collectedMessages));
 
+        // TODO: N -f ???
         if (!collected && getNumberOfMessagesDiffFromUNDEFINED(collectedMessages) >= N - f
                 && verifyAllSignatures(collectedMessages, collectedSignatures) && outputPredicate.test(messageList)) {
             collected = true;
@@ -250,7 +262,10 @@ public class ConditionalCollect {
     }
 
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
-        System.out.println("Message: " + message);
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - DEBUG: Message received {" + message + "}");
+        }
+
         JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
         String type = json.getString("type");
         System.out.println(type);

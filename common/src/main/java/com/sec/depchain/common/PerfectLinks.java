@@ -289,6 +289,13 @@ public class PerfectLinks {
     private void onFairLossDeliver(String srcIP, int srcPort, String receivedMessage) {
 
 
+        if (DEBUG_MODE == 1) {
+            System.out.println("PERFECT LINKS - DEBUG: Received message: {" + receivedMessage + "}");
+        }
+
+        int another = nodeId + 1;
+        another = another - 1;
+
         JSONObject receivedJson = new JSONObject(receivedMessage);
         String type = receivedJson.getString("type");
 

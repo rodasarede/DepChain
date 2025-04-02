@@ -152,9 +152,7 @@ private static byte[] to32Bytes(byte[] bytes) {
 public static boolean verifySignature(Transaction tx) {
     try {
         // 1. Recover the public key from signature
-        byte[] rawTxData = tx.getRawDataForSigning();
-        System.out.println("Transação para dar hash" + rawTxData );
-        byte[] txHash = Hash.sha3(rawTxData);
+        byte[] txHash = hashTransaction(tx);
         byte[] signatureBytes = Numeric.hexStringToByteArray(tx.getSignature());
         
         // Extract r, s, v
@@ -175,6 +173,11 @@ public static boolean verifySignature(Transaction tx) {
     } catch (Exception e) {
         return false;
     }
+}
+public static byte[] hashTransaction(Transaction tx)
+{
+    byte[] rawTxData = tx.getRawDataForSigning();
+    return Hash.sha3(rawTxData); // Keccak-256
 }
 
 }

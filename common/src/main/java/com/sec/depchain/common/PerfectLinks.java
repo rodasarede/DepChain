@@ -13,6 +13,7 @@ import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class PerfectLinks {
@@ -34,7 +35,7 @@ public class PerfectLinks {
 
     private final PrivateKey privateKey;
 
-    private static final int DEBUG_MODE = 0;
+    private static final int DEBUG_MODE = 1;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);
@@ -432,16 +433,36 @@ public class PerfectLinks {
     }
 
     public String getMessageType(String message) {
+    try {
+        // Try parsing as JSON
+        JSONObject json = new JSONObject(message);
+        
+        // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
+        if (json.has("type")) {
+            return json.getString("type");
+        }
+        
+        // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
+        if (json.has("message")) {
+            String innerMessage = json.getString("message");
+            // Check if message is itself a JSON string
+            if (innerMessage.startsWith("{")) {
+                JSONObject innerJson = new JSONObject(innerMessage);
+                if (innerJson.has("type")) {
+                    return innerJson.getString("type");
+                }
+            }
+        }
+    } catch (JSONException e) {
+        // Fallback to old format if not JSON
         if (message.startsWith("<") && message.endsWith(">")) {
             String content = message.substring(1, message.length() - 1);
-
             String[] parts = content.split(":");
-
-            //System.out.println("will return type of message " + message + ": " + parts[0]);
             return parts[0];
         }
-        return Constants.UNKNOWN;
     }
+    return Constants.UNKNOWN;
+}
     public void close(){
         System.out.println("PERFECT LINK - INFO: Shutting down PerfectLinks resources...");
         if(fairLossLinks != null)

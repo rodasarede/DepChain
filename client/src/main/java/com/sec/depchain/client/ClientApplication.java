@@ -94,7 +94,7 @@ public class ClientApplication {
         if (DEBUG_MODE == 1) System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId+ "}");
 
         //TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), 0, null); //TS?
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), null);   
         
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);

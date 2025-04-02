@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.besu.datatypes.Address;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.Transaction;
@@ -29,6 +31,7 @@ public class BlockchainMember {
     private ByzantineEpochConsensus bep;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
     private static Blockchain blockchain_1;
+    private Mempool mempool;
     private int DEBUG_MODE = 1;
 
     public static void main(String[] args) throws Exception {
@@ -76,17 +79,21 @@ public class BlockchainMember {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Received message from {"+senderId+"} -> {"+message+"}");
         }
 
-        message = message.substring(1, message.length() - 1);
+        //message = message.substring(1, message.length() - 1);
         String[] elements = message.split(":");
-        String messageType = elements[0];
-
-        switch (messageType) {
+        JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
+        String messageType = "";
+        if (json.has("type")) {
+            messageType = json.getString("type"); // Returns "tx-request"
+        }
+        switch (json.getString("type")) {
             case "tx-request":
                 String transaction = message.replace(":", "_");
-                Transaction tx = deserializeTransaction(elements);
-                if(tx.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
+                Transaction tx = deserializeTransactionJson(message);
+                if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
+                    mempool.addTransactionToMempool(tx);
                 }
                 else{
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
@@ -97,6 +104,11 @@ public class BlockchainMember {
                 
                 if (DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
+                }
+                if(mempool.size() >= Constants.THRESHOLD){
+                    //TODO
+                    //Create new block
+                    //Propose the block
                 }
                 bep.propose(transaction);
                 break;
@@ -202,9 +214,73 @@ public class BlockchainMember {
 
         String signature = tx[5];
         BigInteger nonce = new BigInteger(tx[6]);
-        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
+        
+        
+        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
         //from:to:value:data:signature:nonce
     }
+    public Transaction deserializeTransactionJson(String jsonStr) {
+        try {
+            JSONObject json = new JSONObject(jsonStr);
+            JSONObject txJson = json.getJSONObject("transaction");
+            
+            // Extract and convert fields
+            String senderAddress = txJson.getString("from");
+            String toAddress = txJson.getString("to");
+            BigInteger value;
+        if (txJson.get("amount") instanceof Integer) {
+            value = BigInteger.valueOf(txJson.getInt("amount"));
+        } else {
+            value = new BigInteger(txJson.getString("amount"));
+        }
+            String data = txJson.getString("data");
+            BigInteger nonce;
+            if (txJson.get("nonce") instanceof Integer) {
+                nonce = BigInteger.valueOf(txJson.getInt("nonce"));
+            } else {
+                nonce = new BigInteger(txJson.getString("nonce"));
+            }
+            String signature = txJson.getString("signature"); // Note: Typo in your JSON? Should be "signature"
+            
+            // Using current timestamp since it's not in the JSON
+            
+            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
 
-    
+        } catch (Exception e) {
+            System.err.println("Failed to deserialize transaction: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public String getMessageType(String message) {
+    try {
+        // Try parsing as JSON
+        JSONObject json = new JSONObject(message);
+        
+        // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
+        if (json.has("type")) {
+            return json.getString("type");
+        }
+        
+        // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
+        if (json.has("message")) {
+            String innerMessage = json.getString("message");
+            // Check if message is itself a JSON string
+            if (innerMessage.startsWith("{")) {
+                JSONObject innerJson = new JSONObject(innerMessage);
+                if (innerJson.has("type")) {
+                    return innerJson.getString("type");
+                }
+            }
+        }
+    } catch (JSONException e) {
+        // Fallback to old format if not JSON
+        if (message.startsWith("<") && message.endsWith(">")) {
+            String content = message.substring(1, message.length() - 1);
+            String[] parts = content.split(":");
+            return parts[0];
+        }
+    }
+    return Constants.UNKNOWN;
+}
 }

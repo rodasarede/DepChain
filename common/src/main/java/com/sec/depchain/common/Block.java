@@ -18,6 +18,7 @@ public class Block {
     private String previousBlockHash;
     private List<Transaction> transactions;
     private Map<Address, AccountState> state;
+    private int height;
     // private long timestamp;
     // private int nonce;
 
@@ -25,14 +26,16 @@ public class Block {
         // Load the genesis block from the json file
         // System.out.println("System is in this path: " + System.getProperty("user.dir"));
         loadFromJson(genesisFilename);
+        this.height = 0;
     }
 
-    public Block(String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state) {
+    public Block(String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state, int height) {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
         this.state = state;
         // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
+        this.height = height;
     }
 
     public String calculateHash() {
@@ -92,7 +95,9 @@ public class Block {
         Map<String, AccountState> state;
     }
 
-
+public int getHeight() {
+    return height;
+}
 
     public void printBlockDetails() {
         

@@ -35,7 +35,7 @@ public class PerfectLinks {
 
     private final PrivateKey privateKey;
 
-    private static final int DEBUG_MODE = 1;
+    private static final int DEBUG_MODE = 0;
 
     public interface DeliverCallback {
         void deliver(int NodeId, String message);

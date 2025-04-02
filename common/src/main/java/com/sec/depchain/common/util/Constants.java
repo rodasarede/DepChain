@@ -12,4 +12,10 @@ public final class Constants {
     private Constants(){
 
     }
+    public final class MessagaTypes{
+        public static final String READ = "READ";
+        public static final String STATE = "STATE";
+        public static final String WRITE = "WRITE";
+        public static final String ACCEPT = "ACCEPTED";
+    }
 }

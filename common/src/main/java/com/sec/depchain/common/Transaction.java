@@ -143,7 +143,7 @@ public class Transaction {
         // Add the transaction to the list of transactions
         transactions.add(this);
         
-        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState);
+        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState, blockchain.getLatestBlock().getHeight() + 1);
         // newBlock.printBlockDetails();
         blockchain.getChain().add(newBlock);
 

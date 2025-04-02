@@ -16,6 +16,7 @@ import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
+import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
 
@@ -93,6 +94,7 @@ public class BlockchainMember {
                 if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) //TODO if transaction signature is valid what is the next step?
                 {
                     clientTransactions.put(senderId, transaction);
+                    bep.propose(transaction);
                     mempool.addTransactionToMempool(tx);
                 }
                 else{
@@ -106,11 +108,13 @@ public class BlockchainMember {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
                 }
                 if(mempool.size() >= Constants.THRESHOLD){
-                    //TODO
-                    //Create new block
-                    //Propose the block
+                   
+                    /*List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
+
+                    bepBlock.propose(newBlocK);*/
                 }
-                bep.propose(transaction);
+               
                 break;
             case "READ":
                 bep.deliverRead(senderId);  
@@ -282,5 +286,15 @@ public class BlockchainMember {
         }
     }
     return Constants.UNKNOWN;
+}
+
+private JSONObject serializeBlock(Block block) {
+    JSONObject jsonTx = new JSONObject();
+    jsonTx.put("blockHash", block.getBlockHash());
+    jsonTx.put("previousBlockHash", block.getPreviousBlockHash());
+    jsonTx.put("height", block.getHeight());
+    //add transactions to json
+    // add any other relevant fields
+    return jsonTx;
 }
 }

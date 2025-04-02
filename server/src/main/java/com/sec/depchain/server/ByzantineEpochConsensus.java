@@ -10,6 +10,8 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
+
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
@@ -78,7 +80,7 @@ public class ByzantineEpochConsensus {
                 System.out.println("BEP - DEBUG: I am proposing value " + v);
             }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
-                String message = formatReadMessage(ets);
+                String message = MessageFormatter.formatReadMessage(ets, position);
 
                 if (DEBUG_MODE == 1) {
                     System.out.println("BEP - DEBUG: Leader " + leaderId + " sending READ message to " + nodeId);
@@ -95,7 +97,7 @@ public class ByzantineEpochConsensus {
 
     public void deliverRead(int senderId) throws Exception {
         if (senderId == leaderId) {
-            String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
+            String message = MessageFormatter.formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
                 System.out.println("BEP - DEBUG: Sending STATE " + message + " to conditional collect");
             }
@@ -164,10 +166,10 @@ public class ByzantineEpochConsensus {
             state.getWriteSet().add(tsValuePair);
 
             // BRODCAST WRITE message to all nodes
-            for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
+            for (int nodeId : systemMembership.getMembershipList().keySet()) 
             {
                 // trigger a send WRITE message containing tmpval
-                String message = formatWriteMessage(tmpval, ets);
+                String message = MessageFormatter.formatWriteMessage(tmpval, ets);
                 perfectLinks.send(nodeId, message);
             }
         }
@@ -206,7 +208,7 @@ public class ByzantineEpochConsensus {
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send ACCEPT Message
-                String message = formatAcceptMessage(v, ets);
+                String message = MessageFormatter. formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }
         }else{
@@ -284,7 +286,6 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
             if (parsedEntry.getTimestamp() != 0) {
                 return false;
             }
@@ -301,9 +302,13 @@ public class ByzantineEpochConsensus {
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-            String[] parts = entry.split(":");
-            long entryTs = Long.parseLong(parts[1]);
-            String entryVal = parts[2];
+            JSONObject json = new JSONObject(entry);
+            JSONObject valuePair = json.getJSONObject("value_pair");
+            long entryTs = valuePair.getLong("timestamp");
+
+            
+            Object valueObj = valuePair.opt("value"); // Returns null if key doesn't exist or value is JSON null
+            String entryVal = (valueObj != null) ? valueObj.toString() : null;
 
             if (entryTs < ts || (entryTs == ts && entryVal.equals(v))) {
                 count++;
@@ -335,11 +340,14 @@ public class ByzantineEpochConsensus {
     }
 
     public boolean sound(List<String> S) {
+        System.out.println(S);
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            System.out.println(parsedEntry.getTimestamp());
+            System.out.println(parsedEntry.getVal());
 
             if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {
                 // dont we have to change something?
@@ -359,8 +367,13 @@ public class ByzantineEpochConsensus {
         return count;
     }
 
+
     private static String formatReadMessage(long ets) {
-        return "<READ:" + ets +  ":" + position + ">";
+        JSONObject readMessage = new JSONObject();
+        readMessage.put("type", "READ");
+        readMessage.put("ets", ets);
+        readMessage.put("position", position);
+        return readMessage.toString();
     }
 
     private static String formatStateMessage(long ets, TSvaluePair valtsVAl, Set<TSvaluePair> writeSet) {
@@ -370,11 +383,19 @@ public class ByzantineEpochConsensus {
     }
 
     private static String formatWriteMessage(String tmpval, long ets) {
-        return "<WRITE:" + ets + ":" + tmpval + ">";
+        JSONObject writeMessage = new JSONObject();
+        writeMessage.put("type", "WRITE");
+        writeMessage.put("ets", ets);
+        writeMessage.put("value", tmpval);
+        return writeMessage.toString();
     }
 
     private static String formatAcceptMessage(String val, long ets) {
-        return "<ACCEPT:" + ets + ":" + val + ">";
+        JSONObject acceptedMessage = new JSONObject();
+        acceptedMessage.put("type", "WRITE");
+        acceptedMessage.put("ets", ets);
+        acceptedMessage.put("value", val);
+        return acceptedMessage.toString();
     }
 
     public static Set<TSvaluePair> parseWriteSet(String writeSetString) {
@@ -406,9 +427,10 @@ public class ByzantineEpochConsensus {
     }
 
     private static TSvaluePair getValsValFromStateMessage(String entry) {
-        String[] parts = entry.replace("<", "").replace(">", "").split(":");
-        long entryTs = Long.parseLong(parts[1]);
-        String entryVal = parts[2];
+        JSONObject json = new JSONObject(entry);
+        JSONObject valuePair = json.getJSONObject("value_pair");
+        long entryTs = valuePair.getLong("timestamp");
+        String entryVal = valuePair.optString("value", ""); 
         return new TSvaluePair(entryTs, entryVal);
     }
 

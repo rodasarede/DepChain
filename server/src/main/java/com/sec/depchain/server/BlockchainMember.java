@@ -108,19 +108,23 @@ public class BlockchainMember {
                 if (DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
                 }
-                if(mempool.size() >= Constants.THRESHOLD){
+                // if(mempool.size() >= Constants.THRESHOLD){
                    
-                    /*List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
-                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
+                //     /*List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+                //     Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
 
-                    bepBlock.propose(newBlocK);*/
-                }
+                //     bepBlock.propose(newBlocK);*/
+                // }
                
                 break;
             case "READ":
+                if (DEBUG_MODE == 1) {
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"})");
+                }
                 bep.deliverRead(senderId);  
                 break;
             case "WRITE":
+            
                 String value = json.getString("value");
                 if (DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+value+"})");

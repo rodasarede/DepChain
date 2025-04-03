@@ -17,7 +17,7 @@ public class Block {
     private List<Transaction> transactions;
     private Map<Address, AccountState> state;
     private int height;
-    // private long timestamp;
+    private long timestamp;
     // private int nonce;
 
     public Block(String genesisFilename) {
@@ -26,6 +26,7 @@ public class Block {
         // System.getProperty("user.dir"));
         loadFromJson(genesisFilename);
         this.height = 0;
+        this.timestamp = System.currentTimeMillis();
     }
 
     public Block(String previousBlockHash, List<Transaction> transactions, Map<Address, AccountState> state,
@@ -36,6 +37,7 @@ public class Block {
         // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
+        this.timestamp = System.currentTimeMillis();
     }
 
     public Block(String previousBlockHash, List<Transaction> transactions, int height) {
@@ -44,6 +46,7 @@ public class Block {
         // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
+        this.timestamp = System.currentTimeMillis();
     }
 
     public String calculateHash() {
@@ -161,4 +164,7 @@ public class Block {
         return sb.toString();
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
 }

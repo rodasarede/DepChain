@@ -5,6 +5,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.besu.datatypes.Address;
@@ -32,6 +34,7 @@ public class BlockchainMember {
     private Mempool mempool;
     private int DEBUG_MODE = 1;
     private ByzantineBlock bepBlock;
+    private Timer consensusTimer;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -100,6 +103,7 @@ public class BlockchainMember {
                     // bep.propose(transaction);
                     // bep.propose("string to propose");
                     mempool.addTransactionToMempool(tx);
+                    startConsensusTimer(); 
                 } else {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + transaction + "}");
@@ -108,21 +112,8 @@ public class BlockchainMember {
                     break;
                 }
 
-                if (mempool.size() >= Constants.THRESHOLD){ //TODO timeout
-
-                    List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
-                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash(), transactions,
-                            blockchain_1.getLatestBlock().getHeight());
-
-                    if (DEBUG_MODE == 1) {
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
-                                + "}, hash:{" + newBlocK.getBlockHash() + "})");
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
-                                + "}, transactions:{" + newBlocK.getTransactions() + "})");
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
-                                + "}, previousHash:{" + newBlocK.getPreviousBlockHash() + "})");
-                    }
-                    bepBlock.propose(newBlocK);
+                if (mempool.size() >= Constants.THRESHOLD) { // TODO timeout
+                    triggerConsensus();
                 }
 
                 break;
@@ -165,23 +156,56 @@ public class BlockchainMember {
         }
     }
 
+    private void startConsensusTimer() {
+        if (consensusTimer != null) {
+            consensusTimer.cancel(); // Cancel previous timer if running
+        }
+
+        consensusTimer = new Timer();
+        consensusTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (mempool.size() != 0) {
+                    triggerConsensus();
+                }
+            }
+        }, Constants.TIMEOUT_MS);
+    }
+
+    private void triggerConsensus() {
+        if (mempool.size() == 0)
+            return;
+        List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+        Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash(), transactions,
+                blockchain_1.getLatestBlock().getHeight());
+
+        Block newBlock = new Block(
+                blockchain_1.getLatestBlock().getBlockHash(),
+                transactions,
+                blockchain_1.getLatestBlock().getHeight());
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("BLOCKCHAIN MEMBER - DEBUG: Proposing block {" + newBlock.getBlockHash() + "}");
+        }
+        bepBlock.propose(newBlock);
+        startConsensusTimer(); 
+    }
+
     public void decideBlock(Block block) {
         System.out.println("block decided");
         System.out.println("hash " + block.getBlockHash());
         System.out.println("previous hash" + block.getPreviousBlockHash());
         System.out.println("transactions" + block.getTransactions());
 
-
         // 1. Persist the block in the blockchain
         blockchain_1.getChain().add(block);
 
-
         // 2. Execute transactions to update the world state
         for (Transaction transaction : block.getTransactions()) {
-            if(transaction.execute(blockchain_1.getCurrentState(), blockchain_1)){
-                //sucess send message to client TODO can I get id from FROM (address)
+            if (transaction.execute(blockchain_1.getCurrentState(), blockchain_1)) {
+                // sucess send message to client TODO can I get id from FROM (address)
                 System.out.println("Transaction executed successfully");
-            }else{
+            } else {
                 // fail, send message to client TODO can I get id from FROM (address)
                 System.out.println("Transaction execution failed");
             }
@@ -190,15 +214,13 @@ public class BlockchainMember {
         // 3. Update the world state based on the executed transactions
         blockchain_1.updateSimpleWorldState();
         blockchain_1.printAccountsInfo();
-        
-        
+
         // 4. Remove included transactions from mempool
         for (Transaction transaction : block.getTransactions()) {
             mempool.removeTransactionFromMempool(transaction);
         }
 
-
-        //5. start next 
+        // 5. start next
     }
 
     public void decide(String val) {
@@ -216,7 +238,7 @@ public class BlockchainMember {
         // System.out.println("Updating world state");
         // blockchain_1.updateSimpleWorldState();
         // }else{
-        
+
         // TODO if exection fails send fail message
         // System.out.println("Transaction execution failed");
         // }
@@ -354,5 +376,4 @@ public class BlockchainMember {
         return blockchain_1;
     }
 
-    
 }

@@ -10,6 +10,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -34,6 +35,7 @@ public class Blockchain {
     private static SimpleWorld simpleWorld;
     private static EVMExecutor executor;
     private static ByteArrayOutputStream byteArrayOutputStream;
+    private static String hardcodedRuntimeBytecode ;
 
     public Blockchain() {
        
@@ -41,6 +43,7 @@ public class Blockchain {
         byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
         StandardJsonTracer tracer = new StandardJsonTracer(printStream, true, true, true, true);
+        Address contractAddress = Address.fromHexString("0x1234567891234567891234567891234567891234");
 
         //initialize local EVM node
         executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
@@ -55,19 +58,30 @@ public class Blockchain {
         updateSimpleWorldState();
 
         // ISTCoin contract creation bytecode from contract address code
-        String Bytecode = simpleWorld.get(Address.fromHexString("0x1234567891234567891234567891234567891234")).getCode().toHexString();
+        String Bytecode = simpleWorld.get(contractAddress).getCode().toHexString();
        
         executor.code(Bytes.fromHexString(Bytecode));
         //contract admin with all supply
-        executor.sender(Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
-        executor.receiver(Address.fromHexString("1234567891234567891234567891234567891234"));
+        executor.sender(Address.fromHexString("b8124c42749e5f1908ab8c5afde9358005320306"));
+        executor.receiver(contractAddress);
         executor.worldUpdater(simpleWorld.updater());
         executor.commitWorldState();
         executor.execute();
 
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
+        hardcodedRuntimeBytecode = runtimeBytecode; // change in future
+        MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
+        contractAccount.setCode(Bytes.fromHexString(runtimeBytecode));
+        
+        simpleWorld.updater().commit();
+        
         //runtime bytecode
+        
         executor.code(Bytes.fromHexString(runtimeBytecode));
+        executor.worldUpdater(simpleWorld.updater());
+        executor.commitWorldState();
+        
+        
 
 
         //test call smart contract
@@ -79,6 +93,9 @@ public class Blockchain {
 
     public  void addTransaction(Transaction tx) {
         pendingTransactions.add(tx);
+    }
+    public SimpleWorld getSimpleWorld() {
+        return simpleWorld;
     }
 
 
@@ -94,7 +111,15 @@ public class Blockchain {
     public int getChainSize() {
         return chain.size();
     }
-
+    public EVMExecutor getExecutor() {
+        return executor;
+    }
+    public ByteArrayOutputStream getbyteArrayOutputStream() {
+        return byteArrayOutputStream;
+    }
+    public String getHardcodedRuntimeBytecode() {
+        return hardcodedRuntimeBytecode;
+    }
     public void updateSimpleWorldState() {
 
         for (Map.Entry<Address, AccountState> entry : getCurrentState().entrySet()) {
@@ -166,7 +191,7 @@ public class Blockchain {
                     // Get name and symbol
                     System.out.println("    _name: " +  helpers.convertHexadecimalToAscii(account.getStorageValue(UInt256.valueOf(3)).toString()));
                     System.out.println("    _symbol: " + helpers.convertHexadecimalToAscii(account.getStorageValue(UInt256.valueOf(4)).toString()));
-                    String paddedSenderAddress = helpers.padHexStringTo256Bit(Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef").toHexString());
+                    String paddedSenderAddress = helpers.padHexStringTo256Bit(Address.fromHexString("0xb8124c42749e5f1908ab8c5afde9358005320306").toHexString());
                     String balanceSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedSenderAddress + helpers.convertIntegerToHex256Bit(0))));
                     System.out.println("    _balances[msg.sender]: " + account.getStorageValue(UInt256.fromHexString(balanceSlotMapping)).toLong());
                     System.out.println("    blacklist sender contract address: " + account.getStorageValue(UInt256.valueOf(5)));

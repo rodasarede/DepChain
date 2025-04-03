@@ -1,14 +1,20 @@
 package com.sec.depchain.common;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
+import com.sec.depchain.common.SmartContractsUtil.helpers;
 import com.sec.depchain.common.util.CryptoUtils;
 
 public class Transaction {
@@ -156,6 +162,8 @@ public class Transaction {
     }
 
     public boolean execute(Map<Address, AccountState> currentState,Blockchain blockchain) {
+
+        
         // Check if the transaction is valid
         if (!isValid(currentState)) {
             return false;
@@ -164,20 +172,44 @@ public class Transaction {
         // Update the state of the sender and receiver
         AccountState senderState = currentState.get(from);
         AccountState receiverState = currentState.get(to);
+        
+        
+        if(receiverState.getCode()!= null && getData() != null){
+            System.out.println("data:" + getData());
 
-        // Update sender's balance
-        senderState.setBalance(senderState.getBalance().subtract(value));
+            blockchain.getExecutor();
+            ByteArrayOutputStream byteArrayOutputStream = blockchain.getbyteArrayOutputStream();
 
-        // Update receiver's balance
-        receiverState.setBalance(receiverState.getBalance().add(value));
 
-        // Add the transaction to the list of transactions
-        // transactions.add(this);
+            //execute as a smart contract call
+            // blockchain.getExecutor().code(Bytes.fromHexString(receiverState.getCode()));
+            blockchain.getExecutor().callData(Bytes.fromHexString(getData()));
+            blockchain.getExecutor().sender(from);
+            blockchain.getExecutor().execute();
+            Boolean result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+            System.out.println("Output of 'execution': " + result);
 
-        // Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState,
-        //         blockchain.getLatestBlock().getHeight() + 1);
-        // newBlock.printBlockDetails();
-        // blockchain.getChain().add(newBlock);
+            // hardcoded to check if balance updated for example: transfer 0x1234567891234567891234567891234567891234 0x336f5f589a81811b47d582d4853af252bfb7c5e2 10
+            blockchain.getExecutor().callData(Bytes.fromHexString("70a08231"+helpers.padHexStringTo256Bit("0x336f5f589a81811b47d582d4853af252bfb7c5e2")));
+            blockchain.getExecutor().execute();
+            Long balanceOfReceiver = helpers.extractLongFromReturnData(byteArrayOutputStream);
+            System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
+
+            if(result != true){
+                return false;
+            }
+            
+        }else{
+            // execute as a normal native transfer
+            // Update sender's balance
+            senderState.setBalance(senderState.getBalance().subtract(value));
+
+            // Update receiver's balance
+            receiverState.setBalance(receiverState.getBalance().add(value));
+        }
+        
+
+       
 
         return true;
     }

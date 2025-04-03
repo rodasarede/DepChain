@@ -50,7 +50,7 @@ public class ContractsTest {
         simpleWorld = new SimpleWorld();
 
         // EOT mock account
-        senderAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+        senderAddress = Address.fromHexString("0xb8124c42749e5f1908ab8c5afde9358005320306");
         simpleWorld.createAccount(senderAddress,0, Wei.fromEth(0));
         MutableAccount senderAccount = (MutableAccount) simpleWorld.get(senderAddress);
 
@@ -232,7 +232,6 @@ public class ContractsTest {
         //sender is still set as the previous address since contract deoploymeent
         
         String transferData = "a9059cbb"+helpers.padHexStringTo256Bit(ISTCoinContractAddress.toHexString())+helpers.convertIntegerToHex256Bit(1000);
-        executor.sender(senderAddress);
         executor.callData(Bytes.fromHexString(transferData));
         executor.execute();
         // System.out.println(byteArrayOutputStream.toString());
@@ -252,6 +251,43 @@ public class ContractsTest {
 
         assert(balanceOfContractAfter == 1000);
     }
+
+    // @Test
+    // public void testTransferFROM(){
+
+    //     // Balance of contract
+    //     // String paddedAddress = helpers.padHexStringTo256Bit(clientAddress.toHexString());
+    //     // executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));
+    //     // executor.execute();
+    //     // long balanceOfContractBefore = helpers.extractLongFromReturnData(byteArrayOutputStream);
+    //     // System.out.println("Output of 'balanceOf(contract)': " + Long.toString(balanceOfContractBefore));
+
+    //     // Transfer 1000 tokens from sender to contract
+    //     //sender is still set as the previous address since contract deoploymeent
+        
+    //     String transferData = "23b872dd"+helpers.padHexStringTo256Bit(senderAddress.toHexString())+helpers.padHexStringTo256Bit(clientAddress.toHexString())+helpers.convertIntegerToHex256Bit(1000);
+    //     // executor.sender(senderAddress);
+    //     // executor.receiver(ISTCoinContractAddress);
+    //     executor.callData(Bytes.fromHexString(transferData));
+    //     executor.execute();
+    //     System.out.println(byteArrayOutputStream.toString());
+
+    //     // Balance of contract
+    //     // executor.callData(Bytes.fromHexString("70a08231"+paddedAddress));
+    //     // executor.execute();
+    //     // // System.out.println(byteArrayOutputStream.toString());
+    //     // long balanceOfContractAfter = helpers.extractLongFromReturnData(byteArrayOutputStream);
+    //     // System.out.println("Output of 'balanceOf(contract)': " + Long.toString(balanceOfContractAfter));
+
+    //     // // Balance of Sender
+    //     // executor.callData(Bytes.fromHexString("70a08231"+ helpers.padHexStringTo256Bit(senderAddress.toHexString())));
+    //     // executor.execute();
+    //     // long balanceOfSenderAfter = helpers.extractLongFromReturnData(byteArrayOutputStream);
+    //     // System.out.println("Output of 'balanceOf(sender)': " + Long.toString(balanceOfSenderAfter));
+
+    //     // assert(balanceOfContractAfter == 1000);
+    //     assert(true);
+    // }
     
     @Test
     public void unauthorizedAddBlacklistTest(){

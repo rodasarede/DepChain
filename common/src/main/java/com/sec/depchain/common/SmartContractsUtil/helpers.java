@@ -183,6 +183,9 @@ public class helpers {
     public static String converStringToHexString(String str) {
         return Numeric.toHexString(str.getBytes());
     }
+    public static String convertBigIntegerToHex256Bit(BigInteger number) {
+        return String.format("%064x", number);
+    }
 
     public static String padHexStringTo256Bit(String hexString) {
         if (hexString.startsWith("0x")) {

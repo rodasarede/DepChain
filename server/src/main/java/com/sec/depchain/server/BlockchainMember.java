@@ -3,6 +3,7 @@ package com.sec.depchain.server;
 import com.sec.depchain.common.Transaction;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
+import com.sec.depchain.common.AccountState;
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
@@ -35,6 +37,8 @@ public class BlockchainMember {
     private int DEBUG_MODE = 1;
     private ByzantineBlock bepBlock;
     private Timer consensusTimer;
+    private Map<Address, BigInteger> accountNonces = new HashMap<>();
+
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -98,6 +102,7 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
+                
                 if (tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) {
                     clientTransactions.put(senderId, transaction);
                     // bep.propose(transaction);
@@ -219,8 +224,9 @@ public class BlockchainMember {
         for (Transaction transaction : block.getTransactions()) {
             mempool.removeTransactionFromMempool(transaction);
         }
-
+        //increment nonce?
         // 5. start next
+
         bepBlock.init();
         // bep.init();
     }
@@ -377,5 +383,6 @@ public class BlockchainMember {
     public static Blockchain getBlockchain_1() {
         return blockchain_1;
     }
+
 
 }

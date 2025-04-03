@@ -134,13 +134,20 @@ public class Transaction {
             return false; // Receiver does not exist
         }
 
-        // Replay attacks
-        if (senderState.getNonce() != null && senderState.getNonce().compareTo(getNonce()) != 0) //
-        {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: What is this verification?");
+        BigInteger expectedNonce = senderState.getNonce();
+        if (expectedNonce != null) {
+            if (getNonce().compareTo(expectedNonce) < 0) {
+                if (DEBUG_MODE == 1) {
+                    System.out.println("TRANSACTION - DEBUG: Nonce too low (possible replay attack)");
+                }
+                return false; // Reject replay attacks
+            } else if (getNonce().compareTo(expectedNonce) > 0) {
+                if (DEBUG_MODE == 1) {
+                    System.out.println("TRANSACTION - DEBUG: Nonce too high, out-of-order transaction.");
+                }
+                // Optionally queue transaction instead of rejecting
+                return false;
             }
-            return false;
         }
 
         // Additional checks if needed(signature verification)

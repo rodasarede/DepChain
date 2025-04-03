@@ -1,5 +1,7 @@
 package com.sec.depchain.client;
 
+import java.math.BigInteger;
+
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
@@ -13,6 +15,7 @@ import com.sec.depchain.common.util.EthereumKeyGen;
 public class Wallet {
     private final ECKeyPair ecPair;
     private final String address;
+    private BigInteger nonce;
     
     
     public Wallet(int clientId) throws Exception{
@@ -21,6 +24,7 @@ public class Wallet {
         String hex = KeyLoader.loadPrivateKeyEth(filePath);
         this.ecPair = EthereumKeyGen.createECPair(hex);
         this.address = "0x" + Keys.getAddress(this.ecPair);
+        this.nonce = BigInteger.ZERO;
     }
     public String getAddress() {
         return address;
@@ -42,6 +46,13 @@ public class Wallet {
         System.arraycopy(signatureData.getS(), 0, signatureBytes, 32, 32);
         signatureBytes[64] = signatureData.getV()[0];
         return Numeric.toHexString(signatureBytes);
+    }
+
+    public BigInteger getNonce() {
+        return nonce;
+    }
+    public void incremetNonce() {
+        this.nonce = getNonce().add(BigInteger.ONE);
     }
 
 }

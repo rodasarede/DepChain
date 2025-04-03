@@ -51,5 +51,7 @@ public class AccountState {
     public BigInteger getNonce() {
         return nonce;
     }
-
+    public void incrementNonce() {
+        this.nonce = this.nonce.add(BigInteger.ONE);
+    }
 }

@@ -67,7 +67,6 @@ public class ByzantineBlock {
         TSvaluePairBlock defaultVal = new TSvaluePairBlock(0, null);
         this.state = new EpochBlock(defaultVal, new HashSet<>());
         if (this.state == null) {
-            System.out.println("aqui é null");
         }
         // System.out.println("Latest block: " + blockchainMember.getBlockchain_1().getLatestBlock());
         this.state = new EpochBlock(defaultVal, new HashSet<>());
@@ -82,13 +81,18 @@ public class ByzantineBlock {
     }
 
     public void propose(Block v) {
+        if (state.getValtsVal() != null && state.getValtsVal().getVal() != null) {
+            if (!v.getPreviousBlockHash().equals(state.getValtsVal().getVal().getBlockHash())) {
+                LOGGER.error("Proposed block doesn't link to current chain");
+                return;
+            }
+        }
         toPropose = v;
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("I am proposing value " + v);
             }
-            if (v.getPreviousBlockHash()
-                    .equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) { //Check if leader is proposing correctly
+
                 for (int nodeId : systemMembership.getMembershipList().keySet()) {
                     String message = MessageFormatter.formatReadMessage(ets, position);
                     
@@ -108,7 +112,6 @@ public class ByzantineBlock {
 
                    
                 }
-            } // TODO else what happens?
         } else {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("I am not the leader, not doing much for now...");
@@ -117,9 +120,7 @@ public class ByzantineBlock {
     }
 
     public void deliverRead(int senderId) throws Exception {
-        if (this.state == null) {
-            System.out.println("aqui é null no READ");
-        }
+
         if (senderId == leaderId) {
             JSONObject message = Formatter.formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
@@ -177,6 +178,12 @@ public class ByzantineBlock {
         // means we have a value to propose
         if (tmpval != null) // tmp value diff null
         {
+            if (state.getValtsVal() != null && state.getValtsVal().getVal() != null) {
+                if (!tmpval.getPreviousBlockHash().equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) {
+                    LOGGER.error("Collected block doesn't link to current chain");
+                    return;
+                }
+            }
             if (state.getWriteSet() != null) {
                 Iterator<TSvaluePairBlock> iterator = state.getWriteSet().iterator();
                 while (iterator.hasNext()) {
@@ -202,6 +209,7 @@ public class ByzantineBlock {
     }
 
     public void deliverWrite(int id, Block v) {
+        
         written[id - 1] = v;
         check_write_quorom(v);
     }
@@ -212,7 +220,6 @@ public class ByzantineBlock {
     }
 
     private void check_write_quorom(Block v) {
-        System.out.println("Checking write quorum for value: " + v);
         int count = 0;
         for (Block writtenEntry : written) {
             if (writtenEntry != null && writtenEntry.getBlockHash().equals(v.getBlockHash())) {
@@ -221,7 +228,6 @@ public class ByzantineBlock {
         }
 
         if (count > (N + f) / 2) {
-            System.out.println("TESTEEEEEE");
 
             if (quorumWriteTimer != null) {
                 quorumWriteTimer.cancel();
@@ -234,7 +240,7 @@ public class ByzantineBlock {
             written = new Block[N]; // clear written
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
-                // trigger a send ACCEPT Message
+                System.out.println("write quorom reached");
                 String message = Formatter.formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }
@@ -316,8 +322,7 @@ public class ByzantineBlock {
             JSONObject valuePair = entryJson.getJSONObject("value_pair");
 
             long entryTs = valuePair.getLong("timestamp");
-            // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() +
-            // " " + parsedEntry.getVal());
+
             if (entryTs != 0) {
                 return false;
             }
@@ -341,7 +346,8 @@ public class ByzantineBlock {
 
             long entryTs = valuePair.getLong("timestamp");
             Block entryVal = valuePair.isNull("value") ? null : Formatter.jsonToBlock(valuePair.getJSONObject("value"));
-
+            //verificar aqui meter uns prints
+            
             // Safe null comparison
             boolean valuesMatch = (entryVal == null && v == null) ||
                     (entryVal != null && entryVal.getBlockHash().equals(v.getBlockHash()));
@@ -380,7 +386,6 @@ public class ByzantineBlock {
         for (String entry : S) {
             if (entry.equals(Constants.UNDEFINED))
                 continue;
-            System.out.println(entry);
             TSvaluePairBlock parsedEntry = getValsValFromStateMessage(entry);
 
             if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {

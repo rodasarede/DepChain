@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 public class ClientApplication {
     private static final int DEBUG_MODE = 1;
     private final Wallet wallet;
-    private BigInteger nonce = new BigInteger("0");
     private ClientLibrary clientLibrary;
 
     public static void main(String[] args) throws Exception {
@@ -98,8 +97,9 @@ public class ClientApplication {
 
         // TODO id logic right now is to address
         Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value,
-                data, nonce.add(BigInteger.ONE), null);
+                data, wallet.getNonce(), null);
 
+        wallet.incremetNonce();
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
         clientLibrary.sendTransferRequest(tx);

@@ -23,8 +23,8 @@ public class PerfectLinks {
 
     private final ConcurrentHashMap<Integer, Deque<Integer>> waitingForACK;
     private final ConcurrentHashMap<Integer, AtomicInteger> higestSeqNumberSent;
-    //private final ConcurrentHashMap<Integer, Map.Entry<Deque<Integer>, Integer>> deliveredHistory;
-
+    // private final ConcurrentHashMap<Integer, Map.Entry<Deque<Integer>, Integer>>
+    // deliveredHistory;
 
     private final ConcurrentHashMap<Integer, Deque<Integer>> deliveredHistory;
     private final ConcurrentHashMap<Integer, AtomicInteger> receivedSeqNumberUntil;
@@ -46,7 +46,7 @@ public class PerfectLinks {
         systemMembership = new SystemMembership(
                 Constants.PROPERTIES_PATH);
         this.port = getPort(nodeId);
-        //System.out.println("I'm on port " + this.port);
+        // System.out.println("I'm on port " + this.port);
         this.fairLossLinks = new FairLossLinks(this.port);
 
         this.waitingForACK = new ConcurrentHashMap<>();
@@ -65,8 +65,8 @@ public class PerfectLinks {
                 "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
     }
 
-    //Constructor for testing
-    public PerfectLinks(int nodeId,FairLossLinks fairLossLinks) throws Exception{
+    // Constructor for testing
+    public PerfectLinks(int nodeId, FairLossLinks fairLossLinks) throws Exception {
         systemMembership = new SystemMembership(
                 Constants.PROPERTIES_PATH);
         this.port = getPort(nodeId);
@@ -79,7 +79,7 @@ public class PerfectLinks {
         this.receivedSeqNumberUntil = new ConcurrentHashMap<>();
 
         this.privateKey = KeyLoader.loadPrivateKey(
-            "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
+                "../common/src/main/java/com/sec/depchain/resources/keys/private_key_" + this.nodeId + ".pem");
     }
 
     // Set the callback to notify when a message is delivered
@@ -94,7 +94,7 @@ public class PerfectLinks {
     // Send a message Perfectly (keep resending)
     public void send(int destId, String message) {
         if (DEBUG_MODE == 1) {
-            System.out.println("PERFECT LINKS - DEBUG: Sending message {"+ message +"} to server {"+ destId +"}");
+            System.out.println("PERFECT LINKS - DEBUG: Sending message {" + message + "} to server {" + destId + "}");
         }
         String destIP = getIP(destId);
         int destPort = getPort(destId);
@@ -117,13 +117,13 @@ public class PerfectLinks {
         jsonMessage.put("seqNum", newSeqNum);
         jsonMessage.put("message", message);
 
-        //String messageWithoutMac = nodeId + "|" + newSeqNum + "|" + message;
+        // String messageWithoutMac = nodeId + "|" + newSeqNum + "|" + message;
         PublicKey destPublicKey = this.systemMembership.getPublicKey(destId);
 
         try {
             String mac = CryptoUtils.generateMAC(privateKey, destPublicKey, jsonMessage.toString());
             jsonMessage.put("mac", mac);
-            //String authenticatedMsg = messageWithoutMac + "|" + mac;
+            // String authenticatedMsg = messageWithoutMac + "|" + mac;
 
             AtomicLong timeout = new AtomicLong(1000);
 
@@ -131,32 +131,35 @@ public class PerfectLinks {
                 while (destWaitingForACK.contains(newSeqNum)) {
                     try {
                         if (DEBUG_MODE == 1) {
-                            System.out.println("PERFECT LINKS - DEBUG: Sending message {"+jsonMessage.toString()+"} to server {"+ destId+"}");
+                            System.out.println("PERFECT LINKS - DEBUG: Sending message {" + jsonMessage.toString()
+                                    + "} to server {" + destId + "}");
                         }
                         fairLossLinks.send(destIP, destPort, jsonMessage.toString());
                         Thread.sleep(timeout.get()); // Resend every second (adjust as needed)
                         timeout.set((long) (1.5 * timeout.get())); // Flexible timeout increase
                     } catch (Exception e) {
-                        //Thread.currentThread().interrupt(); // Preserve interruption status
-                        System.out.println("PERFECT LINKS - INFO: Thread interrupted while resending message to {"+destId+"}");
+                        // Thread.currentThread().interrupt(); // Preserve interruption status
+                        System.out.println(
+                                "PERFECT LINKS - INFO: Thread interrupted while resending message to {" + destId + "}");
                         e.printStackTrace();
                     }
                 }
             }).start();
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
         }
     }
 
     private boolean checkReceivedACK(String receivedACK) {
         /*
-        String[] parts = receivedACK.split("\\|");
-
-        if (parts.length != 4) {
-            System.out.println("PERFECT LINKS - INFO: Invalid ACK format: {"+receivedACK+"}");
-            return false;
-        }
-        */
+         * String[] parts = receivedACK.split("\\|");
+         * 
+         * if (parts.length != 4) {
+         * System.out.println("PERFECT LINKS - INFO: Invalid ACK format: {"+receivedACK+
+         * "}");
+         * return false;
+         * }
+         */
 
         JSONObject jsonReceivedACK = new JSONObject(receivedACK);
         String receivedMac = jsonReceivedACK.getString("mac");
@@ -164,26 +167,27 @@ public class PerfectLinks {
         String receivedWithoutMac = jsonReceivedACK.toString();
         int receivedSrcId = jsonReceivedACK.getInt("nodeId");
         int receivedSeqNum = jsonReceivedACK.getInt("seqNum");
-        //String receivedPayload = jsonReceivedMessage.getString("message");
-/*
-        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
-        int receivedSrcId = Integer.parseInt(parts[1]);
-        int receivedSeqNum = Integer.parseInt(parts[2]);
-        String receivedMac = parts[3];
-*/
+        // String receivedPayload = jsonReceivedMessage.getString("message");
+        /*
+         * String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
+         * int receivedSrcId = Integer.parseInt(parts[1]);
+         * int receivedSeqNum = Integer.parseInt(parts[2]);
+         * String receivedMac = parts[3];
+         */
         if (DEBUG_MODE == 1) {
             System.out.println("PERFECT LINKS - DEBUG: Extracted components:");
-            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {"+ receivedSrcId +"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {" + receivedSeqNum +"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received message without MAC: {"+receivedWithoutMac+"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {"+ receivedMac+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {" + receivedSrcId + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {" + receivedSeqNum + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received message without MAC: {" + receivedWithoutMac + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {" + receivedMac + "}");
         }
 
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
             if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
-                System.out.println("PERFECT LINKS - INFO: MAC verification failed for message: {"+receivedWithoutMac+"}");
+                System.out.println(
+                        "PERFECT LINKS - INFO: MAC verification failed for message: {" + receivedWithoutMac + "}");
                 return false;
             }
         } catch (Exception e) {
@@ -194,14 +198,6 @@ public class PerfectLinks {
     }
 
     private boolean checkReceivedMessage(String receivedMessage) {
-        /*
-        String[] parts = receivedMessage.split("\\|");
-
-        if (parts.length != 4) {
-            System.out.println("PERFECT LINKS - INFO: Invalid message format: {"+ receivedMessage+"}");
-            return false;
-        }
-         */
 
         JSONObject jsonReceivedMessage = new JSONObject(receivedMessage);
         String receivedMac = jsonReceivedMessage.getString("mac");
@@ -211,28 +207,22 @@ public class PerfectLinks {
         int receivedSeqNum = jsonReceivedMessage.getInt("seqNum");
         String receivedPayload = jsonReceivedMessage.getString("message");
 
-
-/*
-        String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
-        int receivedSrcId = Integer.parseInt(parts[0]);
-        int receivedSeqNum = Integer.parseInt(parts[1]);
-        String receivedPayload = parts[2];
-        String receivedMac = parts[3];
-*/
         if (DEBUG_MODE == 1) {
             System.out.println("PERFECT LINKS - DEBUG: Extracted components:");
-            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {"+receivedSrcId+"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {"+receivedSeqNum+"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received message without MAC: {"+jsonReceivedMessage.toString()+"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received Payload: {"+receivedPayload+"}");
-            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {"+receivedMac+"}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {" + receivedSrcId + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received seqNum: {" + receivedSeqNum + "}");
+            System.out.println(
+                    "PERFECT LINKS - DEBUG: - Received message without MAC: {" + jsonReceivedMessage.toString() + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received Payload: {" + receivedPayload + "}");
+            System.out.println("PERFECT LINKS - DEBUG: - Received MAC: {" + receivedMac + "}");
         }
 
         PublicKey receivedIdPK = this.systemMembership.getPublicKey(receivedSrcId);
 
         try {
             if (!CryptoUtils.verifyMAC(privateKey, receivedIdPK, receivedWithoutMac, receivedMac)) {
-                System.out.println("PERFECT LINKS - INFO: MAC verification failed for message: {"+receivedWithoutMac+"}");
+                System.out.println(
+                        "PERFECT LINKS - INFO: MAC verification failed for message: {" + receivedWithoutMac + "}");
                 return false;
             }
         } catch (Exception e) {
@@ -259,17 +249,17 @@ public class PerfectLinks {
             fairLossLinks.send(destIP, destPort, jsonACKMessage.toString());
 
             if (DEBUG_MODE == 1) {
-                System.out.println("PERFECT LINKS - DEBUG: Sent ACK message: {"+jsonACKMessage.toString()+"}");
+                System.out.println("PERFECT LINKS - DEBUG: Sent ACK message: {" + jsonACKMessage.toString() + "}");
             }
         } catch (Exception e) {
-            System.out.println("PERFECT LINKS - ERROR: Exception while sending ACK: "+ e);
+            System.out.println("PERFECT LINKS - ERROR: Exception while sending ACK: " + e);
         }
     }
 
     private void deliverMessage(int srcId, String message) {
         String messageType = getMessageType(message);
         if (DEBUG_MODE == 1) {
-            System.out.println("PERFECT LINKS - DEBUG: Message type identified: {"+messageType+"}");
+            System.out.println("PERFECT LINKS - DEBUG: Message type identified: {" + messageType + "}");
         }
 
         if (deliverCallbackCollect != null || deliverCallback != null) {
@@ -288,7 +278,6 @@ public class PerfectLinks {
 
     private void onFairLossDeliver(String srcIP, int srcPort, String receivedMessage) {
 
-
         if (DEBUG_MODE == 1) {
             System.out.println("PERFECT LINKS - DEBUG: Received message: {" + receivedMessage + "}");
         }
@@ -303,7 +292,8 @@ public class PerfectLinks {
             case "ACK": {
                 if (DEBUG_MODE == 1) {
                     System.out.println("PERFECT LINKS - DEBUG: Received ACK: {" + receivedMessage + "}");
-                    //System.out.println("PERFECT LINKS - DEBUG: Received ACK: ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+                    // System.out.println("PERFECT LINKS - DEBUG: Received ACK:
+                    // ACK|<srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
                 }
 
                 if (checkReceivedACK(receivedMessage)) {
@@ -314,12 +304,14 @@ public class PerfectLinks {
                     Deque<Integer> srcWaitingForACK = waitingForACK.get(srcId);
                     srcWaitingForACK.remove(seqNumber);
                     if (DEBUG_MODE == 1) {
-                        System.out.println("PERFECT LINKS - DEBUG: Stopping to resend the message with seq num: {" + seqNumber + "}");
+                        System.out.println("PERFECT LINKS - DEBUG: Stopping to resend the message with seq num: {"
+                                + seqNumber + "}");
                     }
                     return;
                 } else {
                     if (DEBUG_MODE == 1) {
-                        System.out.println("PERFECT LINKS - DEBUG: Check of the received ACK failed. Ignoring message.");
+                        System.out
+                                .println("PERFECT LINKS - DEBUG: Check of the received ACK failed. Ignoring message.");
                     }
                     return;
                 }
@@ -327,7 +319,8 @@ public class PerfectLinks {
             case "NORMAL": {
                 if (DEBUG_MODE == 1) {
                     System.out.println("PERFECT LINKS - DEBUG: Received message: {" + receivedMessage + "}");
-                    //System.out.println("PERFECT LINKS - DEBUG: Received message: <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
+                    // System.out.println("PERFECT LINKS - DEBUG: Received message:
+                    // <srcID>|<seq_number>|<receivedPayload>|<receivedMac>");
                 }
 
                 if (checkReceivedMessage(receivedMessage)) {
@@ -337,16 +330,19 @@ public class PerfectLinks {
                     String payload = receivedJson.getString("message");
 
                     if (DEBUG_MODE == 1) {
-                        System.out.println("PERFECT LINKS - DEBUG: Sending ACK to the following message: {" + receivedMessage + "}");
+                        System.out.println("PERFECT LINKS - DEBUG: Sending ACK to the following message: {"
+                                + receivedMessage + "}");
                     }
                     sendACK(srcId, seqNumber);
 
                     deliveredHistory.putIfAbsent(srcId, new ArrayDeque<>());
                     receivedSeqNumberUntil.putIfAbsent(srcId, new AtomicInteger(0));
 
-                    if (deliveredHistory.get(srcId).contains(seqNumber) || seqNumber < receivedSeqNumberUntil.get(srcId).get()) {
+                    if (deliveredHistory.get(srcId).contains(seqNumber)
+                            || seqNumber < receivedSeqNumberUntil.get(srcId).get()) {
                         if (DEBUG_MODE == 1) {
-                            System.out.println("PERFECT LINKS - DEBUG: Message already delivered: {" + receivedMessage + "}");
+                            System.out.println(
+                                    "PERFECT LINKS - DEBUG: Message already delivered: {" + receivedMessage + "}");
                         }
                         return;
                     }
@@ -365,7 +361,8 @@ public class PerfectLinks {
                     return;
                 } else {
                     if (DEBUG_MODE == 1) {
-                        System.out.println("PERFECT LINKS - DEBUG: Check of the received message failed. Ignoring message.");
+                        System.out.println(
+                                "PERFECT LINKS - DEBUG: Check of the received message failed. Ignoring message.");
                     }
                     return;
                 }
@@ -395,30 +392,17 @@ public class PerfectLinks {
 
     // Stop resending a message (if needed)
     public void stopResending(String messageKey) {
-        //sentMessages.remove(messageKey);
+        // sentMessages.remove(messageKey);
     }
 
     // debug
     public void printSentMessages() {
         System.out.println("Sent Messages: ");
-        /*for (String key : sentMessages.keySet()) {
-            System.out.println(key);
-        }*/
-    }
-
-    public static String[] getMessageElements(String message) {
-        // Extract between "<" and ">"
-        int start = message.indexOf('<');
-        int end = message.indexOf('>');
-        if (start != -1 && end != -1 && start < end) {
-
-            String extractedPart = message.substring(start + 1, end);
-            String[] elements = extractedPart.split(":");
-            return elements;
-        } else {
-            System.out.println("Invalid format in message: " + message);
-            return null;
-        }
+        /*
+         * for (String key : sentMessages.keySet()) {
+         * System.out.println(key);
+         * }
+         */
     }
 
     private int getPort(int nodeId) {
@@ -440,44 +424,44 @@ public class PerfectLinks {
     }
 
     public String getMessageType(String message) {
-    try {
-        // Try parsing as JSON
-        JSONObject json = new JSONObject(message);
-        
-        // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
-        if (json.has("type")) {
-            return json.getString("type");
-        }
-        
-        // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
-        if (json.has("message")) {
-            String innerMessage = json.getString("message");
-            // Check if message is itself a JSON string
-            if (innerMessage.startsWith("{")) {
-                JSONObject innerJson = new JSONObject(innerMessage);
-                if (innerJson.has("type")) {
-                    return innerJson.getString("type");
+        try {
+            // Try parsing as JSON
+            JSONObject json = new JSONObject(message);
+
+            // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
+            if (json.has("type")) {
+                return json.getString("type");
+            }
+
+            // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
+            if (json.has("message")) {
+                String innerMessage = json.getString("message");
+                // Check if message is itself a JSON string
+                if (innerMessage.startsWith("{")) {
+                    JSONObject innerJson = new JSONObject(innerMessage);
+                    if (innerJson.has("type")) {
+                        return innerJson.getString("type");
+                    }
                 }
             }
+        } catch (JSONException e) {
+            // Fallback to old format if not JSON
+            if (message.startsWith("<") && message.endsWith(">")) {
+                String content = message.substring(1, message.length() - 1);
+                String[] parts = content.split(":");
+                return parts[0];
+            }
         }
-    } catch (JSONException e) {
-        // Fallback to old format if not JSON
-        if (message.startsWith("<") && message.endsWith(">")) {
-            String content = message.substring(1, message.length() - 1);
-            String[] parts = content.split(":");
-            return parts[0];
-        }
+        return Constants.UNKNOWN;
     }
-    return Constants.UNKNOWN;
-}
-    public void close(){
+
+    public void close() {
         System.out.println("PERFECT LINK - INFO: Shutting down PerfectLinks resources...");
-        if(fairLossLinks != null)
-        {
+        if (fairLossLinks != null) {
             System.out.println("PERFECT LINK - INFO: Closing FairLossLinks...");
 
-         fairLossLinks.close();
-         System.out.println("PERFECT LINK - INFO: FairLossLinks closed.");
+            fairLossLinks.close();
+            System.out.println("PERFECT LINK - INFO: FairLossLinks closed.");
 
         }
         waitingForACK.clear();
@@ -489,9 +473,11 @@ public class PerfectLinks {
         receivedSeqNumberUntil.clear();
         System.out.println("PERFECT LINK - INFO: Finished perfect links shutdown.");
     }
-    public PublicKey getPublicKey(int index){
-        return this.systemMembership.getPublicKey(index);
+
+    public PublicKey getPublicKey(int index) {
+        return systemMembership.getPublicKey(index);
     }
+
     public DeliverCallback getDeliverCallback() {
         return deliverCallback;
     }

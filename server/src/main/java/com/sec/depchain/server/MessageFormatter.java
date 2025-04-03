@@ -5,7 +5,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.sec.depchain.common.util.Constants.MessagaTypes;
+import com.sec.depchain.common.util.Constants.MessageType;
 public class MessageFormatter {
     private static String formatBaseMessage(String type, long ets) {
         JSONObject message = new JSONObject();
@@ -15,7 +15,7 @@ public class MessageFormatter {
     }
 
     public static String formatReadMessage(long ets, int position) {
-        JSONObject message = new JSONObject(formatBaseMessage(MessagaTypes.READ, ets));
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.READ, ets));
         message.put("position", position);
         return message.toString();
     }
@@ -44,13 +44,13 @@ public class MessageFormatter {
     }
 
     public static String formatWriteMessage(String value, long ets) {
-        JSONObject message = new JSONObject(formatBaseMessage(MessagaTypes.WRITE, ets));
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.WRITE, ets));
         message.put("value", value);
         return message.toString();
     }
 
     public static String formatAcceptMessage(String value, long ets) {
-        JSONObject message = new JSONObject(formatBaseMessage(MessagaTypes.ACCEPT, ets));
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.ACCEPT, ets));
         message.put("value", value);
         return message.toString();
     }

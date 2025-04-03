@@ -1,6 +1,5 @@
 package com.sec.depchain.client;
 
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,26 +33,25 @@ public class ClientLibrary {
     }
 
     public void sendTransferRequest(Transaction tx) {
-        
+
         JSONObject txRequest = new JSONObject();
         txRequest.put("type", "tx-request");
-        txRequest.put("transaction", serializeTransactionToJson(tx));
+        txRequest.put("transaction", tx.serializeTransactionToJson());
         String jsonMessage = txRequest.toString();
 
-        
-            if (DEBUG_MODE == 1) {
-                System.out.println("CLIENT LIBRARY - DEBUG: Sending request: {"+ jsonMessage +"} to server { "+ systemMembership.getLeaderId()+ "}");
-            }
-            /*for(int nodeId : systemMembership.getMembershipList().keySet()){
-                perfectLinks.send(nodeId, jsonMessage);
-            } */
-            perfectLinks.send(systemMembership.getLeaderId(), jsonMessage);// only send to the leader
-        
+        if (DEBUG_MODE == 1) {
+            System.out.println("CLIENT LIBRARY - DEBUG: Sending request: {" + jsonMessage + "} to server { "
+                    + systemMembership.getLeaderId() + "}");
+        }
+
+        perfectLinks.send(systemMembership.getLeaderId(), jsonMessage);// only send to the leader
+
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {
         if (DEBUG_MODE == 1) {
-            System.out.println("CLIENT LIBRARY - DEBUG: Received response: {"+ message +"} from server {"+ nodeId +"}");
+            System.out.println(
+                    "CLIENT LIBRARY - DEBUG: Received response: {" + message + "} from server {" + nodeId + "}");
         }
 
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
@@ -81,26 +79,29 @@ public class ClientLibrary {
                     processedTransactions.add(transaction);
                     messageResponses.remove(transaction);
                     if (DEBUG_MODE == 1) {
-                        System.out.println("CLIENT LIBRARY - DEBUG: Delivering response for transaction: {"+ transaction +"} at position: {" + position + "}");
+                        System.out.println("CLIENT LIBRARY - DEBUG: Delivering response for transaction: {"
+                                + transaction + "} at position: {" + position + "}");
                     }
                     deliverCallback.deliverAppendResponse(true, transaction, position);
                 } else {
                     if (DEBUG_MODE == 1) {
-                        System.out.println("CLIENT LIBRARY - DEBUG: No callback set: unable to deliver append response.");
+                        System.out
+                                .println("CLIENT LIBRARY - DEBUG: No callback set: unable to deliver append response.");
                     }
                 }
             }
-        }else if ("<append-response".equals(type) && "fail>".equals(status)) {
-            //TODO send to client that transaction failed
+        } else if ("<append-response".equals(type) && "fail>".equals(status)) {
+            // TODO send to client that transaction failed
         }
     }
 
     public void setDeliverCallback(DeliverCallback callback) {
         this.deliverCallback = callback;
     }
+
     public void close() {
-            System.out.println("CLIENT LIBRARY - INFO: Shutting down client resources...");
-            if (perfectLinks != null){
+        System.out.println("CLIENT LIBRARY - INFO: Shutting down client resources...");
+        if (perfectLinks != null) {
             perfectLinks.close();
         }
         messageResponses.clear();
@@ -108,15 +109,5 @@ public class ClientLibrary {
         System.out.println("CLIENT LIBRARY - INFO: Finished shutitng down client resources...");
 
     }
-    private JSONObject serializeTransactionToJson(Transaction tx) {
-        JSONObject jsonTx = new JSONObject();
-        jsonTx.put("from", tx.getFrom());
-        jsonTx.put("to", tx.getTo());
-        jsonTx.put("amount", tx.getValue());
-        jsonTx.put("data", tx.getData());
-        jsonTx.put("signature", tx.getSignature());
-        jsonTx.put("nonce", tx.getNonce());
-        // add any other relevant fields
-        return jsonTx;
-    }
+
 }

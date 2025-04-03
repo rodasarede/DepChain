@@ -2,22 +2,18 @@ package com.sec.depchain.server;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.PerfectLinks;
@@ -94,7 +90,7 @@ public class ByzantineBlock {
             }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = MessageFormatter.formatReadMessage(ets, position);
-            
+                //TODO
                 /*if (getState().getValtsVal().getVal() == null) {
                     TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
                     getState().setValtsVal(tsValuePair);
@@ -119,7 +115,7 @@ public class ByzantineBlock {
             System.out.println("aqui é null no READ");
         }
         if (senderId == leaderId) {
-            JSONObject message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
+            JSONObject message = Formatter.formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("Sending STATE BLOCK" + message + " to conditional collect");
             }
@@ -165,7 +161,7 @@ public class ByzantineBlock {
                 JSONObject valuePair = json.getJSONObject("value_pair");
                 Block value = valuePair.isNull("value") ? 
                 null : 
-                jsonToBlock(valuePair.getJSONObject("value"));
+                Formatter.jsonToBlock(valuePair.getJSONObject("value"));
                 entryVal = value;
             }
             toPropose = entryVal;
@@ -195,7 +191,7 @@ public class ByzantineBlock {
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
-                String message = formatWriteMessage(tmpval, ets);
+                String message = Formatter.formatWriteMessage(tmpval, ets);
                 perfectLinks.send(nodeId, message);
             }
         }
@@ -236,7 +232,7 @@ public class ByzantineBlock {
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send ACCEPT Message
-                String message = formatAcceptMessage(v, ets);
+                String message = Formatter.formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }
         }else{
@@ -342,7 +338,7 @@ public class ByzantineBlock {
                 long entryTs = valuePair.getLong("timestamp");
                 Block entryVal = valuePair.isNull("value") ? 
                 null : 
-                jsonToBlock(valuePair.getJSONObject("value"));
+                Formatter.jsonToBlock(valuePair.getJSONObject("value"));
 
         // Safe null comparison
         boolean valuesMatch = (entryVal == null && v == null) || 
@@ -369,7 +365,7 @@ public class ByzantineBlock {
                 long entryTs = writeSetEntry.getLong("timestamp");
                 Block entryVal = writeSetEntry.isNull("value") ? 
                     null : 
-                    jsonToBlock(writeSetEntry.getJSONObject("value"));
+                    Formatter.jsonToBlock(writeSetEntry.getJSONObject("value"));
                 //Diff de null
                 if (entryTs >= ts && entryVal.getBlockHash().equals(v.getBlockHash())) {
                     count++;
@@ -425,7 +421,7 @@ public class ByzantineBlock {
         long timestamp = valuePair.getLong("timestamp");
         Block val = valuePair.isNull("value") ? 
             null : 
-            jsonToBlock(valuePair.getJSONObject("value"));
+            Formatter.jsonToBlock(valuePair.getJSONObject("value"));
         
         return new TSvaluePairBlock(timestamp, val);
     }
@@ -433,152 +429,8 @@ public class ByzantineBlock {
     public void setCc(ConditionalBlock cc) {
         this.cc = cc;
     }   
-    public static JSONObject blockToJson(Block block) {
-        JSONObject blockJson = new JSONObject();
-        
-        // Block metadata
-        blockJson.put("hash", block.getBlockHash());
-        blockJson.put("previousHash", block.getPreviousBlockHash() != null ? block.getPreviousBlockHash() : JSONObject.NULL);
-        blockJson.put("height", block.getHeight());
-        
-        // Serialize transactions
-        JSONArray transactionsArray = new JSONArray();
-        for (Transaction tx : block.getTransactions()) {
-            transactionsArray.put(serializeTransactionToJson(tx));
-        }
-        blockJson.put("transactions", transactionsArray);
-        return blockJson;
-
-    }
-        public static JSONObject formatStateMessage(long ets, TSvaluePairBlock valtsVal, Set<TSvaluePairBlock> writeSet) {
-            JSONObject message = new JSONObject();
-            message.put("ets", ets);
-        
-            // Handle Block value
-            JSONObject valuePair = new JSONObject();
-            if (valtsVal.getVal() != null) {
-                Block block = (Block) valtsVal.getVal();
-                valuePair.put("value", blockToJson(block));  // Use block serializer
-            } else {
-                valuePair.put("value", JSONObject.NULL);
-            }
-            valuePair.put("timestamp", valtsVal.getTimestamp());
-            message.put("value_pair", valuePair);
-        
-            // Serialize writeSet (containing Blocks)
-            JSONArray writeSetArray = new JSONArray();
-            for (TSvaluePairBlock pair : writeSet) {
-                JSONObject pairObj = new JSONObject();
-                if (pair.getVal() != null) {
-                    Block block = (Block) pair.getVal();
-                    pairObj.put("value", blockToJson(block));
-                } else {
-                    pairObj.put("value", JSONObject.NULL);
-                }
-                pairObj.put("timestamp", pair.getTimestamp());
-                writeSetArray.put(pairObj);
-            }
-            message.put("write_set", writeSetArray);
-        
-            return message;
-        }
-
-        private static JSONObject serializeTransactionToJson(Transaction tx) {
-            JSONObject jsonTxWrapper = new JSONObject(); // Outer wrapper
-            JSONObject jsonTx = new JSONObject();       // Inner transaction object
-            
-            // Populate the inner transaction object
-            jsonTx.put("from", tx.getFrom());
-            jsonTx.put("to", tx.getTo());
-            jsonTx.put("amount", tx.getValue());
-            jsonTx.put("data", tx.getData() != null ? tx.getData() : JSONObject.NULL);
-            jsonTx.put("signature", tx.getSignature());
-            jsonTx.put("nonce", tx.getNonce());
-            
-            // Add the inner transaction to the wrapper
-            jsonTxWrapper.put("transaction", jsonTx);
-            
-            return jsonTxWrapper; // Returns { "transaction": { ... } }
-        }
-        private static String formatAcceptMessage(Block v, long ets){
-            JSONObject message = new JSONObject();
-            message.put("type", "ACCEPT");
-            message.put("ets", ets);
-            message.put("value", blockToJson(v));  // Serialize block
-            return message.toString();
-        }
-        public static String formatWriteMessage(Block block, long ets) {
-            JSONObject message = new JSONObject();
-            message.put("type", "WRITE");
-            message.put("ets", ets);
-            message.put("value", blockToJson(block));  // Serialize block
-            return message.toString();
-        }
-
-        public static Block jsonToBlock(JSONObject blockJson) throws JSONException {
-        // Extract basic block fields
-        String hash = blockJson.getString("hash");
-        Object valueObj = blockJson.get("previousHash");
-
-        String previousHash = (valueObj == JSONObject.NULL || valueObj == null) ? null : valueObj.toString();
-        int height = blockJson.getInt("height");
-
-        // Deserialize transactions
-        JSONArray txArray = blockJson.getJSONArray("transactions");
-        List<Transaction> transactions = new ArrayList<>();
-        
-        for (int i = 0; i < txArray.length(); i++) {
-            JSONObject txJson = txArray.getJSONObject(i);
-            Transaction tx = deserializeTransactionJson(txJson.toString());
-            if (tx == null) {
-                throw new JSONException("Failed to deserialize transaction at index " + i);
-            }
-            transactions.add(tx);
-        }
-
-        // Reconstruct the block
-        Block block = new Block(previousHash, transactions, height);
-
-        // Verify hash matches (security check)
-        if (!block.getBlockHash().equals(hash)) {
-            throw new IllegalStateException("Block hash mismatch - possible tampering");
-        }
-
-        return block;
-}
-        public static Transaction deserializeTransactionJson(String jsonStr) {
-        try {
-            JSONObject json = new JSONObject(jsonStr);
-            JSONObject txJson = json.getJSONObject("transaction");
-            
-            // Extract and convert fields
-            String senderAddress = txJson.getString("from");
-            String toAddress = txJson.getString("to");
-            BigInteger value;
-        if (txJson.get("amount") instanceof Integer) {
-            value = BigInteger.valueOf(txJson.getInt("amount"));
-        } else {
-            value = new BigInteger(txJson.getString("amount"));
-        }
-            String data = txJson.getString("data");
-            BigInteger nonce;
-            if (txJson.get("nonce") instanceof Integer) {
-                nonce = BigInteger.valueOf(txJson.getInt("nonce"));
-            } else {
-                nonce = new BigInteger(txJson.getString("nonce"));
-            }
-            String signature = txJson.getString("signature"); // Note: Typo in your JSON? Should be "signature"
-            
-            // Using current timestamp since it's not in the JSON
-            
-            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
-
-        } catch (Exception e) {
-            System.err.println("Failed to deserialize transaction: " + e.getMessage());
-            return null;
-        }
-
-    }
+    
+    
 
         
 }

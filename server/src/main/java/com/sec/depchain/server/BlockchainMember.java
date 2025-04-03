@@ -3,6 +3,7 @@ package com.sec.depchain.server;
 import com.sec.depchain.common.Transaction;
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +47,15 @@ public class BlockchainMember {
         BlockchainMember node = new BlockchainMember(nodeId);
         node.start();
     }
-    public BlockchainMember(int id) throws Exception{
+
+    public BlockchainMember(int id) throws Exception {
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain_1 = new Blockchain();
         this.mempool = new Mempool();
         if (DEBUG_MODE == 1) {
-            System.out.println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {"+id+"}, Leader: {"+isLeader+"}");
+            System.out
+                    .println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {" + id + "}, Leader: {" + isLeader + "}");
         }
         this.perfectLinks = new PerfectLinks(id);
 
@@ -70,17 +73,21 @@ public class BlockchainMember {
                 System.out.println("BLOCKCHAIN MEMBER - ERROR: Exception in deliverCallback:" + e);
             }
         });
-        
-        this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+
+        // this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0,
+        // perfectLinks, systemMembership, id, this);
         this.bepBlock = new ByzantineBlock(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
     }
-    public void start() throws Exception{
-        //bep.init();
+
+    public void start() throws Exception {
+        // bep.init();
         bepBlock.init();
     }
+
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
         if (DEBUG_MODE == 1) {
-            System.out.println("BLOCKCHAIN MEMBER - DEBUG: Received message from {"+senderId+"} -> {"+message+"}");
+            System.out.println(
+                    "BLOCKCHAIN MEMBER - DEBUG: Received message from {" + senderId + "} -> {" + message + "}");
         }
 
         JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
@@ -92,100 +99,107 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
-                if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId())
-                {
+                if (tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) {
                     clientTransactions.put(senderId, transaction);
-                    //bep.propose(transaction);
-                    //bep.propose("string to propose");
+                    // bep.propose(transaction);
+                    // bep.propose("string to propose");
                     mempool.addTransactionToMempool(tx);
-                }
-                else{
-                    System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
+                } else {
+                    System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
+                            + senderId + "}: {" + transaction + "}");
                     String responseMessage = "<append-response:" + transaction + ":0:fail>";
                     perfectLinks.send(senderId, responseMessage);
                     break;
                 }
-                
-            
-                if(mempool.size() >= Constants.THRESHOLD){
-                   
+
+                if (mempool.size() >= Constants.THRESHOLD) {
+
                     List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
-                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
+                    Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash(), transactions,
+                            blockchain_1.getLatestBlock().getHeight());
 
                     if (DEBUG_MODE == 1) {
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, hash:{"+newBlocK.getBlockHash()+"})");
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, transactions:{"+newBlocK.getTransactions()+"})");
-                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, previousHash:{"+newBlocK.getPreviousBlockHash()+"})");
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
+                                + "}, hash:{" + newBlocK.getBlockHash() + "})");
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
+                                + "}, transactions:{" + newBlocK.getTransactions() + "})");
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
+                                + "}, previousHash:{" + newBlocK.getPreviousBlockHash() + "})");
                     }
 
                     bepBlock.propose(newBlocK);
 
-                } 
-               
-                break;
-            case "READ":
-                //bep.deliverRead(senderId);  
-                bepBlock.deliverRead(senderId);  
-                break;
-            case "WRITE":
-                
-                //String value = json.getString("value");
+                }
 
-                //bep.deliverWrite(senderId, value);
+                break;
+            case Constants.MessageType.READ:
+                // bep.deliverRead(senderId);
+                bepBlock.deliverRead(senderId);
+                break;
+            case Constants.MessageType.WRITE:
+
+                // String value = json.getString("value");
+
+                // bep.deliverWrite(senderId, value);
                 JSONObject messageToJson = new JSONObject(message);
                 JSONObject blockJson = messageToJson.getJSONObject("value");
-                Block v = ByzantineBlock.jsonToBlock(blockJson);
+                Block v = Formatter.jsonToBlock(blockJson);
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+v.calculateHash()+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{" + senderId
+                            + "}, value:{" + v.calculateHash() + "})");
                 }
                 bepBlock.deliverWrite(senderId, v);
                 break;
-            case "ACCEPT":
-                //value = json.getString("value");
-
-               
-                //bep.deliverAccept(senderId, value);
+            case Constants.MessageType.ACCEPT:
+                // value = json.getString("value");
+                // bep.deliverAccept(senderId, value);
                 messageToJson = new JSONObject(message);
                 blockJson = messageToJson.getJSONObject("value");
-                v = ByzantineBlock.jsonToBlock(blockJson);
+                v = Formatter.jsonToBlock(blockJson);
                 if (DEBUG_MODE == 1) {
-                    
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+v.calculateHash()+"})");
+
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{" + senderId
+                            + "}, value:{" + v.calculateHash() + "})");
                 }
                 bepBlock.deliverAccept(senderId, v);
                 break;
             default:
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Unknown message type -> {"+message+"}");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Unknown message type -> {" + message + "}");
                 }
                 break;
         }
     }
-    public void decideBlock(Block block)
-    {
+
+    public void decideBlock(Block block) {
         System.out.println("block decided");
+        // TODO manel aplica aqui a tua lógica
     }
+
     public void decide(String val) {
-        //TODO change the decide logic to add a new block with the val decided( for now a single transaction, list of transactions if we have time)
+        // TODO change the decide logic to add a new block with the val decided( for now
+        // a single transaction, list of transactions if we have time)
         // blockchain.add(val);
         // int index = blockchain.size();
 
         System.out.println("Decided transaction: " + val);
         String[] transaction = val.split("_");
-        Transaction tx = deserializeTransaction(transaction);
-        if(tx.execute(blockchain_1.getCurrentState(), blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
-            System.out.println("Transaction executed successfully");
-            System.out.println("Updating world state");
-            blockchain_1.updateSimpleWorldState();
-        }else{
-            //TODO if exection fails send fail message
-            System.out.println("Transaction execution failed");
-        }  
+        // Transaction tx = deserializeTransactionJson(transaction);
+        // if(tx.execute(blockchain_1.getCurrentState(),
+        // blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
+        // System.out.println("Transaction executed successfully");
+        // System.out.println("Updating world state");
+        // blockchain_1.updateSimpleWorldState();
+        // }else{
+        
+        // TODO if exection fails send fail message
+        // System.out.println("Transaction execution failed");
+        // }
 
         int index = blockchain_1.getChainSize();
         blockchain_1.getLatestBlock().printBlockDetails();
 
-        System.out.println("BLOCKCHAIN MEMBER - INFO: Transaction {"+val+"} committed at index {" + index + "}.");
+        System.out.println("BLOCKCHAIN MEMBER - INFO: Transaction {" + val + "} committed at index {" + index + "}.");
         blockchain_1.getLatestBlock().printBlockDetails();
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
@@ -194,7 +208,8 @@ public class BlockchainMember {
                 String responseMessage = "<append-response:" + val + ":" + index + ":success>";
 
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {"+clientId+"} -> {"+responseMessage+"}");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {" + clientId + "} -> {"
+                            + responseMessage + "}");
                 }
 
                 perfectLinks.send(clientId, responseMessage);
@@ -211,58 +226,53 @@ public class BlockchainMember {
     public void setBep(ByzantineEpochConsensus bep) {
         this.bep = bep;
     }
+
     public List<String> getBlockchain() {
         return blockchain;
     }
+
     public Map<Integer, String> getClientTransactions() {
         return clientTransactions;
     }
+
     public int getId() {
         return id;
     }
+
     public ByzantineEpochConsensus getBep() {
         return bep;
     }
+
     public void setPerfectLinks(PerfectLinks perfectLinks) {
         this.perfectLinks = perfectLinks;
     }
+
     public static void setSystemMembership(SystemMembership membership) {
         systemMembership = membership;
     }
+
     public PerfectLinks getPerfectLinks() {
         return perfectLinks;
     }
-    public void cleanup(){
+
+    public void cleanup() {
         this.perfectLinks.close();
     }
-    private static Transaction deserializeTransaction(String tx[])
-    {
-        String senderAddress = tx[1];
-        String toAddress = tx[2];
-        BigInteger value = new BigInteger(tx[3]);
-        String data = tx[4].equals("empty") ? "" : tx[4];
 
-        String signature = tx[5];
-        BigInteger nonce = new BigInteger(tx[6]);
-        
-        
-        return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
-        //from:to:value:data:signature:nonce
-    }
     public Transaction deserializeTransactionJson(String jsonStr) {
         try {
             JSONObject json = new JSONObject(jsonStr);
             JSONObject txJson = json.getJSONObject("transaction");
-            
+
             // Extract and convert fields
             String senderAddress = txJson.getString("from");
             String toAddress = txJson.getString("to");
             BigInteger value;
-        if (txJson.get("amount") instanceof Integer) {
-            value = BigInteger.valueOf(txJson.getInt("amount"));
-        } else {
-            value = new BigInteger(txJson.getString("amount"));
-        }
+            if (txJson.get("amount") instanceof Integer) {
+                value = BigInteger.valueOf(txJson.getInt("amount"));
+            } else {
+                value = new BigInteger(txJson.getString("amount"));
+            }
             String data = txJson.getString("data");
             BigInteger nonce;
             if (txJson.get("nonce") instanceof Integer) {
@@ -271,10 +281,11 @@ public class BlockchainMember {
                 nonce = new BigInteger(txJson.getString("nonce"));
             }
             String signature = txJson.getString("signature"); // Note: Typo in your JSON? Should be "signature"
-            
+
             // Using current timestamp since it's not in the JSON
-            
-            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
+
+            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data,
+                    nonce, signature);
 
         } catch (Exception e) {
             System.err.println("Failed to deserialize transaction: " + e.getMessage());
@@ -283,47 +294,38 @@ public class BlockchainMember {
     }
 
     public String getMessageType(String message) {
-    try {
-        // Try parsing as JSON
-        JSONObject json = new JSONObject(message);
-        
-        // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
-        if (json.has("type")) {
-            return json.getString("type");
-        }
-        
-        // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
-        if (json.has("message")) {
-            String innerMessage = json.getString("message");
-            // Check if message is itself a JSON string
-            if (innerMessage.startsWith("{")) {
-                JSONObject innerJson = new JSONObject(innerMessage);
-                if (innerJson.has("type")) {
-                    return innerJson.getString("type");
+        try {
+            // Try parsing as JSON
+            JSONObject json = new JSONObject(message);
+
+            // Case 1: Direct JSON message (e.g., {"type":"tx-request", ...})
+            if (json.has("type")) {
+                return json.getString("type");
+            }
+
+            // Case 2: Nested JSON (e.g., {"seqNum":1, "message":"{\"type\":...}"})
+            if (json.has("message")) {
+                String innerMessage = json.getString("message");
+                // Check if message is itself a JSON string
+                if (innerMessage.startsWith("{")) {
+                    JSONObject innerJson = new JSONObject(innerMessage);
+                    if (innerJson.has("type")) {
+                        return innerJson.getString("type");
+                    }
                 }
             }
+        } catch (JSONException e) {
+            // Fallback to old format if not JSON
+            if (message.startsWith("<") && message.endsWith(">")) {
+                String content = message.substring(1, message.length() - 1);
+                String[] parts = content.split(":");
+                return parts[0];
+            }
         }
-    } catch (JSONException e) {
-        // Fallback to old format if not JSON
-        if (message.startsWith("<") && message.endsWith(">")) {
-            String content = message.substring(1, message.length() - 1);
-            String[] parts = content.split(":");
-            return parts[0];
-        }
+        return Constants.UNKNOWN;
     }
-    return Constants.UNKNOWN;
-}
 
-private JSONObject serializeBlock(Block block) {
-    JSONObject jsonTx = new JSONObject();
-    jsonTx.put("blockHash", block.getBlockHash());
-    jsonTx.put("previousBlockHash", block.getPreviousBlockHash());
-    jsonTx.put("height", block.getHeight());
-    //add transactions to json
-    // add any other relevant fields
-    return jsonTx;
-}
-public static Blockchain getBlockchain_1() {
-    return blockchain_1;
-}
+    public static Blockchain getBlockchain_1() {
+        return blockchain_1;
+    }
 }

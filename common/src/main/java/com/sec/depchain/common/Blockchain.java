@@ -17,6 +17,7 @@ import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
 import com.sec.depchain.common.SmartContractsUtil.helpers;
+import com.sec.depchain.common.util.Constants;
 
 
 
@@ -24,7 +25,6 @@ import com.sec.depchain.common.SmartContractsUtil.helpers;
 public class Blockchain {
 
     private static final int DEBUG_MODE = 1;
-    private static final String GENESIS_BLOCK_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/Genesis.json";
     private static List<Block> chain = new ArrayList<>();
     private static List<Transaction> pendingTransactions = new ArrayList<>();
     private static Map<Address, AccountState> currentState = new HashMap<>();
@@ -43,7 +43,7 @@ public class Blockchain {
         executor = EVMExecutor.evm(EvmSpecVersion.CANCUN);
         executor.tracer(tracer);
         
-        Block genesisBlock = new Block(GENESIS_BLOCK_FILE);
+        Block genesisBlock = new Block(Constants.GENESIS_BLOCK_FILE);
         chain.add(genesisBlock);
         currentState.putAll(genesisBlock.getState());
 
@@ -72,12 +72,7 @@ public class Blockchain {
         // executor.execute();
         // String tokenSymbol = helpers.extractStringFromReturnData(byteArrayOutputStream);
         // System.out.println("Output of 'symbol()': " + tokenSymbol);
-
-
-
     }
-
-    
 
     public  void addTransaction(Transaction tx) {
         pendingTransactions.add(tx);

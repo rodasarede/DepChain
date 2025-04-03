@@ -14,6 +14,7 @@ public class ClientApplication {
     private final Wallet wallet;
     private BigInteger nonce = new BigInteger("0");
     private ClientLibrary clientLibrary;
+
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
             System.err.println("Usage: <clientId>");
@@ -25,16 +26,16 @@ public class ClientApplication {
         ClientApplication app = new ClientApplication(clientId);
     }
 
-    public ClientApplication(int clientId) throws Exception{
+    public ClientApplication(int clientId) throws Exception {
         this.wallet = new Wallet(clientId);
         this.clientLibrary = new ClientLibrary(clientId, wallet);
-        if (DEBUG_MODE == 1) 
-        {
+        if (DEBUG_MODE == 1) {
             System.out.println("CLIENT APP - DEBUG: Starting: {" + clientId + "}");
-            System.out.println("CLIENT APP - DEBUG: Address: {"+ wallet.getAddress() + "}");
+            System.out.println("CLIENT APP - DEBUG: Address: {" + wallet.getAddress() + "}");
         }
         setupInputLoop(clientLibrary);
     }
+
     private static int parseClientId(String clientIdArg) {
         try {
             return Integer.parseInt(clientIdArg);
@@ -63,7 +64,8 @@ public class ClientApplication {
                         handleTransactionRequest(caseArgs, clientLibrary);
                         break;
                     default:
-                        System.out.println("[ERROR] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
+                        System.out.println(
+                                "[ERROR] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
                         break;
                 }
             }
@@ -72,7 +74,7 @@ public class ClientApplication {
 
     private void handleTransactionRequest(String[] caseArgs, ClientLibrary clientLibrary) throws Exception {
         System.out.println(caseArgs.length);
-        if (caseArgs.length < 3) { //transfer <to> <balance> [data]
+        if (caseArgs.length < 3) { // transfer <to> <balance> [data]
             System.out.println("[ERROR] Please provide a string to append.");
             return;
         }
@@ -80,7 +82,7 @@ public class ClientApplication {
         String toId = caseArgs[1];
         BigInteger value = new BigInteger(caseArgs[2]);
         String data = (caseArgs.length == 4) ? caseArgs[3] : "";
-        
+
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
@@ -91,11 +93,13 @@ public class ClientApplication {
             futureResponse.complete(result);
         });
 
-        if (DEBUG_MODE == 1) System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId+ "}");
+        if (DEBUG_MODE == 1)
+            System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "}");
 
-        //TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), null);   
-        
+        // TODO id logic right now is to address
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value,
+                data, nonce.add(BigInteger.ONE), null);
+
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
         clientLibrary.sendTransferRequest(tx);
@@ -111,9 +115,8 @@ public class ClientApplication {
 
     private static void exitApplication(Scanner scanner, ClientLibrary clientLibrary) {
         System.out.println("CLIENT APP - INFO: Client is exiting");
-        if(scanner != null)
-        {
-        scanner.close();
+        if (scanner != null) {
+            scanner.close();
         }
         clientLibrary.close();
         System.out.println("CLIENT APP - INFO: Client library closed.");

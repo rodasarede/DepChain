@@ -2,17 +2,21 @@ package com.sec.depchain.common.util;
 
 public final class Constants {
     public static final String UNDEFINED = "UNDEFINED";
-    public static final String  HMAC_SHA256_ALGORITHM = "HmacSHA256";
+    public static final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
     public static final String SIGNATURE_ALGORITHM_SHA256_ECDSA = "SHA256withECDSA";
     public static final String EC = "EC";
     public static final String PROPERTIES_PATH = "../common/src/main/java/com/sec/depchain/resources/system_membership.properties";
     public static final String KEY_DIR = "../common/src/main/java/com/sec/depchain/resources/keys";
     public static final String UNKNOWN = "UNKNOWN";
     public static final int THRESHOLD = 1;
-    private Constants(){
+    public static final String GENESIS_BLOCK_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/Genesis.json";
+
+
+    private Constants() {
 
     }
-    public final class MessagaTypes{
+
+    public class MessageType {
         public static final String READ = "READ";
         public static final String STATE = "STATE";
         public static final String WRITE = "WRITE";

@@ -11,13 +11,12 @@ import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.KeyLoader;
 
 public class SystemMembership {
-    
 
     private int leaderId;
     private HashMap<Integer, Member> membershipList = new HashMap<>();
     private int numberOfNodes;
-    private int maximumNumberOfByzantineNodes; 
-    private Map<Integer, PublicKey> publicKeys; 
+    private int maximumNumberOfByzantineNodes;
+    private Map<Integer, PublicKey> publicKeys;
 
     public SystemMembership(String filename) {
         FileInputStream fis = null;

@@ -47,9 +47,9 @@ public class AccountState {
             storage.put(key, value);
         }
     }
-    public BigInteger getNonce(){
+
+    public BigInteger getNonce() {
         return nonce;
     }
-
 
 }

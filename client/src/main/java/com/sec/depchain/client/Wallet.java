@@ -1,26 +1,12 @@
 package com.sec.depchain.client;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.interfaces.ECKey;
-import java.security.interfaces.ECPrivateKey;
 
-import org.bouncycastle.crypto.ec.ECPair;
-import org.bouncycastle.util.BigIntegers;
-import org.identityconnectors.common.ByteUtil;
-import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
-import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.Sign;
-import org.web3j.crypto.TransactionEncoder;
 import org.web3j.utils.Numeric;
 
 import com.sec.depchain.common.Transaction;
-import com.sec.depchain.common.util.CryptoUtils;
 import com.sec.depchain.common.util.KeyLoader;
 import com.sec.depchain.common.util.EthereumKeyGen;
 
@@ -56,16 +42,6 @@ public class Wallet {
         System.arraycopy(signatureData.getS(), 0, signatureBytes, 32, 32);
         signatureBytes[64] = signatureData.getV()[0];
         return Numeric.toHexString(signatureBytes);
-    }
-    private String createSigningData(Transaction tx) {
-        // Create deterministic string representation for signing
-        return String.join(":",
-            tx.getFrom().toHexString(),
-            tx.getTo().toHexString(),
-            tx.getValue().toString(),
-            tx.getData(),
-            String.valueOf(tx.getNonce())
-        );
     }
 
 }

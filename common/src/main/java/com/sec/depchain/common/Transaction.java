@@ -148,8 +148,7 @@ public class Transaction {
         return true; // Transaction is valid
     }
 
-    public boolean execute(Map<Address, AccountState> currentState, List<Transaction> transactions,
-            Blockchain blockchain) {
+    public boolean execute(Map<Address, AccountState> currentState,Blockchain blockchain) {
         // Check if the transaction is valid
         if (!isValid(currentState)) {
             return false;
@@ -166,12 +165,12 @@ public class Transaction {
         receiverState.setBalance(receiverState.getBalance().add(value));
 
         // Add the transaction to the list of transactions
-        transactions.add(this);
+        // transactions.add(this);
 
-        Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState,
-                blockchain.getLatestBlock().getHeight() + 1);
+        // Block newBlock = new Block(blockchain.getLatestBlock().getBlockHash(), transactions, currentState,
+        //         blockchain.getLatestBlock().getHeight() + 1);
         // newBlock.printBlockDetails();
-        blockchain.getChain().add(newBlock);
+        // blockchain.getChain().add(newBlock);
 
         return true;
     }

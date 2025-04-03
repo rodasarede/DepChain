@@ -11,10 +11,13 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EvmSpecVersion;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
+import org.web3j.crypto.Hash;
+import org.web3j.utils.Numeric;
 
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 import com.sec.depchain.common.util.Constants;
@@ -134,6 +137,44 @@ public class Blockchain {
             }
         }
 
+    }
+    public  void printAccountsInfo() {
+        System.out.println("All Accounts Information:");
+        // Iterate over all accounts
+        // Get all accounts that have been touched (i.e., initialized in the state)
+        Collection<? extends Account> accounts = simpleWorld.getTouchedAccounts();
+
+        for (Account account : accounts) {
+            System.out.println("Account Information:");
+            System.out.println("  Address: " + account.getAddress());
+            System.out.println("  Balance: " + account.getBalance().toLong());
+            System.out.println("  Nonce: " + account.getNonce());
+
+            if (account.getCode().isEmpty()) {
+                System.out.println("  Type: Externally Owned Account (EOA)");
+            } else {
+                System.out.println("  Type: Smart Contract");
+                System.out.println("  Code: " + account.getCode().toHexString());
+
+                // If it's a smart contract, get and print storage entries
+                System.out.println("  Storage:");
+                if(account.getAddress().equals( Address.fromHexString("1234567891234567891234567891234567891234")) ){
+                    
+                    // Get total supply
+                    System.out.println("    _totalSupply: " + account.getStorageValue(UInt256.valueOf(2)).toLong());
+
+                    // Get name and symbol
+                    System.out.println("    _name: " +  helpers.convertHexadecimalToAscii(account.getStorageValue(UInt256.valueOf(3)).toString()));
+                    System.out.println("    _symbol: " + helpers.convertHexadecimalToAscii(account.getStorageValue(UInt256.valueOf(4)).toString()));
+                    String paddedSenderAddress = helpers.padHexStringTo256Bit(Address.fromHexString("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef").toHexString());
+                    String balanceSlotMapping = Numeric.toHexStringNoPrefix(Hash.sha3(Numeric.hexStringToByteArray(paddedSenderAddress + helpers.convertIntegerToHex256Bit(0))));
+                    System.out.println("    _balances[msg.sender]: " + account.getStorageValue(UInt256.fromHexString(balanceSlotMapping)).toLong());
+                    System.out.println("    blacklist sender contract address: " + account.getStorageValue(UInt256.valueOf(5)));
+
+                }
+            }
+            System.out.println();
+        }
     }
 
 

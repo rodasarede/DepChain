@@ -171,18 +171,32 @@ public class BlockchainMember {
         System.out.println("previous hash" + block.getPreviousBlockHash());
         System.out.println("transactions" + block.getTransactions());
 
-        // TODO manel aplica aqui a tua lógica
 
-    // 1. Persist the block in the blockchain
+        // 1. Persist the block in the blockchain
+        blockchain_1.getChain().add(block);
 
-     // 2. Execute transactions to update the world state
 
-    // 3. Update the world state based on the executed transactions
+        // 2. Execute transactions to update the world state
+        for (Transaction transaction : block.getTransactions()) {
+            if(transaction.execute(blockchain_1.getCurrentState(), blockchain_1)){
+                //sucess send message to client TODO can I get id from FROM (address)
+                System.out.println("Transaction executed successfully");
+            }else{
+                // fail, send message to client TODO can I get id from FROM (address)
+                System.out.println("Transaction execution failed");
+            }
+        }
+
+        // 3. Update the world state based on the executed transactions
+        blockchain_1.updateSimpleWorldState();
+        blockchain_1.printAccountsInfo();
         
-    
-    // 4. Remove included transactions from mempool
+        
+        // 4. Remove included transactions from mempool
+        for (Transaction transaction : block.getTransactions()) {
+            mempool.removeTransactionFromMempool(transaction);
+        }
 
-        //4. notify clients
 
         //5. start next 
     }
@@ -339,4 +353,6 @@ public class BlockchainMember {
     public static Blockchain getBlockchain_1() {
         return blockchain_1;
     }
+
+    
 }

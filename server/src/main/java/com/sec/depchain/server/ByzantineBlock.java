@@ -81,12 +81,15 @@ public class ByzantineBlock {
     }
 
     public void propose(Block v) {
-        if (state.getValtsVal() != null && state.getValtsVal().getVal() != null) {
-            if (!v.getPreviousBlockHash().equals(state.getValtsVal().getVal().getBlockHash())) {
-                LOGGER.error("Proposed block doesn't link to current chain");
-                return;
-            }
+        
+        if (!blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash().equals(v.getPreviousBlockHash())) {
+            LOGGER.error("Proposed block doesn't link to current chain");
+            LOGGER.error("Collected block: " + v.getBlockHash());
+            LOGGER.error("Expected previous block hash: " + v.getPreviousBlockHash());
+            LOGGER.error("Previous block hash: " + blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash());
+            return;
         }
+        
         toPropose = v;
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
@@ -97,8 +100,8 @@ public class ByzantineBlock {
                     String message = MessageFormatter.formatReadMessage(ets, position);
                     
                     if (getState().getValtsVal().getVal() == null) {
-                      TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
-                      getState().setValtsVal(tsValuePair);
+                        TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
+                        getState().setValtsVal(tsValuePair);
                     }
                      
 
@@ -178,12 +181,12 @@ public class ByzantineBlock {
         // means we have a value to propose
         if (tmpval != null) // tmp value diff null
         {
-            if (state.getValtsVal() != null && state.getValtsVal().getVal() != null) {
-                if (!tmpval.getPreviousBlockHash().equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) {
-                    LOGGER.error("Collected block doesn't link to current chain");
-                    return;
-                }
+            
+            if (!tmpval.getPreviousBlockHash().equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) {
+                LOGGER.error("Collected block doesn't link to current chain");
+                return;
             }
+            
             if (state.getWriteSet() != null) {
                 Iterator<TSvaluePairBlock> iterator = state.getWriteSet().iterator();
                 while (iterator.hasNext()) {

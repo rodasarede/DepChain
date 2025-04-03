@@ -12,6 +12,9 @@ import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 import com.sec.depchain.common.util.CryptoUtils;
 
+import org.json.JSONObject;
+import org.json.JSONArray;
+
 public class ConditionalCollect {
     private DeliverCallback deliverCallback;
     private final PerfectLinks perfectLinks;
@@ -23,6 +26,7 @@ public class ConditionalCollect {
 
     private static SystemMembership systemMembership;
     private static int nodeId;
+    private static final int DEBUG_MODE = 1;
     private int TAMPER_MESSAGE = 0;
 
     public interface DeliverCallback {
@@ -76,11 +80,15 @@ public class ConditionalCollect {
 
         String signature = CryptoUtils.signMessage(privateKey, message);
 
-        String formatted_message = "<STATE:" + message + ":" + signature + ">";
+        //String formatted_message = "<STATE:" + message + ":" + signature + ">";
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("type", "SEND");
+        jsonMessage.put("message", message);
+        jsonMessage.put("signature", signature);
 
         int leaderId = systemMembership.getLeaderId();
         // System.out.println("Sending message: " + formatted_message + " to leader: " + leaderId);
-        perfectLinks.send(leaderId, formatted_message);
+        perfectLinks.send(leaderId, jsonMessage.toString());
     }
 
     private static String[] getMessageArgs(String message) {
@@ -110,17 +118,42 @@ public class ConditionalCollect {
     }
 
     private void processSend(int senderId, String sendMessage) throws Exception {
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - DEBUG: Received SEND message:" + sendMessage);
+        }
+
         if (nodeId != systemMembership.getLeaderId()) {
             System.out.println(
                     "Unexpected: non leader received SEND message: " + sendMessage + " from node: " + senderId);
             return;
         }
+        /*
         String[] args = getMessageArgs(sendMessage);
         String message = String.join(":", Arrays.copyOfRange(args, 1, args.length - 1));
         String signature = args[args.length - 1];
+        */
+
+        JSONObject jsonMessage = new JSONObject(sendMessage);
+        String message = jsonMessage.getString("message");
+        String signature = jsonMessage.getString("signature");
+
         if (CryptoUtils.verifySignature(systemMembership.getPublicKey(senderId), message, signature)) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("CONDITIONAL COLLECT - DEBUG: SEND signature OK");
+            }
             messages.set(senderId - 1, message);
             signatures.set(senderId - 1, signature);
+        } else {
+
+            if (DEBUG_MODE == 1) {
+                System.out.println("CONDITIONAL COLLECT - DEBUG: SEND signature FAILED");
+            }
+        }
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - DEBUG: CURRENT MESSAGES AND SIGNATURES:");
+            for (int i = 0; i < messages.size(); i++) {
+                System.out.println("CONDITIONAL COLLECT - DEBUG: Sender " + (i + 1) + ": Message = " + messages.get(i) + ", Signature = " + signatures.get(i));
+            }
         }
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
@@ -131,17 +164,26 @@ public class ConditionalCollect {
                     "Unexpected: non leader received SEND message: " + sendMessage + " from node: " + senderId);
             return;
         }
+
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
         if (getNumberOfMessages() >= N - f && outputPredicate.test(messages)) {
+
             if (TAMPER_MESSAGE == 1) {
                 int index = 0;
                 messages.set(index, "1" + messages.get(index).substring(1));
             }
-            String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
+
+
+//            String formattedMessage = "<COLLECTED:" + messages + ":" + signatures + ">";
+            JSONObject jsonMessage = new JSONObject();
+            jsonMessage.put("type", "COLLECTED");
+            jsonMessage.put("messages", messages);
+            jsonMessage.put("signatures", signatures);
+
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
                 // System.out.println("Process ID: " + processId);
-                perfectLinks.send(processId, formattedMessage);
+                perfectLinks.send(processId, jsonMessage.toString());
             }
 
 
@@ -175,11 +217,15 @@ public class ConditionalCollect {
     }
 
     private void processCollected(int senderId, String collectedMessage) throws Exception {
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT - DEBUG: Received COLLECTED message:" + collectedMessage);
+        }
+/*
         // System.out.println("Received COLLECTED message: " + collectedMessage);
         String[][] result = splitCollectedMessage(collectedMessage);
         String[] collectedMessages = result[0];
         String[] collectedSignatures = result[1];
-
+*/
 
         // System.out.println("Collected Messages:");
         // for (String message : collectedMessages) {
@@ -190,6 +236,36 @@ public class ConditionalCollect {
         // for (String signature : collectedSignatures) {
         //     System.out.println("- " + signature);
         // }
+
+        // Parse the JSON message
+        JSONObject jsonMessage = new JSONObject(collectedMessage);
+
+        // Extract messages and signatures arrays
+        JSONArray collectedMessagesArray = jsonMessage.getJSONArray("messages");
+        JSONArray collectedSignaturesArray = jsonMessage.getJSONArray("signatures");
+
+        // Convert JSONArrays to String arrays
+        String[] collectedMessages = new String[collectedMessagesArray.length()];
+        String[] collectedSignatures = new String[collectedSignaturesArray.length()];
+
+        for (int i = 0; i < collectedMessagesArray.length(); i++) {
+            collectedMessages[i] = collectedMessagesArray.getString(i);
+            collectedSignatures[i] = collectedSignaturesArray.getString(i);
+        }
+
+        // Debugging output
+        if (DEBUG_MODE == 1) {
+            System.out.println("Extracted Messages: ");
+            for (String msg : collectedMessages) {
+                System.out.println(msg);
+            }
+            System.out.println("Extracted Signatures: ");
+            for (String sig : collectedSignatures) {
+                System.out.println(sig);
+            }
+        }
+
+
 
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
@@ -220,17 +296,43 @@ public class ConditionalCollect {
 
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
 
-        String messageType = getMessageType(message);
+        //String messageType = getMessageType(message);
         // System.out.println("Message: " + message + ". Message Type: " + messageType);
 
-        switch (messageType) {
+        JSONObject jsonMessage = new JSONObject(message);
+        String type = "";
+        if (jsonMessage.getString("type") != null) {
+            type = jsonMessage.getString("type");
+            if (DEBUG_MODE == 1) {
+                System.out.println("CONDITIONAL COLLECT - DEBUG: message has type:" + type);
+            }
+        } else {
+            System.out.println("CONDITIONAL COLLECT - ERROR: message has no type!");
+        }
+
+
+        /*
+        String receivedMac = jsonReceivedACK.getString("mac");
+        jsonReceivedACK.remove("mac");
+        String receivedWithoutMac = jsonReceivedACK.toString();
+        int receivedSrcId = jsonReceivedACK.getInt("nodeId");
+        int receivedSeqNum = jsonReceivedACK.getInt("seqNum");
+*/
+        switch (type) {
+            /*
             case "STATE":
                 processSend(senderId, message);
                 break;
+
+             */
+            case "SEND":
+                processSend(senderId, message);
+                break;
+
             case "COLLECTED":
                 processCollected(senderId, message);
                 break;
-            case "append-request":
+            case "tx-request":
                 // not supose to happen only for debug purposes
                 System.out.println("Received request in collect: " + message + " from Id: " + senderId);
                 break;

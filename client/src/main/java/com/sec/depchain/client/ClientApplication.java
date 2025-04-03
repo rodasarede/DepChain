@@ -28,7 +28,7 @@ public class ClientApplication {
     public ClientApplication(int clientId) throws Exception{
         this.wallet = new Wallet(clientId);
         this.clientLibrary = new ClientLibrary(clientId, wallet);
-        if (DEBUG_MODE == 1) 
+        if (DEBUG_MODE == 1)
         {
             System.out.println("CLIENT APP - DEBUG: Starting: {" + clientId + "}");
             System.out.println("CLIENT APP - DEBUG: Address: {"+ wallet.getAddress() + "}");
@@ -80,7 +80,7 @@ public class ClientApplication {
         String toId = caseArgs[1];
         BigInteger value = new BigInteger(caseArgs[2]);
         String data = (caseArgs.length == 4) ? caseArgs[3] : "";
-        
+
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
@@ -94,8 +94,7 @@ public class ClientApplication {
         if (DEBUG_MODE == 1) System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId+ "}");
 
         //TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), 0, null); //TS?
-        
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value, data,  nonce.add(BigInteger.ONE), null);
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
         clientLibrary.sendTransferRequest(tx);
@@ -113,7 +112,7 @@ public class ClientApplication {
         System.out.println("CLIENT APP - INFO: Client is exiting");
         if(scanner != null)
         {
-        scanner.close();
+            scanner.close();
         }
         clientLibrary.close();
         System.out.println("CLIENT APP - INFO: Client library closed.");

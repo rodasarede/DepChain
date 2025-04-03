@@ -14,6 +14,10 @@ import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
 
+import org.json.JSONObject;
+import org.json.JSONArray;
+
+
 public class ByzantineEpochConsensus {
 
     private static int N;
@@ -37,6 +41,7 @@ public class ByzantineEpochConsensus {
     private boolean acceptQuorumReached = false;
     private static final int DEBUG_MODE = 1;
     private BlockchainMember blockchainMember;
+
 
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
@@ -77,14 +82,25 @@ public class ByzantineEpochConsensus {
             if (DEBUG_MODE == 1) {
                 System.out.println("BEP - DEBUG: I am proposing value " + v);
             }
+
+            if (getState().getValtsVal().getVal() == null) {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, toPropose);
+                getState().setValtsVal(tsValuePair);
+            }
+
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = formatReadMessage(ets);
+
+                JSONObject jsonMessage = new JSONObject();
+                jsonMessage.put("type", "READ");
+                jsonMessage.put("ets", ets);
+                jsonMessage.put("position", position);
 
                 if (DEBUG_MODE == 1) {
                     System.out.println("BEP - DEBUG: Leader " + leaderId + " sending READ message to " + nodeId);
                 }
 
-                perfectLinks.send(nodeId, message);
+                perfectLinks.send(nodeId, jsonMessage.toString());
             }
         } else {
             if (DEBUG_MODE == 1) {
@@ -95,40 +111,60 @@ public class ByzantineEpochConsensus {
 
     public void deliverRead(int senderId) throws Exception {
         if (senderId == leaderId) {
-            String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
+            //String message = formatStateMessage(ets, state.getValtsVal(), state.getWriteSet());
+
+            JSONObject jsonMessage = new JSONObject();
+            jsonMessage.put("type", "STATE");
+            jsonMessage.put("ets", ets);
+            jsonMessage.put("ts", state.getValtsVal().getTimestamp());
+
             if (DEBUG_MODE == 1) {
-                System.out.println("BEP - DEBUG: Sending STATE " + message + " to conditional collect");
+                System.out.println("BEP - DEBUG: value is: " + state.getValtsVal().getVal() + ".");
+            }
+            if (state.getValtsVal().getVal() == null) {
+                jsonMessage.put("val", "null");
+            } else{
+                jsonMessage.put("val", state.getValtsVal().getVal());
+            }
+
+            jsonMessage.put("write_set", state.getWriteSet());
+
+            if (DEBUG_MODE == 1) {
+                System.out.println("BEP - DEBUG: Sending STATE " + jsonMessage.toString() + " to conditional collect");
             }
             cc.onInit();
-            cc.input(message);
+            cc.input(jsonMessage.toString());
         }
     }
 
     public void collected(String[] states) {
         if (DEBUG_MODE == 1) {
             System.out.println("BEP - DEBUG: collected states: ");
-            for (String state : states) {
-                System.out.println("BEP - DEBUG: - " + state);
+            for (String s : states) {
+                System.out.println("BEP - DEBUG: - " + s);
             }
         }
         String tmpval = null;
 
         List<String> CollectedMessages = new ArrayList<>();
-        for (String state : states) {
-            CollectedMessages.add(state);
+        for (String s : states) {
+            CollectedMessages.add(s);
         }
         boolean firstConditionMet = false;
-        for (String entry : states) {
+        for (String s : states) {
             // System.out.println("Entry: " + entry);
-            if (entry.equals(Constants.UNDEFINED))
+            if (s.equals(Constants.UNDEFINED))
                 continue;
 
-            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            //TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            JSONObject jsonSTATE = new JSONObject(s);
+            String value = jsonSTATE.getString("val");
+            int timeStamp = jsonSTATE.getInt("ts");
 
-            if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
-                    && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), CollectedMessages)) {
+            if (timeStamp >= 0 && value != null
+                    && binds(timeStamp, value, CollectedMessages)) {
                 // System.out.println("First condition met");
-                tmpval = parsedEntry.getVal();
+                tmpval = value;
                 firstConditionMet = true;
 
             }
@@ -140,6 +176,18 @@ public class ByzantineEpochConsensus {
             // if (!leaderEntry.equals(Constants.UNDEFINED)) {
             //     entryVal = parts[2];
             // }
+
+            String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
+            //String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
+
+            JSONObject jsonLeaderEntry = new JSONObject(leaderEntry);
+            //String value = jsonSTATE.getString("val");
+
+            String entryVal = null;
+            if (!leaderEntry.equals(Constants.UNDEFINED)) {
+                entryVal = jsonLeaderEntry.getString("val");
+            }
+            toPropose = entryVal;
             
             //System.out.println("Leader value to propose: " + toPropose);
             if (unbound(CollectedMessages) && toPropose != null) {
@@ -167,8 +215,14 @@ public class ByzantineEpochConsensus {
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send WRITE message containing tmpval
-                String message = formatWriteMessage(tmpval, ets);
-                perfectLinks.send(nodeId, message);
+                //String message = formatWriteMessage(tmpval, ets);
+
+                JSONObject jsonMessage = new JSONObject();
+                jsonMessage.put("type", "WRITE");
+                jsonMessage.put("ets", ets);
+                jsonMessage.put("value", tmpval);
+
+                perfectLinks.send(nodeId, jsonMessage.toString());
             }
         }
 
@@ -206,8 +260,14 @@ public class ByzantineEpochConsensus {
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
                 // trigger a send ACCEPT Message
-                String message = formatAcceptMessage(v, ets);
-                perfectLinks.send(nodeId, message);
+                // String message = formatAcceptMessage(v, ets);
+
+                JSONObject jsonMessage = new JSONObject();
+                jsonMessage.put("type", "ACCEPT");
+                jsonMessage.put("ets", ets);
+                jsonMessage.put("value", v);
+
+                perfectLinks.send(nodeId, jsonMessage.toString());
             }
         }else{
             if (quorumWriteTimer != null) {
@@ -279,13 +339,17 @@ public class ByzantineEpochConsensus {
         if (getNumberOfDefinedEntries(S) < N - f) {
             return false;
         }
-        for (String entry : S) {
-            if (entry.equals(Constants.UNDEFINED))
+        for (String s : S) {
+            if (s.equals(Constants.UNDEFINED))
                 continue;
 
-            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            JSONObject jsonSTATE = new JSONObject(s);
+            //String value = jsonSTATE.getString("val");
+            int timeStamp = jsonSTATE.getInt("ts");
+
+            //TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
             // System.out.println("Parsed Entry timestamp: " + parsedEntry.getTimestamp() + " " + parsedEntry.getVal());
-            if (parsedEntry.getTimestamp() != 0) {
+            if (timeStamp != 0) {
                 return false;
             }
         }
@@ -298,14 +362,19 @@ public class ByzantineEpochConsensus {
 
     private static boolean quoromHighest(long ts, String v, List<String> S) {
         int count = 0;
-        for (String entry : S) {
-            if (entry.equals(Constants.UNDEFINED))
+        for (String s : S) {
+            if (s.equals(Constants.UNDEFINED))
                 continue;
-            String[] parts = entry.split(":");
+            /*
+            String[] parts = state.split(":");
             long entryTs = Long.parseLong(parts[1]);
             String entryVal = parts[2];
+             */
+            JSONObject jsonSTATE = new JSONObject(s);
+            String value = jsonSTATE.getString("val");
+            int timeStamp = jsonSTATE.getInt("ts");
 
-            if (entryTs < ts || (entryTs == ts && entryVal.equals(v))) {
+            if (timeStamp < ts || (timeStamp == ts && value.equals(v))) {
                 count++;
             }
         }
@@ -315,34 +384,44 @@ public class ByzantineEpochConsensus {
 
     private static boolean certifiedValue(long ts, String v, List<String> S) {
         int count = 0;
-        for (String entry : S) {
-            if (entry.equals(Constants.UNDEFINED))
+        for (String s : S) {
+            if (s.equals(Constants.UNDEFINED))
                 continue;
+/*
             String[] parts = entry.replace("<", "").replace(">", "").split(":");
-
             String writeSetString = parts[2];
-
             Set<TSvaluePair> writeSet = parseWriteSet(writeSetString);
-
+*/
+            JSONObject jsonSTATE = new JSONObject(s);
+            String value = jsonSTATE.getString("val");
+            int timeStamp = jsonSTATE.getInt("ts");
+            JSONArray writeSet = jsonSTATE.getJSONArray("write_set");
+/*
             for (TSvaluePair writeSetEntry : writeSet) {
                 if (writeSetEntry.getTimestamp() >= ts && writeSetEntry.getVal().equals(v)) {
                     count++;
                 }
+
             }
+*/
         }
         // System.out.println("Count: " + count + " f: " + f);
         return count > f;
     }
 
     public boolean sound(List<String> S) {
-        for (String entry : S) {
-            if (entry.equals(Constants.UNDEFINED))
+
+        for (String s : S) {
+            if (s.equals(Constants.UNDEFINED))
                 continue;
 
-            TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            //TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
+            JSONObject jsonSTATE = new JSONObject(s);
+            String value = jsonSTATE.getString("val");
+            int timeStamp = jsonSTATE.getInt("ts");
 
-            if (binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), S) || unbound(S)) {
-                // dont we have to change something?
+            if (binds(timeStamp, value, S) || unbound(S)) {
+                // dont we have to change something? i don't think so
                 return true;
             }
         }

@@ -266,18 +266,32 @@ public class PerfectLinks {
     }
 
     private void deliverMessage(int srcId, String message) {
-        String messageType = getMessageType(message);
         if (DEBUG_MODE == 1) {
-            System.out.println("PERFECT LINKS - DEBUG: Message type identified: {"+messageType+"}");
+            System.out.println("PERFECT LINKS - DEBUG: delivering message:" + message);
         }
 
-        if (deliverCallbackCollect != null || deliverCallback != null) {
+        JSONObject jsonMessage = new JSONObject(message);
+        String type = "";
+        if (jsonMessage.getString("type") != null) {
+            type = jsonMessage.getString("type");
+            if (DEBUG_MODE == 1) {
+                System.out.println("PERFECT LINKS - DEBUG: message has type:" + type);
+            }
+        } else {
+            System.out.println("PERFECT LINKS - ERROR: message has no type");
+        }
 
-            if (messageType.equals("tx-request") ||
-                    messageType.equals("append-response") ||
-                    messageType.equals("READ") ||
-                    messageType.equals("WRITE") ||
-                    messageType.equals("ACCEPT")) {
+        //String messageType = getMessageType(message);
+        //if (DEBUG_MODE == 1) {
+        //    System.out.println("PERFECT LINKS - DEBUG: Message type identified: {"+messageType+"}");
+        //}
+
+        if (deliverCallbackCollect != null || deliverCallback != null) {
+            if (type.equals("tx-request") ||
+                    type.equals("append-response") ||
+                    type.equals("READ") ||
+                    type.equals("WRITE") ||
+                    type.equals("ACCEPT")) {
                 deliverCallback.deliver(srcId, message);
             } else {
                 deliverCallbackCollect.deliver(srcId, message);
@@ -352,7 +366,9 @@ public class PerfectLinks {
                     } else {
                         deliveredHistory.get(srcId).add(seqNumber);
                     }
-
+                    if (DEBUG_MODE == 1) {
+                        System.out.println("PERFECT LINKS - DEBUG: delivering payload: {" + payload + "}");
+                    }
                     deliverMessage(srcId, payload);
                     return;
                 } else {

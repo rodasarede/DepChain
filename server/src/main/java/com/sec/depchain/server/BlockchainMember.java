@@ -17,6 +17,8 @@ import com.sec.depchain.common.util.KeyLoader;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
 
+import org.json.JSONObject;
+
 /**
  * Represents a blockchain member node in the Byzantine fault-tolerant system.
  */
@@ -76,45 +78,78 @@ public class BlockchainMember {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Received message from {"+senderId+"} -> {"+message+"}");
         }
 
+        JSONObject jsonMessage = new JSONObject(message);
+        String type = "";
+        if (jsonMessage.getString("type") != null) {
+            type = jsonMessage.getString("type");
+            if (DEBUG_MODE == 1) {
+                System.out.println("BLOCKCHAIN MEMBER - DEBUG: message has type:" + type);
+            }
+        } else {
+            System.out.println("BLOCKCHAIN MEMEBER - ERROR: message has no type!");
+        }
+        String value = "";
+
+/*
         message = message.substring(1, message.length() - 1);
         String[] elements = message.split(":");
         String messageType = elements[0];
-
-        switch (messageType) {
+*/
+        switch (type) {
             case "tx-request":
-                String transaction = message.replace(":", "_");
-                Transaction tx = deserializeTransaction(elements);
-                if(tx.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
-                {
-                    clientTransactions.put(senderId, transaction);
+                // String transaction = message.replace(":", "_");
+                //String jsonStringTransaction = jsonMessage.getString("transaction");
+                JSONObject jsonTransaction = jsonMessage.getJSONObject("transaction");
+
+                if (DEBUG_MODE == 1) {
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: jsonStringTransaction: "+jsonTransaction.toString());
                 }
-                else{
-                    System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+transaction+"}");
-                    String responseMessage = "<append-response:" + transaction + ":0:fail>";
-                    perfectLinks.send(senderId, responseMessage);
+                Transaction transaction = deserializeTransaction(jsonTransaction.toString());
+                if (transaction.isValid(blockchain_1.getCurrentState())) //TODO if transaction signature is valid what is the next step?
+                {
+                    clientTransactions.put(senderId, jsonTransaction.toString());
+                    // to string just to work
+                }
+                else {
+                    System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"+senderId+"}: {"+jsonTransaction.toString()+"}");
+                    //String responseMessage = "<append-response:" + jsonTransaction.toString() + ":0:fail>";
+
+                    JSONObject jsonResponseMessage = new JSONObject();
+                    jsonResponseMessage.put("type", "append-response");
+                    jsonResponseMessage.put("status", "fail");
+                    jsonResponseMessage.put("transfer", jsonTransaction);
+                    // jsonResponseMessage.put("ts", 0);
+
+                    perfectLinks.send(senderId, jsonResponseMessage.toString());
                     break;
                 }
                 
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+ jsonTransaction.toString() +"})");
                 }
-                bep.propose(transaction);
+                bep.propose(jsonTransaction.toString());
                 break;
+
             case "READ":
-                bep.deliverRead(senderId);  
+                bep.deliverRead(senderId);
                 break;
             case "WRITE":
+                value = jsonMessage.getString("value");
+
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+value+"})");
                 }
-                bep.deliverWrite(senderId, elements[2]);
+                bep.deliverWrite(senderId, value);
                 break;
+
             case "ACCEPT":
+                value = jsonMessage.getString("value");
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+elements[2]+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+value+"})");
                 }
-                bep.deliverAccept(senderId, elements[2]);
+                bep.deliverAccept(senderId, value);
                 break;
+
             default:
                 if (DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: Unknown message type -> {"+message+"}");
@@ -129,8 +164,8 @@ public class BlockchainMember {
         // int index = blockchain.size();
 
         System.out.println("Decided transaction: " + val);
-        String[] transaction = val.split("_");
-        Transaction tx = deserializeTransaction(transaction);
+        //String[] transaction = val.split("_");
+        Transaction tx = deserializeTransaction(val);
         if(tx.execute(blockchain_1.getCurrentState(), blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
             System.out.println("Transaction executed successfully");
             System.out.println("Updating world state");
@@ -144,18 +179,24 @@ public class BlockchainMember {
         blockchain_1.getLatestBlock().printBlockDetails();
 
         System.out.println("BLOCKCHAIN MEMBER - INFO: Transaction {"+val+"} committed at index {" + index + "}.");
-        blockchain_1.getLatestBlock().printBlockDetails();
+        //blockchain_1.getLatestBlock().printBlockDetails();
 
         for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
             if (entry.getValue().equals(val)) {
                 int clientId = entry.getKey();
-                String responseMessage = "<append-response:" + val + ":" + index + ":success>";
+                //String responseMessage = "<append-response:" + val + ":" + index + ":success>";
+
+                JSONObject jsonResponseMessage = new JSONObject();
+                jsonResponseMessage.put("type", "append-response");
+                jsonResponseMessage.put("status", "success");
+                jsonResponseMessage.put("transfer", val);
+                jsonResponseMessage.put("index", index);
 
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {"+clientId+"} -> {"+responseMessage+"}");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {"+clientId+"} -> {"+jsonResponseMessage.toString()+"}");
                 }
 
-                perfectLinks.send(clientId, responseMessage);
+                perfectLinks.send(clientId, jsonResponseMessage.toString());
                 clientTransactions.remove(clientId);
             }
         }
@@ -193,6 +234,7 @@ public class BlockchainMember {
     public void cleanup(){
         this.perfectLinks.close();
     }
+    /*
     private static Transaction deserializeTransaction(String tx[])
     {
         String senderAddress = tx[1];
@@ -204,6 +246,39 @@ public class BlockchainMember {
         BigInteger nonce = new BigInteger(tx[6]);
         return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, 0, signature);
         //from:to:value:data:signature:nonce
+    }
+     */
+
+    public Transaction deserializeTransaction(String jsonStringTransaction) {
+        try {
+            JSONObject jsonTransaction = new JSONObject(jsonStringTransaction);
+
+            // Extract and convert fields
+            String senderAddress = jsonTransaction.getString("from");
+            String toAddress = jsonTransaction.getString("to");
+            BigInteger value;
+            if (jsonTransaction.get("amount") instanceof Integer) {
+                value = BigInteger.valueOf(jsonTransaction.getInt("amount"));
+            } else {
+                value = new BigInteger(jsonTransaction.getString("amount"));
+            }
+            String data = jsonTransaction.getString("data");
+            BigInteger nonce;
+            if (jsonTransaction.get("nonce") instanceof Integer) {
+                nonce = BigInteger.valueOf(jsonTransaction.getInt("nonce"));
+            } else {
+                nonce = new BigInteger(jsonTransaction.getString("nonce"));
+            }
+            String signature = jsonTransaction.getString("signature"); // Note: Typo in your JSON? Should be "signature"
+
+            // Using current timestamp since it's not in the JSON
+
+            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data, nonce, signature);
+
+        } catch (Exception e) {
+            System.err.println("Failed to deserialize transaction: " + e.getMessage());
+            return null;
+        }
     }
 
     

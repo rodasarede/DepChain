@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.json.JSONObject;
+
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.Transaction;
@@ -32,15 +34,18 @@ public class ClientLibrary {
     }
 
     public void sendTransferRequest(Transaction tx) {
-        
-        String formattedMessage = "<tx-request:" + serializeTransaction(tx) + ">";
 
-        for (int nodeId : systemMembership.getMembershipList().keySet()) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("CLIENT LIBRARY - DEBUG: Sending request: {"+ formattedMessage +"} to server { "+ nodeId+ "}");
-            }
-            perfectLinks.send(nodeId, formattedMessage);
+        JSONObject txRequest = new JSONObject();
+        txRequest.put("type", "tx-request");
+        txRequest.put("transaction", serializeTransactionToJson(tx));
+        String jsonMessage = txRequest.toString();
+
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("CLIENT LIBRARY - DEBUG: Sending request: {"+ jsonMessage +"} to server { "+ systemMembership.getLeaderId()+ "}");
         }
+        perfectLinks.send(systemMembership.getLeaderId(), jsonMessage); // only send to the leader
+
     }
 
     private void onPerfectLinksDeliver(int nodeId, String message) {
@@ -91,8 +96,8 @@ public class ClientLibrary {
         this.deliverCallback = callback;
     }
     public void close() {
-            System.out.println("CLIENT LIBRARY - INFO: Shutting down client resources...");
-            if (perfectLinks != null){
+        System.out.println("CLIENT LIBRARY - INFO: Shutting down client resources...");
+        if (perfectLinks != null){
             perfectLinks.close();
         }
         messageResponses.clear();
@@ -100,17 +105,15 @@ public class ClientLibrary {
         System.out.println("CLIENT LIBRARY - INFO: Finished shutitng down client resources...");
 
     }
-    private String serializeTransaction(Transaction tx) {
-        String data = tx.getData().equals("") ? "empty" : tx.getData(); // how to deal with empty data? //TODO
-        // Using colon separator with field prefixes
-        return String.format( //from:to:value:data:signature:nonce
-            "%s:%s:%s:%s:%s:%d",
-            tx.getFrom(),
-            tx.getTo(),
-            tx.getValue().toString(),
-            data,
-            tx.getSignature(),
-            tx.getNonce()
-        );
+    private JSONObject serializeTransactionToJson(Transaction tx) {
+        JSONObject jsonTx = new JSONObject();
+        jsonTx.put("from", tx.getFrom());
+        jsonTx.put("to", tx.getTo());
+        jsonTx.put("amount", tx.getValue());
+        jsonTx.put("data", tx.getData());
+        jsonTx.put("signature", tx.getSignature());
+        jsonTx.put("nonce", tx.getNonce());
+        // add any other relevant fields
+        return jsonTx;
     }
 }

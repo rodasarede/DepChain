@@ -17,19 +17,16 @@ public class Transaction {
     private BigInteger value; //how much ether to transfer
     private String data; //payload (func name, args, etc...); – optional field to include arbitrary data
     private BigInteger nonce;  //a sequentially incrementing counter which indicates the transaction number from the account
-    private long timeStamp;
     private String signature; //  the identifier of the sender. This is generated when the sender's private key signs the transaction and confirms the sender has authorized this transaction
     private int DEBUG_MODE = 1;
 
     //https://ethereum.org/en/developers/docs/transactions/
 
-    public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, long timestamp, String signature) {
-        this.to = to;
+    public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, String signature) {        this.to = to;
         this.from = from;
         this.value = value;
         this.data = data;
         this.nonce = nonce;
-        this.timeStamp = timestamp;
         this.signature = signature;
     }
     public String getData() {
@@ -46,9 +43,6 @@ public class Transaction {
     }
     public String getSignature() {
         return signature;
-    }
-    public long getTimeStamp() {
-        return timeStamp;
     }
     public BigInteger getValue() {
         return value;
@@ -67,9 +61,6 @@ public class Transaction {
     }
     public void setSignature(String signature) {
         this.signature = signature;
-    }
-    public void setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
     }
     public void setValue(BigInteger value) {
         this.value = value;
@@ -167,11 +158,10 @@ public class Transaction {
         byte[] valueBytes = this.value.toByteArray();
         byte[] dataBytes = this.data.getBytes(StandardCharsets.UTF_8);
         byte[] nonceBytes = this.nonce.toByteArray();
-        byte[] timestampBytes = BigInteger.valueOf(this.timeStamp).toByteArray();
 
         // Calculate total length
         int totalLength = fromBytes.length + toBytes.length + valueBytes.length 
-                    + dataBytes.length + nonceBytes.length + timestampBytes.length;
+                    + dataBytes.length + nonceBytes.length;
         
         // Create destination array
         byte[] result = new byte[totalLength];
@@ -187,8 +177,6 @@ public class Transaction {
         System.arraycopy(dataBytes, 0, result, offset, dataBytes.length);
         offset += dataBytes.length;
         System.arraycopy(nonceBytes, 0, result, offset, nonceBytes.length);
-        offset += nonceBytes.length;
-        System.arraycopy(timestampBytes, 0, result, offset, timestampBytes.length);
         
         return result;
     }

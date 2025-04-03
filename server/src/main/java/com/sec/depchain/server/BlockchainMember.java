@@ -221,6 +221,8 @@ public class BlockchainMember {
         }
 
         // 5. start next
+        bepBlock.init();
+        // bep.init();
     }
 
     public void decide(String val) {

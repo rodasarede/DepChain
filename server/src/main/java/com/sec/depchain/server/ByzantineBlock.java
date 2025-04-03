@@ -64,12 +64,12 @@ public class ByzantineBlock {
     }
 
     public void init() {
-        TSvaluePairBlock defaultVal = new TSvaluePairBlock(0, blockchainMember.getBlockchain_1().getLatestBlock());
+        TSvaluePairBlock defaultVal = new TSvaluePairBlock(0, null);
         this.state = new EpochBlock(defaultVal, new HashSet<>());
         if (this.state == null) {
             System.out.println("aqui é null");
         }
-        System.out.println("Latest block: " + blockchainMember.getBlockchain_1().getLatestBlock());
+        // System.out.println("Latest block: " + blockchainMember.getBlockchain_1().getLatestBlock());
         this.state = new EpochBlock(defaultVal, new HashSet<>());
         this.written = new Block[N];
         this.accepted = new Block[N];
@@ -91,15 +91,15 @@ public class ByzantineBlock {
                     .equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) { //Check if leader is proposing correctly
                 for (int nodeId : systemMembership.getMembershipList().keySet()) {
                     String message = MessageFormatter.formatReadMessage(ets, position);
-                    /*
-                     * if (getState().getValtsVal().getVal() == null) {
-                     * TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
-                     * getState().setValtsVal(tsValuePair);
-                     * }
-                     */
+                    
+                    if (getState().getValtsVal().getVal() == null) {
+                      TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
+                      getState().setValtsVal(tsValuePair);
+                    }
+                     
 
-                    TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
-                    getState().setValtsVal(tsValuePair);
+                    // TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
+                    // getState().setValtsVal(tsValuePair);
                     if (DEBUG_MODE == 1) {
                         LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
                     }

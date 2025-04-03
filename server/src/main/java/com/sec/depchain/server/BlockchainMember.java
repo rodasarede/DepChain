@@ -16,7 +16,6 @@ import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
-import com.sec.depchain.common.AccountState;
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
@@ -37,8 +36,7 @@ public class BlockchainMember {
     private int DEBUG_MODE = 1;
     private ByzantineBlock bepBlock;
     private Timer consensusTimer;
-    private Map<Address, BigInteger> accountNonces = new HashMap<>();
-
+    private Map<Address, Integer > clientsIds;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -56,6 +54,7 @@ public class BlockchainMember {
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain_1 = new Blockchain();
         this.mempool = new Mempool();
+        this.clientsIds = new HashMap<>();
         if (DEBUG_MODE == 1) {
             System.out
                     .println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {" + id + "}, Leader: {" + isLeader + "}");
@@ -102,13 +101,13 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
-                
+                clientsIds.put(tx.getFrom(), senderId);
                 if (tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) {
                     clientTransactions.put(senderId, transaction);
                     // bep.propose(transaction);
                     // bep.propose("string to propose");
                     mempool.addTransactionToMempool(tx);
-                    startConsensusTimer(); 
+                    startConsensusTimer();
                 } else {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + transaction + "}");
@@ -181,8 +180,6 @@ public class BlockchainMember {
         if (mempool.size() == 0)
             return;
         List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
-        Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash(), transactions,
-                blockchain_1.getLatestBlock().getHeight());
 
         Block newBlock = new Block(
                 blockchain_1.getLatestBlock().getBlockHash(),
@@ -192,8 +189,10 @@ public class BlockchainMember {
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Proposing block {" + newBlock.getBlockHash() + "}");
         }
-        bepBlock.propose(newBlock);
-        startConsensusTimer(); 
+        if (newBlock.getTimestamp() > blockchain_1.getLatestBlock().getTimestamp()) {
+            bepBlock.propose(newBlock);
+            startConsensusTimer();
+        }
     }
 
     public void decideBlock(Block block) {
@@ -202,33 +201,36 @@ public class BlockchainMember {
         System.out.println("previous hash" + block.getPreviousBlockHash());
         System.out.println("transactions" + block.getTransactions());
 
-        // 1. Persist the block in the blockchain
-        blockchain_1.getChain().add(block);
+        if (block.getTimestamp() > blockchain_1.getLatestBlock().getTimestamp()) {
+            blockchain_1.getChain().add(block);
 
-        // 2. Execute transactions to update the world state
-        for (Transaction transaction : block.getTransactions()) {
-            if (transaction.execute(blockchain_1.getCurrentState(), blockchain_1)) {
-                // sucess send message to client TODO can I get id from FROM (address)
-                System.out.println("Transaction executed successfully");
-            } else {
-                // fail, send message to client TODO can I get id from FROM (address)
-                System.out.println("Transaction execution failed");
+            // 2. Execute transactions to update the world state
+            for (Transaction transaction : block.getTransactions()) {
+                if (transaction.execute(blockchain_1.getCurrentState(), blockchain_1)) {
+                    // sucess send message to client TODO can I get id from FROM (address)
+                    System.out.println("Transaction executed successfully");
+                } else {
+                    // fail, send message to client TODO can I get id from FROM (address)
+                    System.out.println("Transaction execution failed");
+                }
             }
+
+            // 3. Update the world state based on the executed transactions
+            blockchain_1.updateSimpleWorldState();
+            blockchain_1.printAccountsInfo();
+
+            // 4. Remove included transactions from mempool
+            for (Transaction transaction : block.getTransactions()) {
+                mempool.removeTransactionFromMempool(transaction);
+            }
+            // increment nonce?
+            // 5. start next
+
+            bepBlock.init();
+            // bep.init();
         }
+        // 1. Persist the block in the blockchain
 
-        // 3. Update the world state based on the executed transactions
-        blockchain_1.updateSimpleWorldState();
-        blockchain_1.printAccountsInfo();
-
-        // 4. Remove included transactions from mempool
-        for (Transaction transaction : block.getTransactions()) {
-            mempool.removeTransactionFromMempool(transaction);
-        }
-        //increment nonce?
-        // 5. start next
-
-        bepBlock.init();
-        // bep.init();
     }
 
     public void decide(String val) {
@@ -383,6 +385,5 @@ public class BlockchainMember {
     public static Blockchain getBlockchain_1() {
         return blockchain_1;
     }
-
 
 }

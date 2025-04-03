@@ -67,7 +67,17 @@ public class Transaction {
     public void setValue(BigInteger value) {
         this.value = value;
     }
-
+    @Override
+public String toString() {
+    return "Transaction{" +
+            "from=" + from +
+            ", to=" + to +
+            ", value=" + value +
+            ", data='" + data + '\'' +
+            ", nonce=" + nonce +
+            ", signature='" + signature + '\'' +
+            '}';
+}
     // Method to validate the transaction
     public boolean isValid(Map<Address, AccountState> currentState) {
 

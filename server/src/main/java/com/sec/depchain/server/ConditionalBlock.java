@@ -86,6 +86,8 @@ public class ConditionalBlock {
 
         int leaderId = systemMembership.getLeaderId();
 
+        System.out.println("CONDITIONAL COLLECT: INPUT DELIVIRING" + envelope.toString());
+
         perfectLinks.send(leaderId, envelope.toString());
     }
 
@@ -115,6 +117,8 @@ public class ConditionalBlock {
             messages.set(senderId - 1, content.toString());
             signatures.set(senderId - 1, signature);
         }
+        System.out.println("CONDITIONAL COLLECT: SEND CHECK " + sendMessage.toString());
+
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 

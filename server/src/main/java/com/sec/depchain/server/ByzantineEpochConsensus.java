@@ -84,6 +84,10 @@ public class ByzantineEpochConsensus {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("I am proposing value " + v);
             }
+            if (getState().getValtsVal().getVal() == null) {
+                TSvaluePair tsValuePair = new TSvaluePair(ets, toPropose);
+                getState().setValtsVal(tsValuePair);
+            }
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = MessageFormatter.formatReadMessage(ets, position);
             
@@ -141,12 +145,15 @@ public class ByzantineEpochConsensus {
             }
         }
         if (!firstConditionMet) {
-            // String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
-            // String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
-            // String entryVal = null;
-            // if (!leaderEntry.equals(Constants.UNDEFINED)) {
-            //     entryVal = parts[2];
-            // }
+            String leaderEntry = collectedMessages.get(systemMembership.getLeaderId() - 1);
+             String entryVal = null;
+             if (!leaderEntry.equals(Constants.UNDEFINED)) {
+                JSONObject json = new JSONObject(leaderEntry);
+                 JSONObject valuePair = json.getJSONObject("value_pair");
+                 String value = valuePair.getString("value");  // Extracts "string to propose"
+                 entryVal = value;
+             }
+             toPropose = entryVal;
             
             //System.out.println("Leader value to propose: " + toPropose);
             if (unbound(collectedMessages) && toPropose != null) {
@@ -318,7 +325,7 @@ public class ByzantineEpochConsensus {
                 JSONObject valuePair = entryJson.getJSONObject("value_pair");
         
                 long entryTs = valuePair.getLong("timestamp");
-                String entryVal = valuePair.isNull("value") ? null : entryJson.getString("value");
+                String entryVal = valuePair.isNull("value") ? null : valuePair.getString("value");
 
         // Safe null comparison
         boolean valuesMatch = (entryVal == null && v == null) || 

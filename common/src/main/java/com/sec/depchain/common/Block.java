@@ -47,16 +47,30 @@ public class Block {
 
     public String calculateHash() {
         try {
+            // Handle null previousHash according to JSON standard
+            String prevHashStr = (previousBlockHash == null) ? "null" : previousBlockHash;
+            
+            // Serialize transactions (empty array if null)
+            String txStr = transactionsToString();
+            
+            // Combine all components
+            String dataToHash = prevHashStr + height + txStr;
+            
+            // Calculate SHA-256 hash
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String data = transactions.toString() ;
-            byte[] hashBytes = digest.digest(data.getBytes(StandardCharsets.UTF_8));
+            byte[] hashBytes = digest.digest(dataToHash.getBytes());
+            
+            // Convert to hex string
             StringBuilder hexString = new StringBuilder();
             for (byte b : hashBytes) {
-                hexString.append(String.format("%02x", b));
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
             }
+            
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("SHA-256 algorithm not available", e);
         }
     }
     public String getBlockHash() {
@@ -85,6 +99,8 @@ public class Block {
             this.previousBlockHash = data.previous_block_hash;
             this.transactions = data.transactions;
             this.state = parseState(data.state);
+
+
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to load block from JSON: " + e.getMessage());
@@ -133,7 +149,14 @@ public int getHeight() {
         }
     }
     
-
+    private String transactionsToString() {
+        if (transactions == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (Transaction tx : transactions) {
+            sb.append(tx.toString()); // Assumes Transaction has a proper toString()
+        }
+        return sb.toString();
+    }
 
 
 

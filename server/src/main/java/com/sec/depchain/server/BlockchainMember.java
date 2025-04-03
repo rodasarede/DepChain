@@ -78,14 +78,11 @@ public class BlockchainMember {
         //bep.init();
         bepBlock.init();
     }
-    //TODO mudei para public
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Received message from {"+senderId+"} -> {"+message+"}");
         }
 
-        //message = message.substring(1, message.length() - 1);
-        String[] elements = message.split(":");
         JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
         String messageType = "";
         if (json.has("type")) {
@@ -95,7 +92,7 @@ public class BlockchainMember {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
-                if(tx.isValid(blockchain_1.getCurrentState()) /*&& id == systemMembership.getLeaderId()*/) //TODO if transaction signature is valid what is the next step?
+                if(tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId())
                 {
                     clientTransactions.put(senderId, transaction);
                     //bep.propose(transaction);
@@ -109,15 +106,20 @@ public class BlockchainMember {
                     break;
                 }
                 
-                if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, value:{"+elements[1]+"})");
-                }
+            
                 if(mempool.size() >= Constants.THRESHOLD){
                    
                     List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
                     Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash() , transactions, blockchain_1.getLatestBlock().getHeight());
 
+                    if (DEBUG_MODE == 1) {
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, hash:{"+newBlocK.getBlockHash()+"})");
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, transactions:{"+newBlocK.getTransactions()+"})");
+                        System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{"+senderId+"}, previousHash:{"+newBlocK.getPreviousBlockHash()+"})");
+                    }
+
                     bepBlock.propose(newBlocK);
+
                 } 
                
                 break;
@@ -126,20 +128,31 @@ public class BlockchainMember {
                 bepBlock.deliverRead(senderId);  
                 break;
             case "WRITE":
-                String value = json.getString("value");
+                
+                //String value = json.getString("value");
+
+                //bep.deliverWrite(senderId, value);
+                JSONObject messageToJson = new JSONObject(message);
+                JSONObject blockJson = messageToJson.getJSONObject("value");
+                Block v = ByzantineBlock.jsonToBlock(blockJson);
                 if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+value+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: WRITE: bep.deliverWrite(senderId:{"+senderId+"}, value:{"+v.calculateHash()+"})");
                 }
-                bep.deliverWrite(senderId, value);
+                bepBlock.deliverWrite(senderId, v);
                 break;
             case "ACCEPT":
-                value = json.getString("value");
+                //value = json.getString("value");
 
+               
+                //bep.deliverAccept(senderId, value);
+                messageToJson = new JSONObject(message);
+                blockJson = messageToJson.getJSONObject("value");
+                v = ByzantineBlock.jsonToBlock(blockJson);
                 if (DEBUG_MODE == 1) {
                     
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+value+"})");
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: ACCEPT: bep.deliverAccept(senderId:{"+senderId+"}, value:{"+v.calculateHash()+"})");
                 }
-                bep.deliverAccept(senderId, value);
+                bepBlock.deliverAccept(senderId, v);
                 break;
             default:
                 if (DEBUG_MODE == 1) {

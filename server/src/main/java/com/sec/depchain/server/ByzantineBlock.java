@@ -88,7 +88,6 @@ public class ByzantineBlock {
 
     public void propose(Block v) {
         toPropose = v;
-
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
                 LOGGER.debug("I am proposing value " + v);
@@ -96,7 +95,12 @@ public class ByzantineBlock {
             for (int nodeId : systemMembership.getMembershipList().keySet()) {
                 String message = MessageFormatter.formatReadMessage(ets, position);
             
-
+                /*if (getState().getValtsVal().getVal() == null) {
+                    TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
+                    getState().setValtsVal(tsValuePair);
+                }*/
+                TSvaluePairBlock tsValuePair = new TSvaluePairBlock(ets, toPropose);
+                    getState().setValtsVal(tsValuePair);
                 if (DEBUG_MODE == 1) {
                     LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
                 }
@@ -153,14 +157,19 @@ public class ByzantineBlock {
             }
         }
         if (!firstConditionMet) {
-            // String leaderEntry = CollectedMessages.get(systemMembership.getLeaderId() - 1);
-            // String[] parts = leaderEntry.replace("<", "").replace(">", "").split(":");
-            // String entryVal = null;
-            // if (!leaderEntry.equals(Constants.UNDEFINED)) {
-            //     entryVal = parts[2];
-            // }
             
-            //System.out.println("Leader value to propose: " + toPropose);
+            String leaderEntry = collectedMessages.get(systemMembership.getLeaderId() - 1);
+            Block entryVal = null;
+            if (!leaderEntry.equals(Constants.UNDEFINED)) {
+                JSONObject json = new JSONObject(leaderEntry);
+                JSONObject valuePair = json.getJSONObject("value_pair");
+                Block value = valuePair.isNull("value") ? 
+                null : 
+                jsonToBlock(valuePair.getJSONObject("value"));
+                entryVal = value;
+            }
+            toPropose = entryVal;
+            
             if (unbound(collectedMessages) && toPropose != null) {
                 tmpval = toPropose;
             }
@@ -207,13 +216,14 @@ public class ByzantineBlock {
         System.out.println("Checking write quorum for value: " + v);
         int count = 0;
         for (Block writtenEntry : written) {
-            System.out.println(writtenEntry);
             if (writtenEntry != null && writtenEntry.getBlockHash().equals(v.getBlockHash())){
                 count++;
             }
         }
        
         if (count > (N + f) / 2) {
+            System.out.println("TESTEEEEEE");
+
             if (quorumWriteTimer != null) {
                 quorumWriteTimer.cancel();
                 quorumWriteTimer.purge();
@@ -422,7 +432,7 @@ public class ByzantineBlock {
 
     public void setCc(ConditionalBlock cc) {
         this.cc = cc;
-    }
+    }   
     public static JSONObject blockToJson(Block block) {
         JSONObject blockJson = new JSONObject();
         
@@ -474,19 +484,25 @@ public class ByzantineBlock {
         }
 
         private static JSONObject serializeTransactionToJson(Transaction tx) {
-            //TODO what attributes do I need more
-            JSONObject jsonTx = new JSONObject();
+            JSONObject jsonTxWrapper = new JSONObject(); // Outer wrapper
+            JSONObject jsonTx = new JSONObject();       // Inner transaction object
+            
+            // Populate the inner transaction object
             jsonTx.put("from", tx.getFrom());
             jsonTx.put("to", tx.getTo());
             jsonTx.put("amount", tx.getValue());
             jsonTx.put("data", tx.getData() != null ? tx.getData() : JSONObject.NULL);
             jsonTx.put("signature", tx.getSignature());
             jsonTx.put("nonce", tx.getNonce());
-            return jsonTx;
+            
+            // Add the inner transaction to the wrapper
+            jsonTxWrapper.put("transaction", jsonTx);
+            
+            return jsonTxWrapper; // Returns { "transaction": { ... } }
         }
         private static String formatAcceptMessage(Block v, long ets){
             JSONObject message = new JSONObject();
-            message.put("type", "WRITE");
+            message.put("type", "ACCEPT");
             message.put("ets", ets);
             message.put("value", blockToJson(v));  // Serialize block
             return message.toString();
@@ -499,20 +515,21 @@ public class ByzantineBlock {
             return message.toString();
         }
 
-            public static Block jsonToBlock(JSONObject blockJson) throws JSONException {
+        public static Block jsonToBlock(JSONObject blockJson) throws JSONException {
         // Extract basic block fields
         String hash = blockJson.getString("hash");
-        String previousHash = blockJson.getString("previousHash");
+        Object valueObj = blockJson.get("previousHash");
+
+        String previousHash = (valueObj == JSONObject.NULL || valueObj == null) ? null : valueObj.toString();
         int height = blockJson.getInt("height");
-        long timestamp = blockJson.optLong("timestamp", System.currentTimeMillis());
 
         // Deserialize transactions
         JSONArray txArray = blockJson.getJSONArray("transactions");
         List<Transaction> transactions = new ArrayList<>();
         
         for (int i = 0; i < txArray.length(); i++) {
-            String txJson = txArray.getString(i);
-            Transaction tx = deserializeTransactionJson(txJson);
+            JSONObject txJson = txArray.getJSONObject(i);
+            Transaction tx = deserializeTransactionJson(txJson.toString());
             if (tx == null) {
                 throw new JSONException("Failed to deserialize transaction at index " + i);
             }

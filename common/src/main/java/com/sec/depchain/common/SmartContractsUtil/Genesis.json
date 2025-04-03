@@ -1,5 +1,5 @@
 {
-  "block_hash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+  "block_hash": "2e308d2161642f4fa082602d60e3a0d88bb6a6a8fd9e6ecbd56c92da067e4cb4",
   "previous_block_hash": null,
   "transactions": [],
   "state": {
@@ -16,10 +16,10 @@
       "balance": "1000"
     },
 
-    "0xbe1263c757e46aa7bdf9e0de5c4415d0d6803049": {
+    "0x49279c9d514ebc8d63fc122569c1e8753393cd24": {
       "balance": "1000"
     },
-    "0xf0c1c2ee2aa7a31da5a8ea650b9e8cc544f9eb4d": {
+    "0xac027709434d9993a89e9fd7a63df6ff0ffe6a55": {
       "balance": "1000"
     },
 

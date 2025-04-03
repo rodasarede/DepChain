@@ -10,7 +10,7 @@ public final class Constants {
     public static final String UNKNOWN = "UNKNOWN";
     public static final int THRESHOLD = 1;
     public static final String GENESIS_BLOCK_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/Genesis.json";
-
+    public static final long CONSENSUS_INTERVAL = 10000; //ms 
 
     private Constants() {
 
@@ -21,5 +21,6 @@ public final class Constants {
         public static final String STATE = "STATE";
         public static final String WRITE = "WRITE";
         public static final String ACCEPT = "ACCEPT";
+        public static final String COLLECTED = "COLLECTED";
     }
 }

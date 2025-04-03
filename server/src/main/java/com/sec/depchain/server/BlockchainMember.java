@@ -2,8 +2,6 @@ package com.sec.depchain.server;
 
 import com.sec.depchain.common.Transaction;
 import java.math.BigInteger;
-import java.security.PublicKey;
-import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,8 +13,6 @@ import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
-import com.sec.depchain.common.util.CryptoUtils;
-import com.sec.depchain.common.util.KeyLoader;
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Blockchain;
 import com.sec.depchain.common.PerfectLinks;
@@ -95,7 +91,7 @@ public class BlockchainMember {
         if (json.has("type")) {
             messageType = json.getString("type"); // Returns "tx-request"
         }
-        switch (json.getString("type")) {
+        switch (messageType) {
             case "tx-request":
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
@@ -112,7 +108,7 @@ public class BlockchainMember {
                     break;
                 }
 
-                if (mempool.size() >= Constants.THRESHOLD) {
+                if (mempool.size() >= Constants.THRESHOLD){ //TODO timeout
 
                     List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
                     Block newBlocK = new Block(blockchain_1.getLatestBlock().getBlockHash(), transactions,
@@ -126,9 +122,7 @@ public class BlockchainMember {
                         System.out.println("BLOCKCHAIN MEMBER - DEBUG: append: bep.propose(senderId:{" + senderId
                                 + "}, previousHash:{" + newBlocK.getPreviousBlockHash() + "})");
                     }
-
                     bepBlock.propose(newBlocK);
-
                 }
 
                 break;
@@ -173,7 +167,24 @@ public class BlockchainMember {
 
     public void decideBlock(Block block) {
         System.out.println("block decided");
+        System.out.println("hash " + block.getBlockHash());
+        System.out.println("previous hash" + block.getPreviousBlockHash());
+        System.out.println("transactions" + block.getTransactions());
+
         // TODO manel aplica aqui a tua lógica
+
+    // 1. Persist the block in the blockchain
+
+     // 2. Execute transactions to update the world state
+
+    // 3. Update the world state based on the executed transactions
+        
+    
+    // 4. Remove included transactions from mempool
+
+        //4. notify clients
+
+        //5. start next 
     }
 
     public void decide(String val) {

@@ -12,12 +12,13 @@ import org.json.JSONObject;
 
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Transaction;
+import com.sec.depchain.common.util.Constants;
 
 public class Formatter {
 
     public static String formatAcceptMessage(Block v, long ets) {
         JSONObject message = new JSONObject();
-        message.put("type", "ACCEPT");
+        message.put("type", Constants.MessageType.ACCEPT);
         message.put("ets", ets);
         message.put("value", blockToJson(v)); // Serialize block
         return message.toString();
@@ -25,7 +26,7 @@ public class Formatter {
 
     public static String formatWriteMessage(Block block, long ets) {
         JSONObject message = new JSONObject();
-        message.put("type", "WRITE");
+        message.put("type", Constants.MessageType.WRITE);
         message.put("ets", ets);
         message.put("value", blockToJson(block)); // Serialize block
         return message.toString();

@@ -6,12 +6,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.sec.depchain.common.Block;
+
 
 class TSvaluePair{
     private final long timestamp;
-    private final String val;
+    private final Block val;
 
-    public TSvaluePair(long timestamp, String val)
+    public TSvaluePair(long timestamp, Block val)
     {
         this.timestamp = timestamp;
         this.val = val;
@@ -19,11 +21,11 @@ class TSvaluePair{
     public long getTimestamp() {
         return timestamp;
     }
-    public String getVal() {
+    public Block getVal() {
         return val;
     }
 }
-public class EpochSate {
+public class EpochState {
     // value that the process received most recently in a quorum of writes
     private TSvaluePair valtsVal; // (valts,val)
     // entry for every value that the process has ever written (TS is the most recently timesetamp where certain value was written )
@@ -31,7 +33,7 @@ public class EpochSate {
     private Set<TSvaluePair> writeSet; //set with (TS,val)
 
 
-    public EpochSate(TSvaluePair valtsVal, Set<TSvaluePair> writeSet) {
+    public EpochState(TSvaluePair valtsVal, Set<TSvaluePair> writeSet) {
         this.valtsVal = valtsVal;
         this.writeSet = writeSet;
     }

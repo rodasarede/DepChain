@@ -27,16 +27,14 @@ public class BlockchainMember {
     private int id;
     private boolean isLeader = false; // Should start as false
     private static SystemMembership systemMembership;
-    private List<String> blockchain = new ArrayList<>();
     private PerfectLinks perfectLinks;
     private ByzantineEpochConsensus bep;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
-    private static Blockchain blockchain_1;
+    private static Blockchain blockchain;
     private Mempool mempool;
     private int DEBUG_MODE = 1;
-    private ByzantineBlock bepBlock;
+    private ByzantineEpochConsensus bepBlock;
     private Timer consensusTimer;
-    private Map<Address, Integer > clientsIds;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -52,9 +50,8 @@ public class BlockchainMember {
     public BlockchainMember(int id) throws Exception {
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
-        this.blockchain_1 = new Blockchain();
+        this.blockchain = new Blockchain();
         this.mempool = new Mempool();
-        this.clientsIds = new HashMap<>();
         if (DEBUG_MODE == 1) {
             System.out
                     .println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {" + id + "}, Leader: {" + isLeader + "}");
@@ -75,14 +72,10 @@ public class BlockchainMember {
                 System.out.println("BLOCKCHAIN MEMBER - ERROR: Exception in deliverCallback:" + e);
             }
         });
-
-        // this.bep = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0,
-        // perfectLinks, systemMembership, id, this);
-        this.bepBlock = new ByzantineBlock(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+        this.bepBlock = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
     }
 
     public void start() throws Exception {
-        // bep.init();
         bepBlock.init();
     }
 
@@ -99,20 +92,19 @@ public class BlockchainMember {
         }
         switch (messageType) {
             case "tx-request":
-                String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
-                clientsIds.put(tx.getFrom(), senderId);
-                if (tx.isValid(blockchain_1) && id == systemMembership.getLeaderId()) {
-                    clientTransactions.put(senderId, transaction);
+                tx.setClientId(senderId);
+                if (tx.isValid(blockchain) && id == systemMembership.getLeaderId()) {
                     // bep.propose(transaction);
                     // bep.propose("string to propose");
                     mempool.addTransactionToMempool(tx);
                     startConsensusTimer();
                 } else {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
-                            + senderId + "}: {" + transaction + "}");
-                    String responseMessage = "<append-response:" + transaction + ":0:fail>";
-                    perfectLinks.send(senderId, responseMessage);
+                            + senderId + "}: {" + tx.computeTxHash() + "}");
+
+                    JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx);
+                    perfectLinks.send(senderId, responseMessage.toString());
                     break;
                 }
 
@@ -122,14 +114,10 @@ public class BlockchainMember {
 
                 break;
             case Constants.MessageType.READ:
-                // bep.deliverRead(senderId);
                 bepBlock.deliverRead(senderId);
                 break;
             case Constants.MessageType.WRITE:
 
-                // String value = json.getString("value");
-
-                // bep.deliverWrite(senderId, value);
                 JSONObject messageToJson = new JSONObject(message);
                 JSONObject blockJson = messageToJson.getJSONObject("value");
                 Block v = Formatter.jsonToBlock(blockJson);
@@ -140,8 +128,6 @@ public class BlockchainMember {
                 bepBlock.deliverWrite(senderId, v);
                 break;
             case Constants.MessageType.ACCEPT:
-                // value = json.getString("value");
-                // bep.deliverAccept(senderId, value);
                 messageToJson = new JSONObject(message);
                 blockJson = messageToJson.getJSONObject("value");
                 v = Formatter.jsonToBlock(blockJson);
@@ -182,14 +168,14 @@ public class BlockchainMember {
         List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
 
         Block newBlock = new Block(
-                blockchain_1.getLatestBlock().getBlockHash(),
+                blockchain.getLatestBlock().getBlockHash(),
                 transactions,
-                blockchain_1.getLatestBlock().getHeight());
+                blockchain.getLatestBlock().getHeight());
 
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Proposing block {" + newBlock.getBlockHash() + "}");
         }
-        if (newBlock.getTimestamp() > blockchain_1.getLatestBlock().getTimestamp()) {
+        if (newBlock.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             bepBlock.propose(newBlock);
             startConsensusTimer();
         }
@@ -197,29 +183,25 @@ public class BlockchainMember {
 
     public void decideBlock(Block block) {
         System.out.println("block decided");
-        System.out.println("hash " + block.getBlockHash());
-        System.out.println("previous hash" + block.getPreviousBlockHash());
-        System.out.println("transactions" + block.getTransactions());
 
-        if (block.getTimestamp() > blockchain_1.getLatestBlock().getTimestamp()) {
-            blockchain_1.getChain().add(block);
+        if (block.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
+            blockchain.getChain().add(block);
 
             // 2. Execute transactions to update the world state
             for (Transaction transaction : block.getTransactions()) {
-                if (transaction.execute( blockchain_1)) {
-                    // sucess send message to client TODO can I get id from FROM (address)
-                    System.out.println("Transaction executed successfully");
-                } else {
-                    // fail, send message to client TODO can I get id from FROM (address)
-                    System.out.println("Transaction execution failed");
-                }
+                transaction.execute(blockchain);
+                int clientId = transaction.getClientId();
+                JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction);
+
+
+                perfectLinks.send(clientId, responseMessage.toString());
             }
 
             // 3. Update the world state based on the executed transactions
-            // blockchain_1.updateSimpleWorldState();
+            // blockchain.updateSimpleWorldState();
             // commit simple world changes / state ???
-            // blockchain_1.getSimpleWorld().commit();
-            blockchain_1.printAccountsInfo();
+            // blockchain.getSimpleWorld().commit();
+            blockchain.printAccountsInfo();
 
             // 4. Remove included transactions from mempool
             for (Transaction transaction : block.getTransactions()) {
@@ -235,48 +217,6 @@ public class BlockchainMember {
 
     }
 
-    public void decide(String val) {
-        // TODO change the decide logic to add a new block with the val decided( for now
-        // a single transaction, list of transactions if we have time)
-        // blockchain.add(val);
-        // int index = blockchain.size();
-
-        System.out.println("Decided transaction: " + val);
-        String[] transaction = val.split("_");
-        // Transaction tx = deserializeTransactionJson(transaction);
-        // if(tx.execute(blockchain_1.getCurrentState(),
-        // blockchain_1.getLatestBlock().getTransactions(), blockchain_1)){
-        // System.out.println("Transaction executed successfully");
-        // System.out.println("Updating world state");
-        // blockchain_1.updateSimpleWorldState();
-        // }else{
-
-        // TODO if exection fails send fail message
-        // System.out.println("Transaction execution failed");
-        // }
-
-        int index = blockchain_1.getChainSize();
-        blockchain_1.getLatestBlock().printBlockDetails();
-
-        System.out.println("BLOCKCHAIN MEMBER - INFO: Transaction {" + val + "} committed at index {" + index + "}.");
-        blockchain_1.getLatestBlock().printBlockDetails();
-
-        for (Map.Entry<Integer, String> entry : clientTransactions.entrySet()) {
-            if (entry.getValue().equals(val)) {
-                int clientId = entry.getKey();
-                String responseMessage = "<append-response:" + val + ":" + index + ":success>";
-
-                if (DEBUG_MODE == 1) {
-                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {" + clientId + "} -> {"
-                            + responseMessage + "}");
-                }
-
-                perfectLinks.send(clientId, responseMessage);
-                clientTransactions.remove(clientId);
-            }
-        }
-        bep.init();
-    }
 
     public boolean isLeader() {
         return isLeader;
@@ -284,10 +224,6 @@ public class BlockchainMember {
 
     public void setBep(ByzantineEpochConsensus bep) {
         this.bep = bep;
-    }
-
-    public List<String> getBlockchain() {
-        return blockchain;
     }
 
     public Map<Integer, String> getClientTransactions() {
@@ -352,8 +288,8 @@ public class BlockchainMember {
         }
     }
 
-    public static Blockchain getBlockchain_1() {
-        return blockchain_1;
+    public static Blockchain getblockchain() {
+        return blockchain;
     }
 
 }

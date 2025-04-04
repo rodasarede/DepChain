@@ -1,10 +1,13 @@
 package com.sec.depchain.client;
 
+import java.math.BigInteger;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONObject;
 
 import com.sec.depchain.common.PerfectLinks;
@@ -18,7 +21,7 @@ public class ClientLibrary {
     private static SystemMembership systemMembership;
     private Map<String, Map<String, Set<Integer>>> messageResponses = new HashMap<>();
     private final Set<String> processedTransactions = new HashSet<>();
-    private static final int DEBUG_MODE = 1;
+    private static final int DEBUG_MODE = 0;
     private final Wallet wallet;
 
     public interface DeliverCallback {
@@ -53,46 +56,37 @@ public class ClientLibrary {
             System.out.println(
                     "CLIENT LIBRARY - DEBUG: Received response: {" + message + "} from server {" + nodeId + "}");
         }
-
+        JSONObject jsonResponse = new JSONObject(message);
+        String type = jsonResponse.getString("type");
+        boolean success = jsonResponse.getBoolean("success");
+        Transaction tx = deserializeTransactionJson(message);
+        tx.setSuccess(success);
+        // Convert JSON transaction to your Transaction object
+        String txHash = tx.computeTxHash();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        String[] elements = message.split(":");
-        String type = elements[0];
-        String transaction = elements[1];
-        String position = elements[2];
-        String status = elements[3];
-
-        if ("<append-response".equals(type) && "success>".equals(status)) {
-            if (processedTransactions.contains(transaction)) {
+        if ("tx-response".equals(type)) {
+            if (processedTransactions.contains(txHash)) {  // Compare by hash
                 return;
             }
 
-            messageResponses.putIfAbsent(transaction, new HashMap<>());
+            // Track responses by txHash instead of Transaction object
+            messageResponses.putIfAbsent(txHash, new HashMap<>());
+            Map<String, Set<Integer>> positionResponses = messageResponses.get(txHash);
 
-            Map<String, Set<Integer>> positionResponses = messageResponses.get(transaction);
-
+            String position = "default";  // Or extract from JSON if available
             positionResponses.putIfAbsent(position, new HashSet<>());
             Set<Integer> respondingNodes = positionResponses.get(position);
             respondingNodes.add(nodeId);
 
-            if (respondingNodes.size() >= (f + 1)) {
+            if (respondingNodes.size() >=  (f + 1)) {
                 if (deliverCallback != null) {
-                    processedTransactions.add(transaction);
-                    messageResponses.remove(transaction);
-                    if (DEBUG_MODE == 1) {
-                        System.out.println("CLIENT LIBRARY - DEBUG: Delivering response for transaction: {"
-                                + transaction + "} at position: {" + position + "}");
-                    }
-                    deliverCallback.deliverAppendResponse(true, transaction, position);
-                } else {
-                    if (DEBUG_MODE == 1) {
-                        System.out
-                                .println("CLIENT LIBRARY - DEBUG: No callback set: unable to deliver append response.");
-                    }
+                    processedTransactions.add(txHash);
+                    messageResponses.remove(txHash);
+                    deliverCallback.deliverAppendResponse(tx.isSuccess(), txHash, position);
                 }
             }
-        } else if ("<append-response".equals(type) && "fail>".equals(status)) {
-            // TODO send to client that transaction failed
         }
+      
     }
 
     public void setDeliverCallback(DeliverCallback callback) {
@@ -110,4 +104,37 @@ public class ClientLibrary {
 
     }
 
+    public static Transaction deserializeTransactionJson(String jsonStr) {
+        try {
+            JSONObject json = new JSONObject(jsonStr);
+            JSONObject txJson = json.getJSONObject("transaction");
+
+            // Extract and convert fields
+            String senderAddress = txJson.getString("from");
+            String toAddress = txJson.getString("to");
+            BigInteger value;
+            if (txJson.get("amount") instanceof Integer) {
+                value = BigInteger.valueOf(txJson.getInt("amount"));
+            } else {
+                value = new BigInteger(txJson.getString("amount"));
+            }
+            String data = txJson.getString("data");
+            BigInteger nonce;
+            if (txJson.get("nonce") instanceof Integer) {
+                nonce = BigInteger.valueOf(txJson.getInt("nonce"));
+            } else {
+                nonce = new BigInteger(txJson.getString("nonce"));
+            }
+            String signature = txJson.getString("signature"); // Note: Typo in your JSON? Should be "signature"
+
+            // Using current timestamp since it's not in the JSON
+
+            return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data,
+                    nonce, signature);
+
+        } catch (Exception e) {
+            System.err.println("Failed to deserialize transaction: " + e.getMessage());
+            return null;
+        }
+    }
 }

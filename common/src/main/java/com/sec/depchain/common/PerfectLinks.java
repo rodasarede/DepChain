@@ -245,10 +245,11 @@ public class PerfectLinks {
             System.out.println("PERFECT LINKS - DEBUG: Message type identified: {" + messageType + "}");
         }
 
+
         if (deliverCallbackCollect != null || deliverCallback != null) {
 
             if (messageType.equals("tx-request") ||
-                    messageType.equals("append-response") ||
+                    messageType.equals("tx-response") ||
                     messageType.equals("READ") ||
                     messageType.equals("WRITE") ||
                     messageType.equals("ACCEPT")) {

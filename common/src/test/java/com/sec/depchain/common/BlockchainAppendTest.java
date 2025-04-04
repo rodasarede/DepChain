@@ -107,8 +107,8 @@ public class BlockchainAppendTest {
             BigInteger.valueOf(1), // nonce
             "signature" // signature
         );
-
-        if(tx.execute(blockchain)){
+        tx.execute(blockchain);
+        if(tx.isSuccess()){
             System.out.println("Transaction executed successfully");
             System.out.println("Updating world state");
             updateSimpleWorldState();
@@ -119,8 +119,6 @@ public class BlockchainAppendTest {
         // debug to see if the values are correctly updated
         printAccountsInfo();
         blockchain.getLatestBlock().printBlockDetails();
-
-
 
     }
 

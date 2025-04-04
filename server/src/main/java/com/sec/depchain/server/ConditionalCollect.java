@@ -1,13 +1,11 @@
 package com.sec.depchain.server;
 
-import com.google.gson.JsonObject;
 import com.sec.depchain.common.PerfectLinks;
 
 import java.security.PrivateKey;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -78,13 +76,15 @@ public class ConditionalCollect {
 
         // Convert the state message to string for signing
         JSONObject envelope = new JSONObject();
-        envelope.put("type", "STATE");
+        envelope.put("type", Constants.MessageType.STATE);
         envelope.put("content", stateMessage); // stateMessage doesn't contain type
         String signature = CryptoUtils.signMessage(privateKey, stateMessage.toString());
 
         envelope.put("signature", signature); // Fixed typo "signature" (was "signature")
 
         int leaderId = systemMembership.getLeaderId();
+
+        System.out.println("CONDITIONAL COLLECT: INPUT DELIVIRING" + envelope.toString());
 
         perfectLinks.send(leaderId, envelope.toString());
     }
@@ -94,7 +94,7 @@ public class ConditionalCollect {
         for (Integer processId : systemMembership.getMembershipList().keySet()) {
             // System.out.println("ProcessId: " + processId + "; Message: " +
             // messages.get(processId - 1));
-            if (!(messages.get(processId - 1).equals("UNDEFINED")))
+            if (!(messages.get(processId - 1).equals(Constants.UNDEFINED)))
                 counter++;
             // System.out.println("Counter: " + counter);
         }
@@ -115,6 +115,8 @@ public class ConditionalCollect {
             messages.set(senderId - 1, content.toString());
             signatures.set(senderId - 1, signature);
         }
+        System.out.println("CONDITIONAL COLLECT: SEND CHECK " + sendMessage.toString());
+
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 
@@ -132,7 +134,7 @@ public class ConditionalCollect {
                 messages.set(index, "1" + messages.get(index).substring(1));
             }
             JSONObject collectedMessage = new JSONObject();
-            collectedMessage.put("type", "COLLECTED");
+            collectedMessage.put("type", Constants.MessageType.COLLECTED);
             collectedMessage.put("messages", new JSONArray(messages));
             collectedMessage.put("signatures", new JSONArray(signatures));
             for (Integer processId : systemMembership.getMembershipList().keySet()) {
@@ -192,13 +194,15 @@ public class ConditionalCollect {
 
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
 
+        // String messageType = getMessageType(message);
+        // System.out.println("Message: " + message + ". Message Type: " + messageType);
         JSONObject messageObj = new JSONObject(message);
         String messageType = messageObj.getString("type");
         switch (messageType) {
-            case "STATE":
+            case Constants.MessageType.STATE:
                 processSend(senderId, messageObj);
                 break;
-            case "COLLECTED":
+            case Constants.MessageType.COLLECTED:
                 processCollected(senderId, messageObj);
                 break;
             case "append-request":

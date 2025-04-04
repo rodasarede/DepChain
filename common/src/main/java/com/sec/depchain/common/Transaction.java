@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +35,10 @@ public class Transaction {
                               // signs the transaction and confirms the sender has authorized this transaction
     private int DEBUG_MODE = 1;
 
-    // https://ethereum.org/en/developers/docs/transactions/
+    private boolean success;
+
+    private int clientId = 0;
+    // https://ethereum.org/en/developers/docs/transactions/ 
 
     public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, String signature) {
         this.to = to;
@@ -42,6 +47,18 @@ public class Transaction {
         this.data = data;
         this.nonce = nonce;
         this.signature = signature;
+        this.success = false;
+    }
+
+    public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, String signature, int clientId) {
+        this.to = to;
+        this.from = from;
+        this.value = value;
+        this.data = data;
+        this.nonce = nonce;
+        this.signature = signature;
+        this.clientId = clientId;
+        this.success = false;
     }
 
     public String getData() {
@@ -106,43 +123,7 @@ public class Transaction {
 
     // Method to validate the transaction
     public boolean isValid(Blockchain blockchain) {
-
-        if (!CryptoUtils.verifySignature(this)) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: Signature verification failed");
-            }
-            return false;
-        } else {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: Signature verification successfull");
-            }
-        }
-
-        // Check if the sender has enough balance
         MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
-        
-        if (senderState == null) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: senderState = null");
-            }
-            return false;
-        }
-        if (senderState == null || senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: Insufficient balance");
-            }
-            return false; // Insufficient balance
-        }
-
-        // Check if the receiver exists in the current state
-        MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
-        if (receiverState == null) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: Receiver does not exist");
-            }
-            return false; // Receiver does not exist
-        }
-
         BigInteger expectedNonce = BigInteger.valueOf(senderState.getNonce());
         if (expectedNonce != null) {
             if (getNonce().compareTo(expectedNonce) < 0) {
@@ -159,25 +140,69 @@ public class Transaction {
             }
         }
 
+        senderState.incrementNonce();
+        if (!CryptoUtils.verifySignature(this)) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Signature verification failed");
+            }
+            return false;
+        } else {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Signature verification successfull");
+            }
+        }
+
+        // Check if the sender has enough balance
+       
+
+        if (senderState == null) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: senderState = null");
+            }
+            return false;
+        }
+        /*if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Insufficient balance");
+            }
+            return false; // Insufficient balance
+        }*/
+
+        // Check if the receiver exists in the current state
+        MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
+        if (receiverState == null) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Receiver does not exist");
+            }
+            return false; // Receiver does not exist
+        }
+
+    
         // Additional checks if needed(signature verification)
 
         return true; // Transaction is valid
     }
 
-    public boolean execute(Blockchain blockchain) {
+    public void execute(Blockchain blockchain) {
 
-        
         // Check if the transaction is valid
-        if (!isValid(blockchain)) {
-            return false;
-        }
+        /*if (!isValid(blockchain)) {
+            return;
+        }*/
+       
 
         // Update the state of the sender and receiver
         MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
         MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
-        
-        //attention: receiverState.getCode() is not null for any account it has always at least"0x"
-        if(receiverState.getCode().bitLength() > 0 && getData() != null){
+        if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Insufficient balance");
+            }
+            return; // Insufficient balance
+        }
+        // attention: receiverState.getCode() is not null for any account it has always
+        // at least"0x"
+        if (receiverState.getCode().bitLength() > 0 && getData() != null) {
             System.out.println("Executing smart contract");
             // System.out.println("from:" + from);
             // System.out.println("code:" + receiverState.getCode());
@@ -186,8 +211,7 @@ public class Transaction {
             blockchain.getExecutor();
             ByteArrayOutputStream byteArrayOutputStream = blockchain.getbyteArrayOutputStream();
 
-
-            //execute as a smart contract call
+            // execute as a smart contract call
             // blockchain.getExecutor().code(Bytes.fromHexString(receiverState.getCode()));
             blockchain.getExecutor().callData(Bytes.fromHexString(getData()));
             blockchain.getExecutor().sender(from);
@@ -195,17 +219,20 @@ public class Transaction {
             Boolean result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
             System.out.println("Output of 'execution': " + result);
 
-            // hardcoded to check if balance updated for example: transfer 0x1234567891234567891234567891234567891234 0x336f5f589a81811b47d582d4853af252bfb7c5e2 10
-            blockchain.getExecutor().callData(Bytes.fromHexString("70a08231"+helpers.padHexStringTo256Bit("0x336f5f589a81811b47d582d4853af252bfb7c5e2")));
+            // hardcoded to check if balance updated for example: transfer
+            // 0x1234567891234567891234567891234567891234
+            // 0x336f5f589a81811b47d582d4853af252bfb7c5e2 10
+            blockchain.getExecutor().callData(Bytes.fromHexString(
+                    "70a08231" + helpers.padHexStringTo256Bit("0x336f5f589a81811b47d582d4853af252bfb7c5e2")));
             blockchain.getExecutor().execute();
             Long balanceOfReceiver = helpers.extractLongFromReturnData(byteArrayOutputStream);
             System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
 
-            if(result != true){
-                return false;
+            if (result != true) {
+                return;
             }
-            
-        }else{
+
+        } else {
             // execute as a normal native transfer
             // Update sender's balance
             senderState.setBalance(senderState.getBalance().subtract(UInt256.valueOf(value)));
@@ -213,11 +240,9 @@ public class Transaction {
             // Update receiver's balance
             receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
         }
-        
 
-       
-
-        return true;
+        setSuccess(true);
+        //senderState.incrementNonce();
     }
 
     public byte[] getRawDataForSigning() {
@@ -260,6 +285,48 @@ public class Transaction {
         jsonTx.put("nonce", getNonce());
         // add any other relevant fields
         return jsonTx;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
+    public String computeTxHash() {
+        try {
+            // Combine all fields that define transaction uniqueness
+            String txData = from.toString() +
+                    to.toString() +
+                    value.toString() +
+                    data +
+                    nonce.toString() +
+                    signature + Boolean.toString(success);
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(txData.getBytes(StandardCharsets.UTF_8));
+
+            // Convert to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1)
+                    hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
+    }
+    public int getClientId() {
+        return clientId;
+    }
+    public void setClientId(int clientId) {
+        this.clientId = clientId;
     }
 
 }

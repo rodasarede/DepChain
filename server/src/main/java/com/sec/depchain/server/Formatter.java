@@ -13,8 +13,22 @@ import org.json.JSONObject;
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
+import com.sec.depchain.common.util.Constants.MessageType;
 
 public class Formatter {
+
+        private static String formatBaseMessage(String type, long ets) {
+        JSONObject message = new JSONObject();
+        message.put("type", type);
+        message.put("ets", ets);
+        return message.toString();
+    }
+
+    public static String formatReadMessage(long ets, int position) {
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.READ, ets));
+        message.put("position", position);
+        return message.toString();
+    }
 
     public static String formatAcceptMessage(Block v, long ets) {
         JSONObject message = new JSONObject();
@@ -32,7 +46,7 @@ public class Formatter {
         return message.toString();
     }
 
-    public static JSONObject formatStateMessage(long ets, TSvaluePairBlock valtsVal, Set<TSvaluePairBlock> writeSet) {
+    public static JSONObject formatStateMessage(long ets, TSvaluePair valtsVal, Set<TSvaluePair> writeSet) {
         JSONObject message = new JSONObject();
         message.put("ets", ets);
 
@@ -49,7 +63,7 @@ public class Formatter {
 
         // Serialize writeSet (containing Blocks)
         JSONArray writeSetArray = new JSONArray();
-        for (TSvaluePairBlock pair : writeSet) {
+        for (TSvaluePair pair : writeSet) {
             JSONObject pairObj = new JSONObject();
             if (pair.getVal() != null) {
                 Block block = (Block) pair.getVal();
@@ -63,6 +77,12 @@ public class Formatter {
         message.put("write_set", writeSetArray);
 
         return message;
+    }
+    public static JSONObject formatTx_ResponseMessage(Transaction tx){
+        JSONObject transactionMessage = serializeTransactionToJson(tx);
+        transactionMessage.put("type", "tx-response");
+        transactionMessage.put("success", tx.isSuccess());
+        return transactionMessage;
     }
 
     public static Block jsonToBlock(JSONObject blockJson) throws JSONException {
@@ -127,7 +147,7 @@ public class Formatter {
         jsonTx.put("data", tx.getData() != null ? tx.getData() : JSONObject.NULL);
         jsonTx.put("signature", tx.getSignature());
         jsonTx.put("nonce", tx.getNonce());
-
+        jsonTx.put("clientId", tx.getClientId());
         // Add the inner transaction to the wrapper
         jsonTxWrapper.put("transaction", jsonTx);
 
@@ -159,8 +179,10 @@ public class Formatter {
 
             // Using current timestamp since it's not in the JSON
 
+            int clientId = Integer.parseInt(txJson.get("clientId").toString());
+
             return new Transaction(Address.fromHexString(senderAddress), Address.fromHexString(toAddress), value, data,
-                    nonce, signature);
+                    nonce, signature, clientId);
 
         } catch (Exception e) {
             System.err.println("Failed to deserialize transaction: " + e.getMessage());

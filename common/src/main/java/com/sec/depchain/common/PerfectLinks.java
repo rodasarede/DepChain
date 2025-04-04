@@ -23,8 +23,6 @@ public class PerfectLinks {
 
     private final ConcurrentHashMap<Integer, Deque<Integer>> waitingForACK;
     private final ConcurrentHashMap<Integer, AtomicInteger> higestSeqNumberSent;
-    // private final ConcurrentHashMap<Integer, Map.Entry<Deque<Integer>, Integer>>
-    // deliveredHistory;
 
     private final ConcurrentHashMap<Integer, Deque<Integer>> deliveredHistory;
     private final ConcurrentHashMap<Integer, AtomicInteger> receivedSeqNumberUntil;
@@ -151,15 +149,6 @@ public class PerfectLinks {
     }
 
     private boolean checkReceivedACK(String receivedACK) {
-        /*
-         * String[] parts = receivedACK.split("\\|");
-         * 
-         * if (parts.length != 4) {
-         * System.out.println("PERFECT LINKS - INFO: Invalid ACK format: {"+receivedACK+
-         * "}");
-         * return false;
-         * }
-         */
 
         JSONObject jsonReceivedACK = new JSONObject(receivedACK);
         String receivedMac = jsonReceivedACK.getString("mac");
@@ -167,13 +156,7 @@ public class PerfectLinks {
         String receivedWithoutMac = jsonReceivedACK.toString();
         int receivedSrcId = jsonReceivedACK.getInt("nodeId");
         int receivedSeqNum = jsonReceivedACK.getInt("seqNum");
-        // String receivedPayload = jsonReceivedMessage.getString("message");
-        /*
-         * String receivedWithoutMac = parts[0] + "|" + parts[1] + "|" + parts[2];
-         * int receivedSrcId = Integer.parseInt(parts[1]);
-         * int receivedSeqNum = Integer.parseInt(parts[2]);
-         * String receivedMac = parts[3];
-         */
+
         if (DEBUG_MODE == 1) {
             System.out.println("PERFECT LINKS - DEBUG: Extracted components:");
             System.out.println("PERFECT LINKS - DEBUG: - Received srcID: {" + receivedSrcId + "}");

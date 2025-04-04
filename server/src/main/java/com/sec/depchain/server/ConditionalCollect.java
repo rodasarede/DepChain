@@ -192,8 +192,6 @@ public class ConditionalCollect {
 
     public void onPerfectLinksDeliver(int senderId, String message) throws Exception {
 
-        // String messageType = getMessageType(message);
-        // System.out.println("Message: " + message + ". Message Type: " + messageType);
         JSONObject messageObj = new JSONObject(message);
         String messageType = messageObj.getString("type");
         switch (messageType) {

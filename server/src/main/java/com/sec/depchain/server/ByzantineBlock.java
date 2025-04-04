@@ -93,7 +93,7 @@ public class ByzantineBlock {
         toPropose = v;
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
-                LOGGER.debug("I am proposing value " + v);
+                LOGGER.debug("I am proposing value " + v.getBlockHash());
             }
 
                 for (int nodeId : systemMembership.getMembershipList().keySet()) {
@@ -183,7 +183,10 @@ public class ByzantineBlock {
         {
             
             if (!tmpval.getPreviousBlockHash().equals(blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash())) {
-                LOGGER.error("Collected block doesn't link to current chain");
+                LOGGER.error("inside tmp!=null: Collected block doesn't link to current chain ");
+                LOGGER.error("Collected block: " + tmpval.getBlockHash());
+                LOGGER.error("Expected previous block hash: " + tmpval.getPreviousBlockHash());
+                LOGGER.error("Previous block hash: " + blockchainMember.getBlockchain_1().getLatestBlock().getBlockHash());
                 return;
             }
             

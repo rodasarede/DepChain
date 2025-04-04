@@ -102,7 +102,7 @@ public class BlockchainMember {
                 String transaction = message.replace(":", "_"); // why???
                 Transaction tx = deserializeTransactionJson(message);
                 clientsIds.put(tx.getFrom(), senderId);
-                if (tx.isValid(blockchain_1.getCurrentState()) && id == systemMembership.getLeaderId()) {
+                if (tx.isValid(blockchain_1) && id == systemMembership.getLeaderId()) {
                     clientTransactions.put(senderId, transaction);
                     // bep.propose(transaction);
                     // bep.propose("string to propose");
@@ -206,7 +206,7 @@ public class BlockchainMember {
 
             // 2. Execute transactions to update the world state
             for (Transaction transaction : block.getTransactions()) {
-                if (transaction.execute(blockchain_1.getCurrentState(), blockchain_1)) {
+                if (transaction.execute( blockchain_1)) {
                     // sucess send message to client TODO can I get id from FROM (address)
                     System.out.println("Transaction executed successfully");
                 } else {
@@ -216,7 +216,9 @@ public class BlockchainMember {
             }
 
             // 3. Update the world state based on the executed transactions
-            blockchain_1.updateSimpleWorldState();
+            // blockchain_1.updateSimpleWorldState();
+            // commit simple world changes / state ???
+            // blockchain_1.getSimpleWorld().commit();
             blockchain_1.printAccountsInfo();
 
             // 4. Remove included transactions from mempool

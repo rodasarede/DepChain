@@ -31,7 +31,7 @@ public class Blockchain {
     private static final int DEBUG_MODE = 1;
     private static List<Block> chain = new ArrayList<>();
     private static List<Transaction> pendingTransactions = new ArrayList<>();
-    private static Map<Address, AccountState> currentState = new HashMap<>();
+    private static Map<Address, AccountState> genesisState = new HashMap<>();
     private static SimpleWorld simpleWorld;
     private static EVMExecutor executor;
     private static ByteArrayOutputStream byteArrayOutputStream;
@@ -51,11 +51,11 @@ public class Blockchain {
         
         Block genesisBlock = new Block(Constants.GENESIS_BLOCK_FILE);
         chain.add(genesisBlock);
-        currentState.putAll(genesisBlock.getState());
+        genesisState.putAll(genesisBlock.getState());
 
         // initialize simpleworld state and update it with currentstate
         simpleWorld = new SimpleWorld();
-        updateSimpleWorldState();
+        updateSimpleWorldStateWithGenesis();
 
         // ISTCoin contract creation bytecode from contract address code
         String Bytecode = simpleWorld.get(contractAddress).getCode().toHexString();
@@ -73,11 +73,10 @@ public class Blockchain {
         MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
         contractAccount.setCode(Bytes.fromHexString(runtimeBytecode));
         
-        simpleWorld.updater().commit();
         
-        //runtime bytecode
-        
-        executor.code(Bytes.fromHexString(runtimeBytecode));
+        //runtime bytecode stored in the IST CONTRACT ADDRESS
+        // System.out.println("Runtime bytecode: " + simpleWorld.get(contractAddress).getCode().toHexString());
+        executor.code(Bytes.fromHexString(simpleWorld.get(contractAddress).getCode().toHexString()));
         executor.worldUpdater(simpleWorld.updater());
         executor.commitWorldState();
         
@@ -105,8 +104,8 @@ public class Blockchain {
     public  Block getLatestBlock() {
         return chain.get(chain.size() - 1);
     }
-    public  Map<Address, AccountState> getCurrentState() {
-        return currentState;
+    public  Map<Address, AccountState> getGenesisState() {
+        return genesisState;
     }
     public int getChainSize() {
         return chain.size();
@@ -120,9 +119,9 @@ public class Blockchain {
     public String getHardcodedRuntimeBytecode() {
         return hardcodedRuntimeBytecode;
     }
-    public void updateSimpleWorldState() {
+    public void updateSimpleWorldStateWithGenesis() {
 
-        for (Map.Entry<Address, AccountState> entry : getCurrentState().entrySet()) {
+        for (Map.Entry<Address, AccountState> entry : getGenesisState().entrySet()) {
             Address address = entry.getKey();
             AccountState accountState = entry.getValue();
             BigInteger balance = accountState.getBalance();

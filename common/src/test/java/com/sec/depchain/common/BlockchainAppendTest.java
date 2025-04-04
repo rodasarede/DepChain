@@ -108,7 +108,7 @@ public class BlockchainAppendTest {
             "signature" // signature
         );
 
-        if(tx.execute(blockchain.getCurrentState(), blockchain)){
+        if(tx.execute(blockchain)){
             System.out.println("Transaction executed successfully");
             System.out.println("Updating world state");
             updateSimpleWorldState();
@@ -126,7 +126,7 @@ public class BlockchainAppendTest {
 
     public static void updateSimpleWorldState() {
 
-        for (Map.Entry<Address, AccountState> entry : blockchain.getCurrentState().entrySet()) {
+        for (Map.Entry<Address, AccountState> entry : blockchain.getGenesisState().entrySet()) {
             Address address = entry.getKey();
             AccountState accountState = entry.getValue();
             BigInteger balance = accountState.getBalance();

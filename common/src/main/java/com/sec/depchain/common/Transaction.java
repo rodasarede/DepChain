@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
@@ -103,7 +105,7 @@ public class Transaction {
     }
 
     // Method to validate the transaction
-    public boolean isValid(Map<Address, AccountState> currentState) {
+    public boolean isValid(Blockchain blockchain) {
 
         if (!CryptoUtils.verifySignature(this)) {
             if (DEBUG_MODE == 1) {
@@ -117,14 +119,15 @@ public class Transaction {
         }
 
         // Check if the sender has enough balance
-        AccountState senderState = currentState.get(from);
+        MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
+        
         if (senderState == null) {
             if (DEBUG_MODE == 1) {
                 System.out.println("TRANSACTION - DEBUG: senderState = null");
             }
             return false;
         }
-        if (senderState == null || senderState.getBalance().compareTo(getValue()) < 0) {
+        if (senderState == null || senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
             if (DEBUG_MODE == 1) {
                 System.out.println("TRANSACTION - DEBUG: Insufficient balance");
             }
@@ -132,7 +135,7 @@ public class Transaction {
         }
 
         // Check if the receiver exists in the current state
-        AccountState receiverState = currentState.get(to);
+        MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
         if (receiverState == null) {
             if (DEBUG_MODE == 1) {
                 System.out.println("TRANSACTION - DEBUG: Receiver does not exist");
@@ -140,7 +143,7 @@ public class Transaction {
             return false; // Receiver does not exist
         }
 
-        BigInteger expectedNonce = senderState.getNonce();
+        BigInteger expectedNonce = BigInteger.valueOf(senderState.getNonce());
         if (expectedNonce != null) {
             if (getNonce().compareTo(expectedNonce) < 0) {
                 if (DEBUG_MODE == 1) {
@@ -161,20 +164,23 @@ public class Transaction {
         return true; // Transaction is valid
     }
 
-    public boolean execute(Map<Address, AccountState> currentState,Blockchain blockchain) {
+    public boolean execute(Blockchain blockchain) {
 
         
         // Check if the transaction is valid
-        if (!isValid(currentState)) {
+        if (!isValid(blockchain)) {
             return false;
         }
 
         // Update the state of the sender and receiver
-        AccountState senderState = currentState.get(from);
-        AccountState receiverState = currentState.get(to);
+        MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
+        MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
         
-        
-        if(receiverState.getCode()!= null && getData() != null){
+        //attention: receiverState.getCode() is not null for any account it has always at least"0x"
+        if(receiverState.getCode().bitLength() > 0 && getData() != null){
+            System.out.println("Executing smart contract");
+            // System.out.println("from:" + from);
+            // System.out.println("code:" + receiverState.getCode());
             System.out.println("data:" + getData());
 
             blockchain.getExecutor();
@@ -202,10 +208,10 @@ public class Transaction {
         }else{
             // execute as a normal native transfer
             // Update sender's balance
-            senderState.setBalance(senderState.getBalance().subtract(value));
+            senderState.setBalance(senderState.getBalance().subtract(UInt256.valueOf(value)));
 
             // Update receiver's balance
-            receiverState.setBalance(receiverState.getBalance().add(value));
+            receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
         }
         
 

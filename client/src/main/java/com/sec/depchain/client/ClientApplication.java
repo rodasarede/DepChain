@@ -66,7 +66,7 @@ public class ClientApplication {
                         return;
 
                     case "transfer":
-                        if (caseArgs.length < 3) { // transfer <to> <balance> [data]
+                        if (caseArgs.length != 3) { // transfer <to> <balance> [data]
                             System.out.println("[ERROR] Please provide the command: transfer <to> <value>");
                             break;
                         }

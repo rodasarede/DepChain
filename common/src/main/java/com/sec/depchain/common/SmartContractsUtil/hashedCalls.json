@@ -2,6 +2,7 @@
     "transfer": "a9059cbb",
     "approve": "095ea7b3",
     "transferFrom": "23b872dd",
+    "balanceOf": "70a08231",
     "isBlacklisted": "fe575a87",
     "addToBlacklist": "44337ea1",
     "removeFromBlacklist": "537df3b6"

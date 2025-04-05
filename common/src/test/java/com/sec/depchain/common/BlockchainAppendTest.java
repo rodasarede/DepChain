@@ -6,6 +6,8 @@ import org.web3j.utils.Numeric;
 
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 
+import net.bytebuddy.agent.ByteBuddyAgent.AttachmentProvider.Accessor.Simple;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -56,6 +58,7 @@ public class BlockchainAppendTest {
         updateSimpleWorldState();
         // get ISTCoin contract creation bytecode 
         String Bytecode = simpleWorld.get(Address.fromHexString("0x1234567891234567891234567891234567891234")).getCode().toHexString();
+        
        
 
         executor.code(Bytes.fromHexString(Bytecode));
@@ -69,6 +72,17 @@ public class BlockchainAppendTest {
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
         //runtime bytecode
         executor.code(Bytes.fromHexString(runtimeBytecode));
+
+        blockchain.getSimpleWorld().createAccount(Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeee"), 0, Wei.of(10000));
+        blockchain.getSimpleWorld().createAccount(Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"), 0, Wei.of(10000));
+        
+        
+        
+        // System.out.println("Receiver account balance: " + receiverState.getBalance().toLong());
+
+        executor.worldUpdater(simpleWorld.updater());
+        executor.commitWorldState();
+
 
         executor.callData(Bytes.fromHexString("95d89b41"));
         executor.execute();

@@ -189,7 +189,18 @@ public class ClientApplication {
                         System.out.println("[INFO] data: " + finalData);
                         SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                         break;
-
+                    case "balanceof":
+                        // balanceOf(address) -> 70a08231
+                        // data = "70a08231";
+                        data = calls.getString("balanceOf");
+                        if(caseArgs.length != 3) { // balanceOf  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: balanceOf <contractAddress> <address>");
+                            break;
+                        }
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
                     case "isblacklisted":
                         // isBlacklisted(address) -> fe575a87
                         // data = "fe575a87";

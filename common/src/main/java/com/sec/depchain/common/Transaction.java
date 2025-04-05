@@ -226,6 +226,7 @@ public class Transaction {
             
             
             Boolean result = false;
+            BigInteger resultBigInt = null;
             if (type.equals("transfer")) {
                 try {
                     result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
@@ -260,6 +261,16 @@ public class Transaction {
                     System.out.println("Error in transferFrom execution: " + e.getMessage());
                     String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
                     setResponse("TransferFrom failed: " + errorMessage);
+                }
+            }else if(type.equals("balanceOf")){
+                try{
+                    resultBigInt = helpers.extractBigIntegerFromReturnData(byteArrayOutputStream);
+                    System.out.println("balanceOf executed:" + resultBigInt.toString());
+                    setResponse("Balance of receiver: " + resultBigInt.toString());
+                }catch (NumberFormatException e) {
+                    System.out.println("Error in balanceOf execution: " + e.getMessage());
+                    String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
+                    setResponse("balanceOf failed: " + errorMessage);
                 }
             }else if(type.equals("isBlacklisted")){
                 result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);

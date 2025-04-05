@@ -13,6 +13,7 @@ public final class Constants {
     public static final int TIMEOUT_MS = 7500; // ms
     public static final String CALLS_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/hashedCalls.json";
     public static final String BLOCKS_DIR = "../common/src/main/java/com/sec/depchain/resources/";
+    public static final String SHA_256 = "SHA-256";
 
     private Constants() {
 
@@ -24,5 +25,21 @@ public final class Constants {
         public static final String WRITE = "WRITE";
         public static final String ACCEPT = "ACCEPT";
         public static final String COLLECTED = "COLLECTED";
+        public static final String TX_REQUEST = "tx-request";
+        public static final String TX_RESPONSE = "tx-response";
+        public static final String ACK = "ACK";
+        public static final String NORMAL = "NORMAL";
+
+ }
+
+    public class ExecType{
+        public static final String TRANSFER = "transfer";
+        public static final String APPROVE = "approve";
+        public static final String TRANSFERFROM = "transferfrom";
+        public static final String BALANCEOF = "balanceof";
+        public static final String ISBLACKEDLISTED = "isblacklisted";
+        public static final String ADDTOBLACKLIST = "addtoblacklist";
+        public static final String REMOVEFROMBLACKLIST = "removefromblacklist";
+
     }
 }

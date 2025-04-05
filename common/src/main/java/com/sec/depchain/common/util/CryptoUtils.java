@@ -10,6 +10,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -130,6 +131,7 @@ public class CryptoUtils {
      * Converts a BigInteger byte array to exactly 32 bytes, padding with zeros if
      * needed
      */
+    
     private static byte[] to32Bytes(byte[] bytes) {
         byte[] result = new byte[32];
         int start = Math.max(0, 32 - bytes.length); // Calculate padding start
@@ -182,6 +184,46 @@ public class CryptoUtils {
     public static byte[] hashTransaction(Transaction tx) {
         byte[] rawTxData = tx.getRawDataForSigning();
         return Hash.sha3(rawTxData); // Keccak-256
+    }
+
+    public static String calculateHash(String previousBlockHash, int height, List<Transaction> transactions) {
+        try {
+            // Handle null previousHash according to JSON standard
+            String prevHashStr = (previousBlockHash == null) ? "null" : previousBlockHash;
+
+            // Serialize transactions (empty array if null)
+            String txStr = transactionsToString(transactions);
+
+            // Combine all components
+            String dataToHash = prevHashStr + height + txStr;
+
+            // Calculate SHA-256 hash
+            MessageDigest digest = MessageDigest.getInstance(Constants.SHA_256);
+            byte[] hashBytes = digest.digest(dataToHash.getBytes());
+
+            // Convert to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1)
+                    hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
+    }
+
+    private static String transactionsToString(List<Transaction> transactions) {
+        if (transactions == null)
+            return "";
+        StringBuilder sb = new StringBuilder();
+        for (Transaction tx : transactions) {
+            sb.append(tx.toString()); // Assumes Transaction has a proper toString()
+        }
+        return sb.toString();
     }
 
 }

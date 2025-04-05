@@ -120,10 +120,10 @@ public class ClientApplication {
         clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
             String message;
             if (transaction.isSuccess() && transaction.getResponse() != null) {
-                message = String.format("[SUCCESS] '%s' appended at position %s.Response: %s", appendedString,
-                        timestamp, transaction.getResponse());
+                message = String.format("[SUCCESS] '%s' appended at position %s. Response: %s", appendedString,
+                        String.valueOf(timestamp), transaction.getResponse());
             } else if (transaction.isSuccess()) {
-                message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp);
+                message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString,  String.valueOf(timestamp));
             } else if (transaction.getResponse() != null) {
                 message = String.format("[FAILURE] Could not append '%s'.Response: %s", appendedString,
                         transaction.getResponse());
@@ -173,7 +173,7 @@ public class ClientApplication {
                 case "exit":
                     return;
 
-                case "transfer":
+                case Constants.ExecType.TRANSFER:
                     // transferFrom(address,address,uint256) -> 23b872dd
                     // data = "a9059cbb";
                     data = calls.getString("transfer");
@@ -189,7 +189,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "approve":
+                case Constants.ExecType.APPROVE:
                     // approve(address,uint256) -> 095ea7b3
                     // data = "095ea7b3";
                     data = calls.getString("approve");
@@ -204,7 +204,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "transferfrom":
+                case Constants.ExecType.TRANSFERFROM:
                     // transferFrom(address,address,uint256) -> 23b872dd
                     // data = "23b872dd";
                     data = calls.getString("transferFrom");
@@ -219,7 +219,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "balanceof":
+                case Constants.ExecType.BALANCEOF:
                     // balanceOf(address) -> 70a08231
                     // data = "70a08231";
                     data = calls.getString("balanceOf");
@@ -231,7 +231,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "isblacklisted":
+                case Constants.ExecType.ISBLACKEDLISTED:
                     // isBlacklisted(address) -> fe575a87
                     // data = "fe575a87";
                     data = calls.getString("isBlacklisted");
@@ -245,7 +245,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "addtoblacklist":
+                case Constants.ExecType.ADDTOBLACKLIST:
                     // addBlacklist(address) -> 44337ea1
                     // data = "44337ea1";
                     data = calls.getString("addToBlacklist");
@@ -259,7 +259,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "removefromblacklist":
+                case Constants.ExecType.REMOVEFROMBLACKLIST:
                     // removeFromBlacklist(address) -> 537df3b6
                     // data = "537df3b6";
                     data = calls.getString("removeFromBlacklist");
@@ -290,10 +290,10 @@ public class ClientApplication {
         String toAddress = caseArgs[1];
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
-        clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
+        clientLibrary.setDeliverCallback((transaction, appendedString, position) -> {
             String message = transaction.isSuccess()
-                    ? String.format("[SUCCESS] '%s' executed in block at position %s. And got the response: %s.",
-                            appendedString, timestamp, transaction.getResponse())
+                    ? String.format("[SUCCESS] '%s' executed in block at position %s . And got the response: %s.",
+                            appendedString, position, transaction.getResponse())
                     : String.format("[FAILURE] Could not append '%s'.", appendedString);
             System.out.println(message);
             futureResponse.complete(transaction.isSuccess());

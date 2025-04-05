@@ -86,20 +86,20 @@ public class BlockchainMember {
                     "BLOCKCHAIN MEMBER - DEBUG: Received message from {" + senderId + "} -> {" + message + "}");
         }
 
-        JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
+        JSONObject json = new JSONObject(message.trim()); 
         String messageType = "";
         if (json.has("type")) {
             messageType = json.getString("type"); // Returns "tx-request"
         }
         switch (messageType) {
-            case "tx-request":
+            case Constants.MessageType.TX_REQUEST:
                 Transaction tx = deserializeTransactionJson(message);
                 tx.setClientId(senderId);
                 if (!tx.isValid(blockchain) ) {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + tx.computeTxHash() + "}");
                     tx.setResponse("Transaction not valid");
-                    JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx);
+                    JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx, null);
                     perfectLinks.send(senderId, responseMessage.toString());
                     break;
                 }
@@ -170,7 +170,7 @@ public class BlockchainMember {
         Block newBlock = new Block(
                 blockchain.getLatestBlock().getBlockHash(),
                 transactions,
-                blockchain.getLatestBlock().getHeight());
+                blockchain.getLatestBlock().getHeight() + 1);
 
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Proposing block {" + newBlock.getBlockHash() + "}");
@@ -200,7 +200,7 @@ public class BlockchainMember {
             for (Transaction transaction : block.getTransactions()) {
                 transaction.execute(blockchain);
                 int clientId = transaction.getClientId();
-                JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction);
+                JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction, block);
 
                 if(DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {" + clientId + "}: {"

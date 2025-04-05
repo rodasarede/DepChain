@@ -316,36 +316,33 @@ public class Transaction {
             } else {
                 System.out.println("Unknown Call");
             }
-            
-            
-
-            // hardcoded to check if balance updated for example: transfer
-            // 0x1234567891234567891234567891234567891234
-            // 0x336f5f589a81811b47d582d4853af252bfb7c5e2 10
-            blockchain.getExecutor().callData(Bytes.fromHexString(
-                    "70a08231" + helpers.padHexStringTo256Bit("0x336f5f589a81811b47d582d4853af252bfb7c5e2")));
-            blockchain.getExecutor().execute();
-            Long balanceOfReceiver = helpers.extractLongFromReturnData(byteArrayOutputStream);
-            System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
 
 
         } else {
-            if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
-                if (DEBUG_MODE == 1) {
-                    System.out.println("TRANSACTION - DEBUG: Insufficient balance: " + senderState.getBalance().toBigInteger());
-                    System.out.println("TRANSACTION - DEBUG: Value to transfer: " + getValue());
-                }
-                setResponse("Insufficient balance");
-                return; // Insufficient balance
-            }
-            // execute as a normal native transfer
-            // Update sender's balance
-            senderState.setBalance(senderState.getBalance().subtract(UInt256.valueOf(value)));
+            
+            if(to.toString().equals(from.toString()) && value == BigInteger.ZERO){
+                //respond with balance of account
+                
+                setResponse(senderState.getBalance().toBigInteger().toString());
 
-            // Update receiver's balance
-            receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
-            setResponse("Transfer successful");
-        }
+            }else{
+                if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
+                    if (DEBUG_MODE == 1) {
+                        System.out.println("TRANSACTION - DEBUG: Insufficient balance: " + senderState.getBalance().toBigInteger());
+                        System.out.println("TRANSACTION - DEBUG: Value to transfer: " + getValue());
+                    }
+                    setResponse("Insufficient balance");
+                    return; // Insufficient balance
+                }
+                // execute as a normal native transfer
+                // Update sender's balance
+                senderState.setBalance(senderState.getBalance().subtract(UInt256.valueOf(value)));
+
+                // Update receiver's balance
+                receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
+                setResponse("Transfer successful");
+                }
+            }
 
         // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
         setStatus(true);

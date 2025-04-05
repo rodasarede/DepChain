@@ -66,6 +66,18 @@ public class ClientApplication {
                         return;
 
                     case "transfer":
+                        if (caseArgs.length < 3) { // transfer <to> <balance> [data]
+                            System.out.println("[ERROR] Please provide the command: transfer <to> <value>");
+                            break;
+                        }
+                        handleTransactionRequest(caseArgs, clientLibrary);
+                        break;
+                    case "getbalance":
+                        if (caseArgs.length != 1) { // getbalance 
+                            System.out.println("[ERROR] Please provide only the command: getbalance");
+                            break;
+                        }
+                        
                         handleTransactionRequest(caseArgs, clientLibrary);
                         break;
                     case "contractexecution":
@@ -86,15 +98,16 @@ public class ClientApplication {
 
     private void handleTransactionRequest(String[] caseArgs, ClientLibrary clientLibrary) throws Exception {
         
-        if (caseArgs.length < 3) { // transfer <to> <balance> [data]
-            System.out.println("[ERROR] Please provide the command: transfer <to> <value>");
-            return;
-        }
+        
 
-        String toAddress = caseArgs[1];
+        String toAddress = caseArgs.length == 1 ? wallet.getAddress() : caseArgs[1];
         BigInteger value;
         try{
-            value = new BigInteger(caseArgs[2]);
+            if (caseArgs.length == 1) {
+                value = BigInteger.ZERO;
+            }else{
+                value = new BigInteger(caseArgs[2]);
+            }
         }catch (NumberFormatException e) {
             System.out.println("[ERROR] Please provide a valid destination address.");
             return;
@@ -105,9 +118,15 @@ public class ClientApplication {
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
-            String message = transaction.isSuccess()
-                    ? String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp)
-                    : String.format("[FAILURE] Could not append '%s'.", appendedString);
+            String message;
+            if(transaction.isSuccess() && transaction.getResponse()!= null){
+                message = String.format("[SUCCESS] '%s' appended at position %s.Response: %s", appendedString, timestamp, transaction.getResponse());
+            }else if (transaction.isSuccess()) {
+                message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp);
+            }else{
+                message = String.format("[FAILURE] Could not append '%s'.", appendedString);
+            }
+            
             System.out.println(message);
             futureResponse.complete(transaction.isSuccess());
         });

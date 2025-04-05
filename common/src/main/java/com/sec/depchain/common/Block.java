@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.google.gson.Gson;
+import com.sec.depchain.common.util.CryptoUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,7 +19,6 @@ public class Block {
     private Map<Address, AccountState> state;
     private int height;
     private long timestamp;
-    // private int nonce;
 
     public Block(String genesisFilename) {
         // Load the genesis block from the json file
@@ -34,7 +34,6 @@ public class Block {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
         this.state = state;
-        // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
         this.timestamp = System.currentTimeMillis();
@@ -43,40 +42,13 @@ public class Block {
     public Block(String previousBlockHash, List<Transaction> transactions, int height) {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
-        // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
         this.timestamp = System.currentTimeMillis();
     }
 
     public String calculateHash() {
-        try {
-            // Handle null previousHash according to JSON standard
-            String prevHashStr = (previousBlockHash == null) ? "null" : previousBlockHash;
-
-            // Serialize transactions (empty array if null)
-            String txStr = transactionsToString();
-
-            // Combine all components
-            String dataToHash = prevHashStr + height + txStr;
-
-            // Calculate SHA-256 hash
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(dataToHash.getBytes());
-
-            // Convert to hex string
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1)
-                    hexString.append('0');
-                hexString.append(hex);
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
-        }
+        return CryptoUtils.calculateHash(previousBlockHash, height, transactions);
     }
 
     public String getBlockHash() {
@@ -152,16 +124,6 @@ public class Block {
             }
 
         }
-    }
-
-    private String transactionsToString() {
-        if (transactions == null)
-            return "";
-        StringBuilder sb = new StringBuilder();
-        for (Transaction tx : transactions) {
-            sb.append(tx.toString()); // Assumes Transaction has a proper toString()
-        }
-        return sb.toString();
     }
 
     public long getTimestamp() {

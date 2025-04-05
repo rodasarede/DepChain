@@ -204,7 +204,7 @@ public class ConditionalCollect {
             case Constants.MessageType.COLLECTED:
                 processCollected(senderId, messageObj);
                 break;
-            case "append-request":
+            case Constants.MessageType.TX_REQUEST:
                 // not supose to happen only for debug purposes
                 System.out.println("Received request in collect: " + message + " from Id: " + senderId);
                 break;

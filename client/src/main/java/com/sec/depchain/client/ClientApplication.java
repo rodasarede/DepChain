@@ -120,10 +120,10 @@ public class ClientApplication {
         clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
             String message;
             if (transaction.isSuccess() && transaction.getResponse() != null) {
-                message = String.format("[SUCCESS] '%s' appended at position %s.Response: %s", appendedString,
-                        timestamp, transaction.getResponse());
+                message = String.format("[SUCCESS] '%s' appended at position %s. Response: %s", appendedString,
+                        String.valueOf(timestamp), transaction.getResponse());
             } else if (transaction.isSuccess()) {
-                message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp);
+                message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString,  String.valueOf(timestamp));
             } else if (transaction.getResponse() != null) {
                 message = String.format("[FAILURE] Could not append '%s'.Response: %s", appendedString,
                         transaction.getResponse());
@@ -290,10 +290,10 @@ public class ClientApplication {
         String toAddress = caseArgs[1];
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
-        clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
+        clientLibrary.setDeliverCallback((transaction, appendedString, position) -> {
             String message = transaction.isSuccess()
-                    ? String.format("[SUCCESS] '%s' executed in block at position %s. And got the response: %s.",
-                            appendedString, timestamp, transaction.getResponse())
+                    ? String.format("[SUCCESS] '%s' executed in block at position %s . And got the response: %s.",
+                            appendedString, position, transaction.getResponse())
                     : String.format("[FAILURE] Could not append '%s'.", appendedString);
             System.out.println(message);
             futureResponse.complete(transaction.isSuccess());

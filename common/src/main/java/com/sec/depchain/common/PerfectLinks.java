@@ -110,7 +110,7 @@ public class PerfectLinks {
         destWaitingForACK.add(newSeqNum);
 
         JSONObject jsonMessage = new JSONObject();
-        jsonMessage.put("type", "NORMAL");
+        jsonMessage.put("type", Constants.MessageType.NORMAL);
         jsonMessage.put("nodeId", nodeId);
         jsonMessage.put("seqNum", newSeqNum);
         jsonMessage.put("message", message);
@@ -218,7 +218,7 @@ public class PerfectLinks {
     private void sendACK(int destId, int seqNumber) {
         try {
             JSONObject jsonACKMessage = new JSONObject();
-            jsonACKMessage.put("type", "ACK");
+            jsonACKMessage.put("type", Constants.MessageType.ACK);
             jsonACKMessage.put("nodeId", nodeId);
             jsonACKMessage.put("seqNum", seqNumber);
 
@@ -248,11 +248,11 @@ public class PerfectLinks {
 
         if (deliverCallbackCollect != null || deliverCallback != null) {
 
-            if (messageType.equals("tx-request") ||
-                    messageType.equals("tx-response") ||
-                    messageType.equals("READ") ||
-                    messageType.equals("WRITE") ||
-                    messageType.equals("ACCEPT")) {
+            if (messageType.equals(Constants.MessageType.TX_REQUEST) ||
+                    messageType.equals(Constants.MessageType.TX_RESPONSE) ||
+                    messageType.equals(Constants.MessageType.READ) ||
+                    messageType.equals(Constants.MessageType.WRITE) ||
+                    messageType.equals(Constants.MessageType.ACCEPT)) {
                 deliverCallback.deliver(srcId, message);
             } else {
                 deliverCallbackCollect.deliver(srcId, message);
@@ -273,7 +273,7 @@ public class PerfectLinks {
         String type = receivedJson.getString("type");
 
         switch (type) {
-            case "ACK": {
+            case Constants.MessageType.ACK: {
                 if (DEBUG_MODE == 1) {
                     System.out.println("PERFECT LINKS - DEBUG: Received ACK: {" + receivedMessage + "}");
                     // System.out.println("PERFECT LINKS - DEBUG: Received ACK:
@@ -300,7 +300,7 @@ public class PerfectLinks {
                     return;
                 }
             }
-            case "NORMAL": {
+            case Constants.MessageType.NORMAL: {
                 if (DEBUG_MODE == 1) {
                     System.out.println("PERFECT LINKS - DEBUG: Received message: {" + receivedMessage + "}");
                     // System.out.println("PERFECT LINKS - DEBUG: Received message:

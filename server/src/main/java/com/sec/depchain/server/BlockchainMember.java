@@ -31,7 +31,8 @@ public class BlockchainMember {
     private ByzantineEpochConsensus bep;
     private Map<Integer, String> clientTransactions = new ConcurrentHashMap<>();
     private static Blockchain blockchain;
-    private Mempool mempool;
+    // private Mempool mempool;
+    private MempoolFifo mempoolFifo;
     private int DEBUG_MODE = 1;
     private ByzantineEpochConsensus bepBlock;
     private Timer consensusTimer;
@@ -51,7 +52,8 @@ public class BlockchainMember {
         this.id = id;
         this.isLeader = (id == systemMembership.getLeaderId());
         this.blockchain = new Blockchain();
-        this.mempool = new Mempool();
+        // this.mempool = new Mempool();
+        this.mempoolFifo = new MempoolFifo();
         if (DEBUG_MODE == 1) {
             System.out
                     .println("BLOCKCHAIN MEMBER - DEBUG: Initialized with ID {" + id + "}, Leader: {" + isLeader + "}");
@@ -97,7 +99,7 @@ public class BlockchainMember {
                 if (tx.isValid(blockchain) && id == systemMembership.getLeaderId()) {
                     // bep.propose(transaction);
                     // bep.propose("string to propose");
-                    mempool.addTransactionToMempool(tx);
+                    mempoolFifo.addTransactionToMempool(tx);
                     startConsensusTimer();
                 } else {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
@@ -108,7 +110,8 @@ public class BlockchainMember {
                     break;
                 }
 
-                if (mempool.size() >= Constants.THRESHOLD) { // TODO timeout
+                if (mempoolFifo.size() >= Constants.THRESHOLD) { // TODO timeout
+                    cancelConsensusTimer();
                     triggerConsensus();
                 }
 
@@ -155,7 +158,7 @@ public class BlockchainMember {
         consensusTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (mempool.size() != 0) {
+                if (mempoolFifo.size() != 0) {
                     triggerConsensus();
                 }
             }
@@ -163,9 +166,9 @@ public class BlockchainMember {
     }
 
     private void triggerConsensus() {
-        if (mempool.size() == 0)
+        if (mempoolFifo.size() == 0)
             return;
-        List<Transaction> transactions = new ArrayList<>(mempool.getTransactions().values());
+        List<Transaction> transactions = new ArrayList<>(mempoolFifo.getTransactions());
 
         Block newBlock = new Block(
                 blockchain.getLatestBlock().getBlockHash(),
@@ -178,6 +181,12 @@ public class BlockchainMember {
         if (newBlock.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             bepBlock.propose(newBlock);
             //startConsensusTimer();
+        }
+    }
+    private void cancelConsensusTimer() {
+        if (consensusTimer != null) {
+            consensusTimer.cancel();
+            consensusTimer = null;
         }
     }
 
@@ -193,7 +202,10 @@ public class BlockchainMember {
                 int clientId = transaction.getClientId();
                 JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction);
 
-
+                if(DEBUG_MODE == 1) {
+                    System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {" + clientId + "}: {"
+                            + responseMessage.toString() + "}");
+                }
                 perfectLinks.send(clientId, responseMessage.toString());
             }
 
@@ -205,7 +217,10 @@ public class BlockchainMember {
 
             // 4. Remove included transactions from mempool
             for (Transaction transaction : block.getTransactions()) {
-                mempool.removeTransactionFromMempool(transaction);
+                mempoolFifo.removeTransactionFromMempool(transaction);
+            }
+            if (DEBUG_MODE == 1) {
+                System.out.println("BLOCKCHAIN MEMBER - DEBUG: Mempool size after commit: {" + mempoolFifo.size() + "}");
             }
             // increment nonce?
             // 5. start next

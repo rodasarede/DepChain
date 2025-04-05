@@ -200,12 +200,7 @@ public class Transaction {
         // Update the state of the sender and receiver
         MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
         MutableAccount receiverState = (MutableAccount) blockchain.getSimpleWorld().get(to);
-        if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
-            if (DEBUG_MODE == 1) {
-                System.out.println("TRANSACTION - DEBUG: Insufficient balance");
-            }
-            return; // Insufficient balance
-        }
+        
         // attention: receiverState.getCode() is not null for any account it has always
         // at least"0x"
         if (receiverState.getCode().bitLength() > 0 && getData() != null) {
@@ -303,6 +298,14 @@ public class Transaction {
 
 
         } else {
+            if (senderState.getBalance().compareTo(UInt256.valueOf(getValue())) < 0) {
+                if (DEBUG_MODE == 1) {
+                    System.out.println("TRANSACTION - DEBUG: Insufficient balance: " + senderState.getBalance().toBigInteger());
+                    System.out.println("TRANSACTION - DEBUG: Value to transfer: " + getValue());
+                }
+                setResponse("Insufficient balance");
+                return; // Insufficient balance
+            }
             // execute as a normal native transfer
             // Update sender's balance
             senderState.setBalance(senderState.getBalance().subtract(UInt256.valueOf(value)));
@@ -395,7 +398,7 @@ public class Transaction {
                     value.toString() +
                     data +
                     nonce.toString() +
-                    signature + Boolean.toString(status);
+                    signature ;
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(txData.getBytes(StandardCharsets.UTF_8));
@@ -419,6 +422,18 @@ public class Transaction {
     }
     public void setClientId(int clientId) {
         this.clientId = clientId;
+    }
+    public void printTransaction() {
+        System.out.println("Transaction{" +
+                "from=" + from +
+                ", to=" + to +
+                ", value=" + value +
+                ", data='" + data + '\'' +
+                ", nonce=" + nonce +
+                ", signature='" + signature + '\'' +
+                ", status=" + status +
+                ", response='" + response + '\'' +
+                '}');
     }
 
 }

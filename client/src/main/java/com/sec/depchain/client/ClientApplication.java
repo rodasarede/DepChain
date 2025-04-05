@@ -1,11 +1,14 @@
 package com.sec.depchain.client;
 
 import org.hyperledger.besu.datatypes.Address;
+import org.json.JSONObject;
 
 import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -47,6 +50,9 @@ public class ClientApplication {
     }
 
     private void setupInputLoop(ClientLibrary clientLibrary) throws Exception {
+        // I want to open a json file and get certain data from it
+
+        
         try (Scanner scanner = new Scanner(System.in)) {
             System.out.println("Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
 
@@ -80,14 +86,21 @@ public class ClientApplication {
     }
 
     private void handleTransactionRequest(String[] caseArgs, ClientLibrary clientLibrary) throws Exception {
-        System.out.println(caseArgs.length);
+        
         if (caseArgs.length < 3) { // transfer <to> <balance> [data]
             System.out.println("[ERROR] Please provide the command: transfer <to> <value>");
             return;
         }
 
         String toId = caseArgs[1];
-        BigInteger value = new BigInteger(caseArgs[2]);
+        BigInteger value;
+        try{
+            value = new BigInteger(caseArgs[2]);
+        }catch (NumberFormatException e) {
+            System.out.println("[ERROR] Please provide a valid destination address.");
+            return;
+        }
+        
         String data = (caseArgs.length == 4) ? caseArgs[3] : "";
 
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
@@ -101,8 +114,10 @@ public class ClientApplication {
         });
 
         if (DEBUG_MODE == 1)
-            System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "}");
+            System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "} with nonce {"
+                    + wallet.getNonce() + "} and value {" + value + "} and data {" + data + "}");
 
+        
         // TODO id logic right now is to address
         Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value,
                 data, wallet.getNonce(), null);
@@ -123,28 +138,69 @@ public class ClientApplication {
 
     private void handleSmartContractExecution( Scanner scanner,ClientLibrary clientLibrary) throws Exception {
         
-        
+        JSONObject calls = helpers.loadJsonFromFile("../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/hashedCalls.json");
         System.out.println("Enter 'ContractCall <to> <value> [<data>]', or 'exit' to leave SmartContract execution :");
         while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine().trim();
                 String[] caseArgs = input.split(" ", 4);
-
+                String data;
                 switch (caseArgs[0].toLowerCase()) {
                     case "exit":
                         return;
 
                     case "transfer":
                         // transferFrom(address,address,uint256) -> 23b872dd
-                        String data = "a9059cbb";
+                        // data = "a9059cbb";
+                        data = calls.getString("transfer");
                         if(caseArgs.length != 4) { // transfer  <contractAddress> [<data>]
-                            System.out.println("[ERROR] Please provide the command: transferFrom <contractAddress> <to> <value>)");
+                            System.out.println("[ERROR] Please provide the command: transferFrom <contractAddress> <to> <value>");
                             break;
                         }
                         int value = Integer.parseInt(caseArgs[3]);
                         String finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.convertIntegerToHex256Bit(value);
                         System.out.println("[INFO] data: " + finalData);
                         SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
+
+                    case "isblacklisted":
+                        // isBlacklisted(address) -> fe575a87
+                        // data = "fe575a87";
+                        data = calls.getString("isBlacklisted");
+                        if(caseArgs.length != 3) { // isBlacklisted  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: isBlacklisted <contractAddress> <address>");
+                            break;
+                        }
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
+
+                    case "addtoblacklist":
+                        // addBlacklist(address) -> 44337ea1
+                        // data = "44337ea1";
+                        data = calls.getString("addToBlacklist");
+                        if(caseArgs.length != 3) { // addBlacklist  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: addToBlacklist <contractAddress> <address>");
+                            break;
+                        }
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
+
+                    case "removefromblacklist":
+                        // removeFromBlacklist(address) -> 537df3b6
+                        // data = "537df3b6";
+                        data = calls.getString("removeFromBlacklist");
+                        if(caseArgs.length != 3) { // removeFromBlacklist  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: removeFromBlacklist <contractAddress> <address>");
+                            break;
+                        }
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
 
                     default:
                         System.out.println("[ERROR] Choose one Contract call:");
@@ -170,7 +226,9 @@ public class ClientApplication {
         });
 
         if (DEBUG_MODE == 1)
-            System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "}");
+        System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "} with nonce {"
+        + wallet.getNonce() + "} ");
+
 
         
         // TODO id logic right now is to address
@@ -203,4 +261,5 @@ public class ClientApplication {
 
         System.exit(0);
     }
+    
 }

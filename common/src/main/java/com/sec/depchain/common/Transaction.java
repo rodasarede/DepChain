@@ -1,20 +1,17 @@
 package com.sec.depchain.common;
 
-import java.io.ByteArrayInputStream;
+
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Map;
+
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
-import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
@@ -129,18 +126,24 @@ public class Transaction {
             if (getNonce().compareTo(expectedNonce) < 0) {
                 if (DEBUG_MODE == 1) {
                     System.out.println("TRANSACTION - DEBUG: Nonce too low (possible replay attack)");
+                    System.out.println("TRANSACTION - DEBUG: Expected nonce: " + expectedNonce);
+                    System.out.println("TRANSACTION - DEBUG: Provided nonce: " + getNonce());
                 }
                 return false; // Reject replay attacks
-            } else if (getNonce().compareTo(expectedNonce) > 0) {
+            } 
+            else if (getNonce().compareTo(expectedNonce) > 0) {
                 if (DEBUG_MODE == 1) {
                     System.out.println("TRANSACTION - DEBUG: Nonce too high, out-of-order transaction.");
-                }
+                    System.out.println("TRANSACTION - DEBUG: Expected nonce: " + expectedNonce);
+                    System.out.println("TRANSACTION - DEBUG: Provided nonce: " + getNonce());
+            }
                 // Optionally queue transaction instead of rejecting
                 return false;
             }
         }
 
         senderState.incrementNonce();
+        System.out.println("Just incremented nonce of sender: " + senderState.getNonce());
         if (!CryptoUtils.verifySignature(this)) {
             if (DEBUG_MODE == 1) {
                 System.out.println("TRANSACTION - DEBUG: Signature verification failed");
@@ -208,16 +211,42 @@ public class Transaction {
             // System.out.println("code:" + receiverState.getCode());
             System.out.println("data:" + getData());
 
-            blockchain.getExecutor();
+            // blockchain.getExecutor();
             ByteArrayOutputStream byteArrayOutputStream = blockchain.getbyteArrayOutputStream();
 
-            // execute as a smart contract call
-            // blockchain.getExecutor().code(Bytes.fromHexString(receiverState.getCode()));
+
+            //execute as a smart contract call
+            blockchain.getExecutor().code(receiverState.getCode());
             blockchain.getExecutor().callData(Bytes.fromHexString(getData()));
             blockchain.getExecutor().sender(from);
             blockchain.getExecutor().execute();
-            Boolean result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
-            System.out.println("Output of 'execution': " + result);
+            //handles response based on data first 4 bytes / 8 hex characters
+            String type = handleTraceResponse(data.substring(0,8));
+            // System.out.println("Type of Call: " + type);
+            // System.out.println("Data: " + data.substring(0,8));
+            
+            Boolean result = false;
+            if (type.equals("transfer")) {
+                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                System.out.println("transfer executed:" + result);
+
+            }else if(type.equals("isBlacklisted")){
+                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                System.out.println("isBlacklisted executed:" + result);
+
+            } else if (type.equals("addBlacklist")) {
+                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                System.out.println("addBlacklist executed" + result);
+
+            } else if (type.equals("removeBlacklist")) {
+                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                System.out.println("removeBlacklist executed" + result);
+
+            } else {
+                System.out.println("Unknown Call");
+            }
+            
+            
 
             // hardcoded to check if balance updated for example: transfer
             // 0x1234567891234567891234567891234567891234
@@ -229,6 +258,7 @@ public class Transaction {
             System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
 
             if (result != true) {
+                System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
                 return;
             }
 
@@ -241,8 +271,21 @@ public class Transaction {
             receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
         }
 
+        System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
         setSuccess(true);
         //senderState.incrementNonce();
+    }
+
+    private String handleTraceResponse(String Data) {
+        JSONObject calls = helpers.loadJsonFromFile("../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/hashedCalls.json");
+        String typeOfCall="";
+        for (String key : calls.keySet()) {
+            if (calls.getString(key).equals(Data)) {
+                typeOfCall = key;
+                break;
+            }
+        }
+        return typeOfCall;
     }
 
     public byte[] getRawDataForSigning() {

@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
 import com.google.gson.JsonArray;
@@ -201,6 +202,20 @@ public class helpers {
 
         return "0".repeat(targetLength - length) +
                 hexString;
+    }
+
+    public static JSONObject loadJsonFromFile(String filePath) {
+        try {
+            // Read all bytes from the file and convert to String
+            String content = new String(Files.readAllBytes(Paths.get(filePath)));
+
+            // Create and return JSONObject
+            return new JSONObject(content);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;  
+        }
     }
     
 }

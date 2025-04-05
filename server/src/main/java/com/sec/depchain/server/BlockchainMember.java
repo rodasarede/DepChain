@@ -177,7 +177,7 @@ public class BlockchainMember {
         }
         if (newBlock.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             bepBlock.propose(newBlock);
-            startConsensusTimer();
+            //startConsensusTimer();
         }
     }
 

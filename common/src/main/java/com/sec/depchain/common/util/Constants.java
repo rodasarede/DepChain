@@ -23,5 +23,18 @@ public final class Constants {
         public static final String WRITE = "WRITE";
         public static final String ACCEPT = "ACCEPT";
         public static final String COLLECTED = "COLLECTED";
+        public static final String TX_REQUEST = "tx-request";
+        public static final String TX_RESPONSE = "tx-response";
+ }
+
+    public class ExecType{
+        public static final String TRANSFER = "transfer";
+        public static final String APPROVE = "approve";
+        public static final String TRANSFERFROM = "transferfrom";
+        public static final String BALANCEOF = "balanceof";
+        public static final String ISBLACKEDLISTED = "isblacklisted";
+        public static final String ADDTOBLACKLIST = "addtoblacklist";
+        public static final String REMOVEFROMBLACKLIST = "removefromblacklist";
+
     }
 }

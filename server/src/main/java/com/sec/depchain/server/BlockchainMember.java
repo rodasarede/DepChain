@@ -92,7 +92,7 @@ public class BlockchainMember {
             messageType = json.getString("type"); // Returns "tx-request"
         }
         switch (messageType) {
-            case "tx-request":
+            case Constants.MessageType.TX_REQUEST:
                 Transaction tx = deserializeTransactionJson(message);
                 tx.setClientId(senderId);
                 if (!tx.isValid(blockchain) ) {

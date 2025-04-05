@@ -66,7 +66,7 @@ public class ClientLibrary {
         // Convert JSON transaction to your Transaction object
         String txHash = tx.computeTxHash();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        if ("tx-response".equals(type)) {
+        if (Constants.MessageType.TX_RESPONSE.equals(type)) {
             if (processedTransactions.contains(txHash)) {  // Compare by hash
                 return;
             }

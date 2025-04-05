@@ -173,7 +173,7 @@ public class ClientApplication {
                 case "exit":
                     return;
 
-                case "transfer":
+                case Constants.ExecType.TRANSFER:
                     // transferFrom(address,address,uint256) -> 23b872dd
                     // data = "a9059cbb";
                     data = calls.getString("transfer");
@@ -189,7 +189,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "approve":
+                case Constants.ExecType.APPROVE:
                     // approve(address,uint256) -> 095ea7b3
                     // data = "095ea7b3";
                     data = calls.getString("approve");
@@ -204,7 +204,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "transferfrom":
+                case Constants.ExecType.TRANSFERFROM:
                     // transferFrom(address,address,uint256) -> 23b872dd
                     // data = "23b872dd";
                     data = calls.getString("transferFrom");
@@ -219,7 +219,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "balanceof":
+                case Constants.ExecType.BALANCEOF:
                     // balanceOf(address) -> 70a08231
                     // data = "70a08231";
                     data = calls.getString("balanceOf");
@@ -231,7 +231,7 @@ public class ClientApplication {
                     System.out.println("[INFO] data: " + finalData);
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
-                case "isblacklisted":
+                case Constants.ExecType.ISBLACKEDLISTED:
                     // isBlacklisted(address) -> fe575a87
                     // data = "fe575a87";
                     data = calls.getString("isBlacklisted");
@@ -245,7 +245,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "addtoblacklist":
+                case Constants.ExecType.ADDTOBLACKLIST:
                     // addBlacklist(address) -> 44337ea1
                     // data = "44337ea1";
                     data = calls.getString("addToBlacklist");
@@ -259,7 +259,7 @@ public class ClientApplication {
                     SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                     break;
 
-                case "removefromblacklist":
+                case Constants.ExecType.REMOVEFROMBLACKLIST:
                     // removeFromBlacklist(address) -> 537df3b6
                     // data = "537df3b6";
                     data = calls.getString("removeFromBlacklist");

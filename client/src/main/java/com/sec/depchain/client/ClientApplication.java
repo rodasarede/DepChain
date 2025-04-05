@@ -105,12 +105,12 @@ public class ClientApplication {
 
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
-        clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
-            String message = result
+        clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
+            String message = transaction.isSuccess()
                     ? String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp)
                     : String.format("[FAILURE] Could not append '%s'.", appendedString);
             System.out.println(message);
-            futureResponse.complete(result);
+            futureResponse.complete(transaction.isSuccess());
         });
 
         if (DEBUG_MODE == 1)
@@ -154,11 +154,11 @@ public class ClientApplication {
                         // data = "a9059cbb";
                         data = calls.getString("transfer");
                         if(caseArgs.length != 4) { // transfer  <contractAddress> [<data>]
-                            System.out.println("[ERROR] Please provide the command: transferFrom <contractAddress> <to> <value>");
+                            System.out.println("[ERROR] Please provide the command: transfer <contractAddress> <to> <value>");
                             break;
                         }
-                        int value = Integer.parseInt(caseArgs[3]);
-                        String finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.convertIntegerToHex256Bit(value);
+                        BigInteger value = new BigInteger(caseArgs[3]);
+                        String finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.convertBigIntegerToHex256Bit(value);
                         System.out.println("[INFO] data: " + finalData);
                         SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                         break;
@@ -217,12 +217,12 @@ public class ClientApplication {
         String toId = caseArgs[1];
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
-        clientLibrary.setDeliverCallback((result, appendedString, timestamp) -> {
-            String message = result
-                    ? String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp)
+        clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
+            String message = transaction.isSuccess()
+                    ? String.format("[SUCCESS] '%s' executed in block at position %s. And got the response: %s.", appendedString, timestamp, transaction.getResponse())
                     : String.format("[FAILURE] Could not append '%s'.", appendedString);
             System.out.println(message);
-            futureResponse.complete(result);
+            futureResponse.complete(transaction.isSuccess());
         });
 
         if (DEBUG_MODE == 1)

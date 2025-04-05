@@ -32,7 +32,8 @@ public class Transaction {
                               // signs the transaction and confirms the sender has authorized this transaction
     private int DEBUG_MODE = 1;
 
-    private boolean success;
+    private boolean status;
+    private String response;
 
     private int clientId = 0;
     // https://ethereum.org/en/developers/docs/transactions/ 
@@ -44,7 +45,8 @@ public class Transaction {
         this.data = data;
         this.nonce = nonce;
         this.signature = signature;
-        this.success = false;
+        this.status = false;
+        this.response = null;
     }
 
     public Transaction(Address from, Address to, BigInteger value, String data, BigInteger nonce, String signature, int clientId) {
@@ -55,7 +57,8 @@ public class Transaction {
         this.nonce = nonce;
         this.signature = signature;
         this.clientId = clientId;
-        this.success = false;
+        this.status = false;
+        this.response = null;
     }
 
     public String getData() {
@@ -229,21 +232,60 @@ public class Transaction {
             
             Boolean result = false;
             if (type.equals("transfer")) {
-                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
-                System.out.println("transfer executed:" + result);
+                try {
+                    result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                    System.out.println("transfer executed:" + result);
+                    if(result){
+                        setResponse("Transfer successful"); 
+                    }      
+                } catch (NumberFormatException e) {
+                    System.out.println("Error in transfer execution: " + e.getMessage());
+                    String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
+                    setResponse("Transfer failed: " + errorMessage);
+                }
+                
 
             }else if(type.equals("isBlacklisted")){
                 result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
                 System.out.println("isBlacklisted executed:" + result);
+                if(result){
+                    setResponse("Address is blacklisted");
+                }else{
+                    setResponse("Address is not blacklisted");
+                }
 
-            } else if (type.equals("addBlacklist")) {
-                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
-                System.out.println("addBlacklist executed" + result);
+            } else if (type.equals("addToBlacklist")) {
+                try{
+                    result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                    System.out.println("addBlacklist executed" + result);
 
-            } else if (type.equals("removeBlacklist")) {
-                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
-                System.out.println("removeBlacklist executed" + result);
+                    if(result){
+                        setResponse("Address added to blacklist");
+                    }else{
+                        setResponse("Address not added to blacklist");
+                    }
+                }catch (NumberFormatException e) {
+                    System.out.println("Error in addBlacklist execution: " + e.getMessage());
+                    String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
+                    setResponse("addBlacklist failed: " + errorMessage);
+                }
 
+            } else if (type.equals("removeFromBlacklist")) {
+                try{
+
+                    result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                    System.out.println("removeBlacklist executed" + result);
+                    if(result){
+                        setResponse("Address removed from blacklist");
+                    }else{
+                        setResponse("Address not removed from blacklist");
+                    }
+                }catch (NumberFormatException e) {
+                    System.out.println("Error in removeBlacklist execution: " + e.getMessage());
+                    String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
+                    setResponse("removeBlacklist failed: " + errorMessage);
+                }
+                    
             } else {
                 System.out.println("Unknown Call");
             }
@@ -259,10 +301,6 @@ public class Transaction {
             Long balanceOfReceiver = helpers.extractLongFromReturnData(byteArrayOutputStream);
             System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
 
-            if (result != true) {
-                // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
-                return;
-            }
 
         } else {
             // execute as a normal native transfer
@@ -271,10 +309,11 @@ public class Transaction {
 
             // Update receiver's balance
             receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
+            setResponse("Transfer successful");
         }
 
         // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
-        setSuccess(true);
+        setStatus(true);
         //senderState.incrementNonce();
     }
 
@@ -333,11 +372,19 @@ public class Transaction {
     }
 
     public boolean isSuccess() {
-        return success;
+        return status;
     }
 
-    public void setSuccess(boolean success) {
-        this.success = success;
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
+    public String getResponse() {
+        return response;
+    }
+
+    public String setResponse(String response) {
+        this.response = response;
+        return response;
     }
 
     public String computeTxHash() {
@@ -348,7 +395,7 @@ public class Transaction {
                     value.toString() +
                     data +
                     nonce.toString() +
-                    signature + Boolean.toString(success);
+                    signature + Boolean.toString(status);
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(txData.getBytes(StandardCharsets.UTF_8));

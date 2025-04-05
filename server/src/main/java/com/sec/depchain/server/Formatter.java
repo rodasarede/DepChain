@@ -82,6 +82,7 @@ public class Formatter {
         JSONObject transactionMessage = serializeTransactionToJson(tx);
         transactionMessage.put("type", "tx-response");
         transactionMessage.put("success", tx.isSuccess());
+        transactionMessage.put("response", tx.getResponse());
         return transactionMessage;
     }
 

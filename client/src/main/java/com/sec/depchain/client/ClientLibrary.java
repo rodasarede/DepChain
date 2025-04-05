@@ -25,7 +25,7 @@ public class ClientLibrary {
     private final Wallet wallet;
 
     public interface DeliverCallback {
-        void deliverAppendResponse(boolean result, String transaction, String position);
+        void deliverAppendResponse(Transaction tx, String transaction, String position);
     }
 
     public ClientLibrary(int clientId, Wallet wallet) throws Exception {
@@ -59,8 +59,10 @@ public class ClientLibrary {
         JSONObject jsonResponse = new JSONObject(message);
         String type = jsonResponse.getString("type");
         boolean success = jsonResponse.getBoolean("success");
+        String response = jsonResponse.getString("response");
         Transaction tx = deserializeTransactionJson(message);
-        tx.setSuccess(success);
+        tx.setStatus(success);
+        tx.setResponse(response);
         // Convert JSON transaction to your Transaction object
         String txHash = tx.computeTxHash();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
@@ -82,7 +84,7 @@ public class ClientLibrary {
                 if (deliverCallback != null) {
                     processedTransactions.add(txHash);
                     messageResponses.remove(txHash);
-                    deliverCallback.deliverAppendResponse(tx.isSuccess(), txHash, position);
+                    deliverCallback.deliverAppendResponse(tx, txHash, position);
                 }
             }
         }

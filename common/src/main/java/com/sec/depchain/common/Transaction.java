@@ -157,6 +157,12 @@ public class Transaction {
                 System.out.println("TRANSACTION - DEBUG: Signature verification successfull");
             }
         }
+        if(getValue().compareTo(BigInteger.ZERO) == -1){
+            if (DEBUG_MODE == 1) {
+                System.out.println("TRANSACTION - DEBUG: Value is negative");
+            }
+            return false;
+        }
 
         // Check if the sender has enough balance
        

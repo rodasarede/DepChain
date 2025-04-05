@@ -95,20 +95,18 @@ public class BlockchainMember {
             case "tx-request":
                 Transaction tx = deserializeTransactionJson(message);
                 tx.setClientId(senderId);
-                if (tx.isValid(blockchain) && id == systemMembership.getLeaderId()) {
-                    // bep.propose(transaction);
-                    // bep.propose("string to propose");
-                    mempoolFifo.addTransactionToMempool(tx);
-                    startConsensusTimer();
-                } else {
+                if (!tx.isValid(blockchain) ) {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + tx.computeTxHash() + "}");
-
+                    tx.setResponse("Transaction not valid");
                     JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx);
                     perfectLinks.send(senderId, responseMessage.toString());
                     break;
                 }
-
+                if(id == systemMembership.getLeaderId()) {
+                    mempoolFifo.addTransactionToMempool(tx);
+                    startConsensusTimer();
+                }
                 if (mempoolFifo.size() >= Constants.THRESHOLD) { 
                     cancelConsensusTimer();
                     triggerConsensus();

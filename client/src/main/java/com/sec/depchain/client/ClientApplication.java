@@ -123,6 +123,8 @@ public class ClientApplication {
                 message = String.format("[SUCCESS] '%s' appended at position %s.Response: %s", appendedString, timestamp, transaction.getResponse());
             }else if (transaction.isSuccess()) {
                 message = String.format("[SUCCESS] '%s' appended at position %s.", appendedString, timestamp);
+            }else if (transaction.getResponse() != null) {
+                message = String.format("[FAILURE] Could not append '%s'.Response: %s", appendedString, transaction.getResponse());
             }else{
                 message = String.format("[FAILURE] Could not append '%s'.", appendedString);
             }

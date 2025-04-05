@@ -39,7 +39,7 @@ public class PerfectLinks {
         void deliver(int NodeId, String message);
     }
 
-    // TODO sequence number in order to make in-order delivery
+    
     public PerfectLinks(int nodeId) throws Exception {
         systemMembership = new SystemMembership(
                 Constants.PROPERTIES_PATH);

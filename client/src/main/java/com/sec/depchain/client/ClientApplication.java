@@ -3,12 +3,11 @@ package com.sec.depchain.client;
 import org.hyperledger.besu.datatypes.Address;
 import org.json.JSONObject;
 
+
 import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,7 +53,7 @@ public class ClientApplication {
 
         
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
+            System.out.println("Welcome! Enter <help> for the available commands , or 'exit' to quit:");
 
             while (true) {
                 System.out.print("> ");
@@ -74,11 +73,11 @@ public class ClientApplication {
                         break;
                     case "help":
                         System.out.println(
-                                "[INFO] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
+                                "[INFO] Available commands: transfer <to> <value>, contractexecution, exit");
                         break;    
                     default:
                         System.out.println(
-                                "[ERROR] Enter 'transfer <to> <value> [<data>]' to transfer , or 'exit' to quit:");
+                                "[ERROR] Unknown Command: Enter <help> for the  available commands.");
                         break;
                 }
             }
@@ -92,7 +91,7 @@ public class ClientApplication {
             return;
         }
 
-        String toId = caseArgs[1];
+        String toAddress = caseArgs[1];
         BigInteger value;
         try{
             value = new BigInteger(caseArgs[2]);
@@ -114,17 +113,18 @@ public class ClientApplication {
         });
 
         if (DEBUG_MODE == 1)
-            System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "} with nonce {"
-                    + wallet.getNonce() + "} and value {" + value + "} and data {" + data + "}");
+            System.out.println("CLIENT APP - DEBUG: Sending transaction request to {" + toAddress + "} with nonce {"
+                    + wallet.getNonce() + "} and value {" + value + "}");
 
         
-        // TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), value,
+        
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toAddress), value,
                 data, wallet.getNonce(), null);
 
         wallet.incremetNonce();
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
+        System.out.println("[INFO] Transaction Hash: " + tx.computeTxHash());
         clientLibrary.sendTransferRequest(tx);
         try {
             futureResponse.get();
@@ -139,7 +139,7 @@ public class ClientApplication {
     private void handleSmartContractExecution( Scanner scanner,ClientLibrary clientLibrary) throws Exception {
         
         JSONObject calls = helpers.loadJsonFromFile("../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/hashedCalls.json");
-        System.out.println("Enter 'ContractCall <to> <value> [<data>]', or 'exit' to leave SmartContract execution :");
+        System.out.println("Welcome to Contract Execution ! Enter <help> for the available contract calls , or 'exit' to quit:");
         while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine().trim();
@@ -228,7 +228,10 @@ public class ClientApplication {
                         System.out.println("[INFO] data: " + finalData);
                         SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                         break;
-
+                    
+                    case "help":
+                        System.out.println("[INFO] Available contract calls: transfer, approve, transferFrom, isBlacklisted, addToBlacklist, removeFromBlacklist");
+                        break;
                     default:
                         System.out.println("[ERROR] Choose one Contract call:");
                         break;
@@ -241,7 +244,7 @@ public class ClientApplication {
     private void SmartContractExecutionRequest(String[] caseArgs, ClientLibrary clientLibrary, String data) throws Exception {
         
 
-        String toId = caseArgs[1];
+        String toAddress = caseArgs[1];
         CompletableFuture<Boolean> futureResponse = new CompletableFuture<>();
 
         clientLibrary.setDeliverCallback((transaction, appendedString, timestamp) -> {
@@ -253,18 +256,19 @@ public class ClientApplication {
         });
 
         if (DEBUG_MODE == 1)
-        System.out.println("CLIENT APP - DEBUG: Sending transaquion request: {" + toId + "} with nonce {"
-        + wallet.getNonce() + "} ");
+        System.out.println("CLIENT APP - DEBUG: Sending transaction request to {" + toAddress + "} with nonce {"
++ wallet.getNonce() + "} ");
 
 
         
-        // TODO id logic right now is to address
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toId), BigInteger.ZERO,
+        
+        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toAddress), BigInteger.ZERO,
                 data, wallet.getNonce(), null);
 
         wallet.incremetNonce();
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
+        System.out.println("[INFO] Transaction Hash: " + tx.computeTxHash());
         clientLibrary.sendTransferRequest(tx);
         try {
             futureResponse.get();

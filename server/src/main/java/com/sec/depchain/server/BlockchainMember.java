@@ -3,7 +3,7 @@ package com.sec.depchain.server;
 import com.sec.depchain.common.Transaction;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -11,7 +11,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hyperledger.besu.datatypes.Address;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.sec.depchain.common.SystemMembership;
@@ -110,7 +109,7 @@ public class BlockchainMember {
                     break;
                 }
 
-                if (mempoolFifo.size() >= Constants.THRESHOLD) { // TODO timeout
+                if (mempoolFifo.size() >= Constants.THRESHOLD) { 
                     cancelConsensusTimer();
                     triggerConsensus();
                 }

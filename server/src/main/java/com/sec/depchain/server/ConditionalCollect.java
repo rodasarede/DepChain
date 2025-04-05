@@ -5,7 +5,6 @@ import com.sec.depchain.common.PerfectLinks;
 import java.security.PrivateKey;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -84,7 +83,7 @@ public class ConditionalCollect {
 
         int leaderId = systemMembership.getLeaderId();
 
-        System.out.println("CONDITIONAL COLLECT: INPUT DELIVIRING" + envelope.toString());
+        System.out.println("CONDITIONAL COLLECT: INPUT DELIVERING" + envelope.toString());
 
         perfectLinks.send(leaderId, envelope.toString());
     }

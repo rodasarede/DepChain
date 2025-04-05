@@ -10,14 +10,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
-import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 import org.junit.jupiter.api.BeforeAll;

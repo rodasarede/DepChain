@@ -4,7 +4,7 @@ import java.net.*;
 
 public class FairLossLinks {
     private DatagramSocket socket;
-    private int port;
+    // private int port;
     private DeliverCallback deliverCallback;
     private volatile boolean running = true;
 
@@ -15,7 +15,7 @@ public class FairLossLinks {
     }
 
     public FairLossLinks(int port) throws Exception {
-        this.port = port;
+        // this.port = port;
         this.socket = new DatagramSocket(port);
     }
 

@@ -1,7 +1,6 @@
 package com.sec.depchain.client;
 
 import java.math.BigInteger;
-import java.util.Formatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

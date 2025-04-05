@@ -214,16 +214,16 @@ public class Transaction {
 
 
             //execute as a smart contract call
-            // blockchain.getExecutor().code(receiverState.getCode());
+            blockchain.getExecutor().code(receiverState.getCode());
             blockchain.getExecutor().callData(Bytes.fromHexString(getData()));
             blockchain.getExecutor().sender(from);
             blockchain.getExecutor().worldUpdater(blockchain.getSimpleWorld().updater());
             blockchain.getExecutor().commitWorldState();
             blockchain.getExecutor().execute();
+
             //handles response based on data first 4 bytes / 8 hex characters
             String type = handleTraceResponse(data.substring(0,8));
-            // System.out.println("Type of Call: " + type);
-            // System.out.println("Data: " + data.substring(0,8));
+            
             
             Boolean result = false;
             if (type.equals("transfer")) {

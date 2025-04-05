@@ -1,7 +1,6 @@
 package com.sec.depchain.common;
 
-import com.sec.depchain.common.Member;
-import com.sec.depchain.common.SystemMembership;
+
 import com.sec.depchain.common.util.Constants;
 
 import static org.junit.jupiter.api.Assertions.*;

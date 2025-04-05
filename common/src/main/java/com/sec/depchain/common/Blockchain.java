@@ -130,7 +130,6 @@ public class Blockchain {
                 Bytes contractCode = Bytes.fromHexString(accountState.getCode());
                 MutableAccount contractAccount;
                 if(simpleWorld.get(address) == null){
-                    System.out.println("Creating new account");
                     simpleWorld.createAccount(address, 0, Wei.of(balance));
                     contractAccount = (MutableAccount) simpleWorld.get(address);
                 }else{

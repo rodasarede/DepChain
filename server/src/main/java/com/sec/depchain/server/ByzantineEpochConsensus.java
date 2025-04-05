@@ -1,6 +1,6 @@
 package com.sec.depchain.server;
 
-import org.hyperledger.besu.datatypes.Address;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -17,7 +17,6 @@ import java.util.TimerTask;
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
-import com.sec.depchain.common.Transaction;
 import com.sec.depchain.common.util.Constants;
 
 public class ByzantineEpochConsensus {
@@ -244,9 +243,12 @@ public class ByzantineEpochConsensus {
             state.setValtsVal(tsValuePair);
             writeQuorumReached = true;
             written = new Block[N]; // clear written
+            if(DEBUG_MODE == 1) {
+                LOGGER.debug("Write quorum reached for block " + v.getBlockHash());
+            }
             for (int nodeId : systemMembership.getMembershipList().keySet()) // for all q∈Π do
             {
-                System.out.println("write quorom reached");
+                
                 String message = Formatter.formatAcceptMessage(v, ets);
                 perfectLinks.send(nodeId, message);
             }

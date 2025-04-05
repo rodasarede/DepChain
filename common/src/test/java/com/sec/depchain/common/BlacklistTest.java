@@ -7,13 +7,13 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EvmSpecVersion;
-import org.hyperledger.besu.evm.account.MutableAccount;
+
 import org.hyperledger.besu.evm.fluent.EVMExecutor;
 import org.hyperledger.besu.evm.fluent.SimpleWorld;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.web3j.abi.datatypes.Bool;
+
 
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 
@@ -37,7 +37,7 @@ public class BlacklistTest {
         // contract mock account
         BlacklistContractAddress = Address.fromHexString("1234567891234567891234567891234567891235");
         simpleWorld.createAccount(BlacklistContractAddress,0, Wei.fromEth(0));
-        MutableAccount contractAccount = (MutableAccount) simpleWorld.get(BlacklistContractAddress);
+        // MutableAccount contractAccount = (MutableAccount) simpleWorld.get(BlacklistContractAddress);
 
         byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+
 
 import java.util.Random;
 
@@ -108,7 +108,6 @@ class FairLossLinksTest {
             try {
                 fairLossLinks.send(destIP, destPort, message);
             } catch (Exception e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         });

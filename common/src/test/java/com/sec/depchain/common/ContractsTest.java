@@ -1,8 +1,6 @@
 package com.sec.depchain.common;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+
 import org.apache.tuweni.bytes.Bytes;
 
 import org.apache.tuweni.units.bigints.UInt256;
@@ -17,8 +15,6 @@ import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -40,7 +36,7 @@ public class ContractsTest {
     private static Address senderAddress;
     private static Address ISTCoinContractAddress;
     private static Address clientAddress;
-    private static Address BlacklistContractAddress;
+    // private static Address BlacklistContractAddress;
     private static EVMExecutor executor;
     private static ByteArrayOutputStream byteArrayOutputStream;
 
@@ -52,7 +48,7 @@ public class ContractsTest {
         // EOT mock account
         senderAddress = Address.fromHexString("0xb8124c42749e5f1908ab8c5afde9358005320306");
         simpleWorld.createAccount(senderAddress,0, Wei.fromEth(0));
-        MutableAccount senderAccount = (MutableAccount) simpleWorld.get(senderAddress);
+        // MutableAccount senderAccount = (MutableAccount) simpleWorld.get(senderAddress);
 
         // EOT client mock account
         clientAddress = Address.fromHexString("deadbeefdeadbeefdeadbeefdeadbeefdeadbeee");

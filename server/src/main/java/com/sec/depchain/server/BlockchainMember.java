@@ -192,7 +192,7 @@ public class BlockchainMember {
 
         if (block.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             blockchain.getChain().add(block);
-            String blockname = blockchain.getChainSize() + ".json";
+            String blockname = block.getHeight()+ ".json";
             String blockPath = Constants.BLOCKS_DIR + "/blockchain_" + id;
             block.writeBlockToJson( blockPath, blockname);
             

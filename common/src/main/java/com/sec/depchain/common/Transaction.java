@@ -143,7 +143,7 @@ public class Transaction {
         }
 
         senderState.incrementNonce();
-        System.out.println("Just incremented nonce of sender: " + senderState.getNonce());
+        // System.out.println("Just incremented nonce of sender: " + senderState.getNonce());
         if (!CryptoUtils.verifySignature(this)) {
             if (DEBUG_MODE == 1) {
                 System.out.println("TRANSACTION - DEBUG: Signature verification failed");
@@ -216,9 +216,11 @@ public class Transaction {
 
 
             //execute as a smart contract call
-            blockchain.getExecutor().code(receiverState.getCode());
+            // blockchain.getExecutor().code(receiverState.getCode());
             blockchain.getExecutor().callData(Bytes.fromHexString(getData()));
             blockchain.getExecutor().sender(from);
+            blockchain.getExecutor().worldUpdater(blockchain.getSimpleWorld().updater());
+            blockchain.getExecutor().commitWorldState();
             blockchain.getExecutor().execute();
             //handles response based on data first 4 bytes / 8 hex characters
             String type = handleTraceResponse(data.substring(0,8));
@@ -258,7 +260,7 @@ public class Transaction {
             System.out.println("Output of 'balanceOf(336f5f)': " + Long.toString(balanceOfReceiver));
 
             if (result != true) {
-                System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
+                // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
                 return;
             }
 
@@ -271,7 +273,7 @@ public class Transaction {
             receiverState.setBalance(receiverState.getBalance().add(UInt256.valueOf(value)));
         }
 
-        System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
+        // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
         setSuccess(true);
         //senderState.incrementNonce();
     }

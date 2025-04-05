@@ -24,16 +24,16 @@ public class MempoolFifo {
 
     // Removes a specific transaction by iterating over the list
     public void removeTransactionFromMempool(Transaction tx) {
-        System.out.println("Transaction to remove: " );
-        tx.printTransaction();
+        // System.out.println("Transaction to remove: " );
+        // tx.printTransaction();
         synchronized (transactions) {
             Iterator<Transaction> iterator = transactions.iterator();
             while (iterator.hasNext()) {
                 Transaction current = iterator.next();
-                System.out.println("Transaction in mempool: " );
-                current.printTransaction();
+                // System.out.println("Transaction in mempool: " );
+                // current.printTransaction();
                 if (current.computeTxHash().equals(tx.computeTxHash())) {
-                    System.out.println("Match found");
+                    // System.out.println("Match found");
                     iterator.remove();
                     break;
                 }

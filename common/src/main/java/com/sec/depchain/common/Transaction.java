@@ -240,6 +240,27 @@ public class Transaction {
                 }
                 
 
+            }else if(type.equals("approve")){
+                result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                System.out.println("approve executed:" + result);
+                if(result){
+                    setResponse("Approve successful");
+                }else{
+                    setResponse("Approve failed");
+                }
+
+            }else if(type.equals("transferFrom")){
+                try{
+                    result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
+                    System.out.println("transferFrom executed:" + result);
+                    if(result){
+                        setResponse("TransferFrom successful");
+                    }
+                }catch (NumberFormatException e) {
+                    System.out.println("Error in transferFrom execution: " + e.getMessage());
+                    String errorMessage = helpers.extractErrorMessage(byteArrayOutputStream);
+                    setResponse("TransferFrom failed: " + errorMessage);
+                }
             }else if(type.equals("isBlacklisted")){
                 result = helpers.extractBooleanFromReturnData(byteArrayOutputStream);
                 System.out.println("isBlacklisted executed:" + result);

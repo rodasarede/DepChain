@@ -1,5 +1,6 @@
 {
     "transfer": "a9059cbb",
+    "approve": "095ea7b3",
     "transferFrom": "23b872dd",
     "isBlacklisted": "fe575a87",
     "addToBlacklist": "44337ea1",

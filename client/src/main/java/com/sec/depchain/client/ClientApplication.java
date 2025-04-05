@@ -143,7 +143,7 @@ public class ClientApplication {
         while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine().trim();
-                String[] caseArgs = input.split(" ", 4);
+                String[] caseArgs = input.split(" ", 5);
                 String data;
                 switch (caseArgs[0].toLowerCase()) {
                     case "exit":
@@ -159,6 +159,33 @@ public class ClientApplication {
                         }
                         BigInteger value = new BigInteger(caseArgs[3]);
                         String finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.convertBigIntegerToHex256Bit(value);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
+
+                    case "approve":
+                        // approve(address,uint256) -> 095ea7b3
+                        // data = "095ea7b3";
+                        data = calls.getString("approve");
+                        if(caseArgs.length != 4) { // approve  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: approve <contractAddress> <to> <value>");
+                            break;
+                        }
+                        value = new BigInteger(caseArgs[3]);
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.convertBigIntegerToHex256Bit(value);
+                        System.out.println("[INFO] data: " + finalData);
+                        SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
+                        break;
+                    case "transferfrom":
+                        // transferFrom(address,address,uint256) -> 23b872dd
+                        // data = "23b872dd";
+                        data = calls.getString("transferFrom");
+                        if(caseArgs.length != 5) { // transferFrom  <contractAddress> [<data>]
+                            System.out.println("[ERROR] Please provide the command: transferFrom <contractAddress> <from> <to> <value>");
+                            break;
+                        }
+                        value = new BigInteger(caseArgs[4]);
+                        finalData = data + helpers.padHexStringTo256Bit(caseArgs[2]) + helpers.padHexStringTo256Bit(caseArgs[3]) + helpers.convertBigIntegerToHex256Bit(value);
                         System.out.println("[INFO] data: " + finalData);
                         SmartContractExecutionRequest(caseArgs, clientLibrary, finalData);
                         break;

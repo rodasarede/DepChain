@@ -10,7 +10,8 @@ public final class Constants {
     public static final String UNKNOWN = "UNKNOWN";
     public static final int THRESHOLD = 2;
     public static final String GENESIS_BLOCK_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/Genesis.json";
-    public static final int TIMEOUT_MS = 7500; //ms 
+    public static final int TIMEOUT_MS = 7500; // ms
+    public static final String CALLS_FILE = "../common/src/main/java/com/sec/depchain/common/SmartContractsUtil/hashedCalls.json";
 
     private Constants() {
 

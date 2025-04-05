@@ -319,7 +319,7 @@ public class ByzantineEpochConsensus {
     }
 
     private boolean unbound(List<String> S) {
-        if (getNumberOfDefinedEntries(S) < N - f) {
+        if (getNumberOfDefinedEntries(S) < (2 * f + 1)) {
             return false;
         }
         for (String entry : S) {
@@ -339,7 +339,7 @@ public class ByzantineEpochConsensus {
     }
 
     private static boolean binds(long ts, Block v, List<String> states) {
-        return (states.size() >= N - f && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
+        return (states.size() >= (2*f+1) && quoromHighest(ts, v, states) && certifiedValue(ts, v, states));
     }
 
     private static boolean quoromHighest(long ts, Block v, List<String> S) {

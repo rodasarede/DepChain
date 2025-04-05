@@ -1,20 +1,35 @@
 package com.sec.depchain.common;
 
 import java.security.MessageDigest;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.Expose;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Block {
+    @Expose
     private String blockHash;
+    @Expose
     private String previousBlockHash;
+    @Expose
     private List<Transaction> transactions;
+
+
     private Map<Address, AccountState> state;
     private int height;
     private long timestamp;
@@ -166,5 +181,35 @@ public class Block {
 
     public long getTimestamp() {
         return timestamp;
+    }
+     
+    public  void writeBlockToJson( String filePath, String fileName) {
+        Gson gson = new GsonBuilder()
+                .excludeFieldsWithoutExposeAnnotation()
+                .registerTypeAdapter(Address.class, (JsonSerializer<Address>) (address, type, context) ->
+                    context.serialize(address.toString())  // or customize as needed
+                )
+                .registerTypeAdapter(BigInteger.class, (JsonSerializer<BigInteger>) (bigInt, t, ctx) -> ctx.serialize(bigInt.toString()))
+                .setPrettyPrinting()
+                .create();
+
+        File directory = new File(filePath);
+        if (!directory.exists()) {
+            if (directory.mkdirs()) {
+                // System.out.println("Created directory: " + filePath);
+            } else {
+                System.err.println("Failed to create directory: " + filePath);
+                return;
+            }
+        }
+
+        String fullPath = filePath.endsWith("/") ? filePath + fileName : filePath + "/" + fileName;
+
+        try (FileWriter writer = new FileWriter(fullPath)) {
+            gson.toJson(this, writer);
+            // System.out.println("Block written to " + fullPath);
+        } catch (IOException e) {
+            System.err.println("Failed to write block to JSON: " + e.getMessage());
+        }
     }
 }

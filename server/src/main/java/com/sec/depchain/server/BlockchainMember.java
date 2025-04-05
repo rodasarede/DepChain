@@ -192,7 +192,10 @@ public class BlockchainMember {
 
         if (block.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             blockchain.getChain().add(block);
-
+            String blockname = blockchain.getChainSize() + ".json";
+            String blockPath = Constants.BLOCKS_DIR + "/blockchain_" + id;
+            block.writeBlockToJson( blockPath, blockname);
+            
             // 2. Execute transactions to update the world state
             for (Transaction transaction : block.getTransactions()) {
                 transaction.execute(blockchain);

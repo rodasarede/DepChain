@@ -15,19 +15,26 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
+import com.google.gson.annotations.Expose;
 import com.sec.depchain.common.SmartContractsUtil.helpers;
 import com.sec.depchain.common.util.CryptoUtils;
 
 public class Transaction {
+    @Expose
     private Address from; // the address of the sender, that will be signing the transaction. This will be
                           // an externally-owned account as contract accounts cannot send transactions
+    @Expose                      
     private Address to; // the receiving address (if an externally-owned account, the transaction will
                         // transfer value. If a contract account, the transaction will execute the
                         // contract code)
+    @Expose
     private BigInteger value; // how much ether to transfer
+    @Expose
     private String data; // payload (func name, args, etc...); – optional field to include arbitrary data
+    @Expose
     private BigInteger nonce; // a sequentially incrementing counter which indicates the transaction number
                               // from the account
+    @Expose
     private String signature; // the identifier of the sender. This is generated when the sender's private key
                               // signs the transaction and confirms the sender has authorized this transaction
     private int DEBUG_MODE = 1;

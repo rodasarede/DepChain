@@ -210,8 +210,8 @@ public class Transaction {
         /*if (!isValid(blockchain)) {
             return;
         }*/
-       
-
+        // status is considered successful if the transaction is executed even if it does nothing like a not enough balance transfer
+        setStatus(true);
         // Update the state of the sender and receiver
         MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
         senderState.incrementNonce();
@@ -331,6 +331,8 @@ public class Transaction {
                     
             } else {
                 System.out.println("Unknown Call");
+                setStatus(false);
+                return; 
             }
 
 
@@ -361,7 +363,7 @@ public class Transaction {
             }
 
         // System.out.println("Nonce of sender at end transaction" + senderState.getNonce());
-        setStatus(true);
+        
         //senderState.incrementNonce();
     }
 

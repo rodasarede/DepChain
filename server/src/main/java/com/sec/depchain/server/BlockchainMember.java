@@ -96,7 +96,7 @@ public class BlockchainMember {
             case Constants.MessageType.TX_REQUEST:
                 Transaction tx = deserializeTransactionJson(message);
                 tx.setClientId(senderId);
-                if (!tx.isValid(blockchain, true)) {
+                if (!tx.isValid(blockchain)) {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + tx.computeTxHash() + "}");
                     tx.setResponse("Transaction not valid");

@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutionException;
 
 public class ClientApplication {
     private static final int DEBUG_MODE = 1;
-    private static final int SWITCH_FROM_WITH_TO = 1;
+    private static final int SWITCH_FROM_WITH_TO = 0;
     private final Wallet wallet;
     private ClientLibrary clientLibrary;
 

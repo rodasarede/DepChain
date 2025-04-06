@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 
 public class ClientApplication {
     private static final int DEBUG_MODE = 1;
+    private static final int SWITCH_FROM_WITH_TO = 1;
     private final Wallet wallet;
     private ClientLibrary clientLibrary;
 
@@ -139,13 +140,25 @@ public class ClientApplication {
             System.out.println("CLIENT APP - DEBUG: Sending transaction request to {" + toAddress + "} with nonce {"
                     + wallet.getNonce() + "} and value {" + value + "}");
 
-        Transaction tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toAddress),
-                value,
-                data, wallet.getNonce(), null);
+        // here i want to modify the
+        // tx.setFrom(Address another_client);
+        Transaction tx = null;
+        if (SWITCH_FROM_WITH_TO == 1) {
+            // change from with to
+            tx = new Transaction(Address.fromHexString(toAddress), Address.fromHexString(wallet.getAddress()),
+                    value,
+                    data, wallet.getNonce(), null);
+        } else {
+            tx = new Transaction(Address.fromHexString(wallet.getAddress()), Address.fromHexString(toAddress),
+                    value,
+                    data, wallet.getNonce(), null);
+        }
 
         wallet.incremetNonce();
+
         String signature = wallet.signTransaction(tx);
         tx.setSignature(signature);
+
         System.out.println("[INFO] Transaction Hash: " + tx.computeTxHash());
         clientLibrary.sendTransferRequest(tx);
         try {

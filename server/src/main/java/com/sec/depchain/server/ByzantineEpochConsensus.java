@@ -46,6 +46,7 @@ public class ByzantineEpochConsensus {
     private boolean acceptQuorumReached = false;
     private BlockchainMember blockchainMember;
     private static final int DEBUG_MODE = 1;
+    private static final int SERVER_2_MULTIPLE_WRITE = 0;
     private static Blockchain blockchain;
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
@@ -173,7 +174,7 @@ public class ByzantineEpochConsensus {
                 // if !tx.isValid()
 
                 for (Transaction tx : tmpval.getTransactions()) {
-                    if (!tx.isValid(blockchain, false)) {
+                    if (!tx.isValid(blockchain)) {
                         System.out.println("BEP - ERROR: There is one transaction that is not real!");
                         return;
                     }
@@ -201,7 +202,7 @@ public class ByzantineEpochConsensus {
                 System.out.println("tmpval is " + tmpval + " 2.2.");
 
                 for (Transaction tx : tmpval.getTransactions()) {
-                    if (!tx.isValid(blockchain, false)) {
+                    if (!tx.isValid(blockchain)) {
                         System.out.println("BEP - ERROR: There is one transaction that is not real!");
                         return;
                     }
@@ -239,7 +240,19 @@ public class ByzantineEpochConsensus {
             {
                 // trigger a send WRITE message containing tmpval
                 String message = Formatter.formatWriteMessage(tmpval, ets);
-                perfectLinks.send(nodeId, message);
+                if (SERVER_2_MULTIPLE_WRITE == 1) {
+                    if (nodeId == 1) {
+                        perfectLinks.send(nodeId, message);
+                    }
+                    else if (nodeId == 2) {
+                        for (int i = 0; i < 5; i++) {
+                            perfectLinks.send(nodeId, message);
+                        }
+                    }
+                } else {
+                    perfectLinks.send(nodeId, message);
+                }
+
             }
         }
 

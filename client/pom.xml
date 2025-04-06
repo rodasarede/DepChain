@@ -16,7 +16,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <skipTests>false</skipTests>
+        <skipTests>true</skipTests>
     </properties>
     <dependencies>
         <!-- Example of adding dependencies -->

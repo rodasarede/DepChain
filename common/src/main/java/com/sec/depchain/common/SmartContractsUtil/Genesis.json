@@ -4,17 +4,17 @@
   "transactions": [],
   "state": {
     "0xb8124c42749e5f1908ab8c5afde9358005320306": {
-      "balance": "1000"
+      "balance": "10000"
     },
     "0x336f5f589a81811b47d582d4853af252bfb7c5e2": {
-      "balance": "1000"
+      "balance": "50000"
     },
 
-    "0x49279c9d514ebc8d63fc122569c1e8753393cd24": {
-      "balance": "1000"
+    "0x3aa476800f5f4be6242976adfaed17376cff7c0c": {
+      "balance": "2500"
     },
-    "0xac027709434d9993a89e9fd7a63df6ff0ffe6a55": {
-      "balance": "1000"
+    "0x80e39cf2ef738260e9aada27c75ed15cf97f4bde": {
+      "balance": "90000"
     },
     "0x1234567891234567891234567891234567891234": {
       "contract_name": "ISTCoinContract",

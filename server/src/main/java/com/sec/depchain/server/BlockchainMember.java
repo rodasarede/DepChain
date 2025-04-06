@@ -202,7 +202,7 @@ public class BlockchainMember {
             blockchain.getChain().add(block);
             String blockname = block.getHeight()+ ".json";
             String blockPath = Constants.BLOCKS_DIR + "/blockchain_" + id;
-            block.writeBlockToJson( blockPath, blockname);
+            
             
             // 2. Execute transactions to update the world state
             for (Transaction transaction : block.getTransactions()) {
@@ -217,27 +217,24 @@ public class BlockchainMember {
                 perfectLinks.send(clientId, responseMessage.toString());
             }
 
-            // 3. Update the world state based on the executed transactions
-            // blockchain.updateSimpleWorldState();
-            // commit simple world changes / state ???
-            // blockchain.getSimpleWorld().commit();
-            blockchain.printAccountsInfo();
+            
+            // blockchain.printAccountsInfo();
 
-            // 4. Remove included transactions from mempool
+            // 3. Remove included transactions from mempool
             for (Transaction transaction : block.getTransactions()) {
                 mempoolFifo.removeTransactionFromMempool(transaction);
             }
             if (DEBUG_MODE == 1) {
                 System.out.println("BLOCKCHAIN MEMBER - DEBUG: Mempool size after commit: {" + mempoolFifo.size() + "}");
             }
-            // increment nonce?
-            // 5. start next
-
+            // 4. Persist the block to JSON
+            block.persistBlockToJson( blockPath, blockname);
+            // 5. reset for next consensus
             bepBlock.init();
-            // bep.init();
+            
         }
-        // 1. Persist the block in the blockchain
-
+        
+        
     }
 
 
@@ -311,7 +308,7 @@ public class BlockchainMember {
         }
     }
 
-    public static Blockchain getblockchain() {
+    public Blockchain getblockchain() {
         return blockchain;
     }
 

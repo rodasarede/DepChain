@@ -1,20 +1,16 @@
 package com.sec.depchain.common;
 
-import java.security.MessageDigest;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 
-import org.checkerframework.common.returnsreceiver.qual.This;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.Expose;
 import com.sec.depchain.common.util.CryptoUtils;
@@ -35,10 +31,8 @@ public class Block {
     private int height;
     private long timestamp;
 
+    // Constructor for Genesis block
     public Block(String genesisFilename) {
-        // Load the genesis block from the json file
-        // System.out.println("System is in this path: " +
-        // System.getProperty("user.dir"));
         loadFromJson(genesisFilename);
         this.height = 0;
         this.timestamp = System.currentTimeMillis();
@@ -146,7 +140,7 @@ public class Block {
         return timestamp;
     }
      
-    public  void writeBlockToJson( String filePath, String fileName) {
+    public  void persistBlockToJson( String filePath, String fileName) {
         Gson gson = new GsonBuilder()
                 .excludeFieldsWithoutExposeAnnotation()
                 .registerTypeAdapter(Address.class, (JsonSerializer<Address>) (address, type, context) ->

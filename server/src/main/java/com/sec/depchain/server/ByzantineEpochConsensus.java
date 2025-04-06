@@ -113,9 +113,6 @@ public class ByzantineEpochConsensus {
                         getState().setValtsVal(tsValuePair);
                     }
                      
-
-                    // TSvaluePair tsValuePair = new TSvaluePair(ets, toPropose);
-                    // getState().setValtsVal(tsValuePair);
                     if (DEBUG_MODE == 1) {
                         LOGGER.debug("Leader " + leaderId + " sending READ message to " + nodeId);
                     }
@@ -168,10 +165,7 @@ public class ByzantineEpochConsensus {
                 tmpval = parsedEntry.getVal();
                 System.out.println("tmpval is " + tmpval + " 1.3.");
 
-                // tmpval é um bloco
-                // for tx : tmmpval.getTransactions()
-                // if !tx.isValid()
-
+                
                 for (Transaction tx : tmpval.getTransactions()) {
                     if (!tx.isValid(blockchain, false)) {
                         System.out.println("BEP - ERROR: There is one transaction that is not real!");

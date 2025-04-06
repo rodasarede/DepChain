@@ -29,19 +29,18 @@ public class Blockchain {
 
     private static final int DEBUG_MODE = 1;
     private static List<Block> chain = new ArrayList<>();
-    private static List<Transaction> pendingTransactions = new ArrayList<>();
     private static Map<Address, AccountState> genesisState = new HashMap<>();
     private static SimpleWorld simpleWorld;
     private static EVMExecutor executor;
     private static ByteArrayOutputStream byteArrayOutputStream;
-    private static String hardcodedRuntimeBytecode ;
 
     public Blockchain() {
        
-        //node tracer
+        //executor tracer
         byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
         StandardJsonTracer tracer = new StandardJsonTracer(printStream, true, true, true, true);
+        //contract address to get runtime bytecode
         Address contractAddress = Address.fromHexString("0x1234567891234567891234567891234567891234");
 
         //initialize local EVM node
@@ -68,7 +67,6 @@ public class Blockchain {
         executor.execute();
 
         String runtimeBytecode = helpers.extractRuntimeBytecode(byteArrayOutputStream);
-        hardcodedRuntimeBytecode = runtimeBytecode; // change in future
         MutableAccount contractAccount = (MutableAccount) simpleWorld.get(contractAddress);
         contractAccount.setCode(Bytes.fromHexString(runtimeBytecode));
         
@@ -79,19 +77,10 @@ public class Blockchain {
         executor.worldUpdater(simpleWorld.updater());
         executor.commitWorldState();
         
-        
-
-
-        //test call smart contract
-        // executor.callData(Bytes.fromHexString("95d89b41"));
-        // executor.execute();
-        // String tokenSymbol = helpers.extractStringFromReturnData(byteArrayOutputStream);
-        // System.out.println("Output of 'symbol()': " + tokenSymbol);
+    
     }
 
-    public  void addTransaction(Transaction tx) {
-        pendingTransactions.add(tx);
-    }
+    
     public SimpleWorld getSimpleWorld() {
         return simpleWorld;
     }
@@ -114,9 +103,6 @@ public class Blockchain {
     }
     public ByteArrayOutputStream getbyteArrayOutputStream() {
         return byteArrayOutputStream;
-    }
-    public String getHardcodedRuntimeBytecode() {
-        return hardcodedRuntimeBytecode;
     }
     public void updateSimpleWorldStateWithGenesis() {
 
@@ -162,8 +148,8 @@ public class Blockchain {
     }
     public  void printAccountsInfo() {
         System.out.println("All Accounts Information:");
-        // Iterate over all accounts
-        // Get all accounts that have been touched (i.e., initialized in the state)
+        
+        // Get all accounts that have been touched (initialized or modified)
         Collection<? extends Account> accounts = simpleWorld.getTouchedAccounts();
 
         for (Account account : accounts) {

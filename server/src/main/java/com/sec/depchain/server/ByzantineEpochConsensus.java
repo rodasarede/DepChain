@@ -14,10 +14,13 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
 import com.sec.depchain.common.Block;
 import com.sec.depchain.common.PerfectLinks;
 import com.sec.depchain.common.SystemMembership;
 import com.sec.depchain.common.util.Constants;
+import com.sec.depchain.common.Transaction;
+import com.sec.depchain.common.Blockchain;
 
 public class ByzantineEpochConsensus {
     private static final Logger LOGGER = LoggerFactory.getLogger(ByzantineEpochConsensus.class);
@@ -41,11 +44,12 @@ public class ByzantineEpochConsensus {
     private int countWrites = 0;
     private boolean writeQuorumReached = false;
     private boolean acceptQuorumReached = false;
-    private static final int DEBUG_MODE = 1;
     private BlockchainMember blockchainMember;
+    private static final int DEBUG_MODE = 1;
+    private static Blockchain blockchain;
 
     public ByzantineEpochConsensus(int leaderId, long ets, PerfectLinks perfectLinks, SystemMembership systemMembership,
-            int nodeId, BlockchainMember blockchainMember) throws Exception {
+            int nodeId, BlockchainMember blockchainMember, Blockchain blockchain) throws Exception {
         this.leaderId = leaderId;
         this.ets = ets;
         this.perfectLinks = perfectLinks;
@@ -55,6 +59,7 @@ public class ByzantineEpochConsensus {
         this.cc = new ConditionalCollect(leaderId, perfectLinks, systemMembership, this::sound);
         this.cc.setDeliverCallback(this::onCollectedDelivery);
         this.nodeId = nodeId;
+        this.blockchain = blockchain;
 
         this.blockchainMember = blockchainMember;
         if (DEBUG_MODE == 1) {
@@ -88,7 +93,12 @@ public class ByzantineEpochConsensus {
             LOGGER.error("Previous block hash: " + blockchainMember.getblockchain().getLatestBlock().getBlockHash());
             return;
         }
-        
+
+        if (DEBUG_MODE == 1) {
+            System.out.println("BEP - DEBUG: Printing block that is going to be proposed...");
+            v.printBlockDetails();
+        }
+
         toPropose = v;
         if (nodeId == leaderId) {
             if (DEBUG_MODE == 1) {
@@ -150,17 +160,30 @@ public class ByzantineEpochConsensus {
                 continue;
 
             TSvaluePair parsedEntry = getValsValFromStateMessage(entry);
-
+            System.out.println("state is " + state + " 1.1.");
             if (parsedEntry.getTimestamp() >= 0 && parsedEntry.getVal() != null
                     && binds(parsedEntry.getTimestamp(), parsedEntry.getVal(), collectedMessages)) {
                 // System.out.println("First condition met");
+                System.out.println("tmpval is " + tmpval + " 1.2.");
                 tmpval = parsedEntry.getVal();
+                System.out.println("tmpval is " + tmpval + " 1.3.");
+
+                // tmpval é um bloco
+                // for tx : tmmpval.getTransactions()
+                // if !tx.isValid()
+
+                for (Transaction tx : tmpval.getTransactions()) {
+                    if (!tx.isValid(blockchain, false)) {
+                        System.out.println("BEP - ERROR: There is one transaction that is not real!");
+                        return;
+                    }
+                }
+
                 firstConditionMet = true;
 
             }
         }
         if (!firstConditionMet) {
-
             String leaderEntry = collectedMessages.get(systemMembership.getLeaderId() - 1);
             Block entryVal = null;
             if (!leaderEntry.equals(Constants.UNDEFINED)) {
@@ -173,7 +196,16 @@ public class ByzantineEpochConsensus {
             toPropose = entryVal;
 
             if (unbound(collectedMessages) && toPropose != null) {
+                System.out.println("tmpval is " + tmpval + " 2.1.");
                 tmpval = toPropose;
+                System.out.println("tmpval is " + tmpval + " 2.2.");
+
+                for (Transaction tx : tmpval.getTransactions()) {
+                    if (!tx.isValid(blockchain, false)) {
+                        System.out.println("BEP - ERROR: There is one transaction that is not real!");
+                        return;
+                    }
+                }
             }
         }
 

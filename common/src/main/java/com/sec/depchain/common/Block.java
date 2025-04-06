@@ -138,7 +138,7 @@ public class Block {
         for (Transaction tx : this.transactions) {
             System.out.println(tx);
         }
-
+        /*
         System.out.println("\nState:");
         Map<String, AccountState> state = this.state.entrySet().stream()
                 .collect(Collectors.toMap(entry -> entry.getKey().toHexString(), Map.Entry::getValue));
@@ -152,6 +152,7 @@ public class Block {
             }
 
         }
+        */
     }
 
     private String transactionsToString() {

@@ -24,6 +24,8 @@ public class ConditionalCollect {
 
     private static SystemMembership systemMembership;
     private static int nodeId;
+
+    private static final int DEBUG_MODE = 0;
     private int TAMPER_MESSAGE = 0;
 
     public interface DeliverCallback {
@@ -83,7 +85,9 @@ public class ConditionalCollect {
 
         int leaderId = systemMembership.getLeaderId();
 
-        System.out.println("CONDITIONAL COLLECT: INPUT DELIVERING" + envelope.toString());
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT: INPUT DELIVERING" + envelope.toString());
+        }
 
         perfectLinks.send(leaderId, envelope.toString());
     }
@@ -114,8 +118,9 @@ public class ConditionalCollect {
             messages.set(senderId - 1, content.toString());
             signatures.set(senderId - 1, signature);
         }
-        System.out.println("CONDITIONAL COLLECT: SEND CHECK " + sendMessage.toString());
-
+        if (DEBUG_MODE == 1) {
+            System.out.println("CONDITIONAL COLLECT: SEND CHECK " + sendMessage.toString());
+        }
         checkAndBrodcastCollectedMessages(sendMessage, senderId);
     }
 

@@ -122,10 +122,14 @@ public class Transaction {
     }
 
     // Method to validate the transaction
-    public boolean isValid(Blockchain blockchain) {
+    public boolean isValid(Blockchain blockchain, boolean checkNonce) {
+        if (DEBUG_MODE == 1) {
+            System.out.println("TRANSACTION - DEBUG: Checking validity of transacition");
+        }
+
         MutableAccount senderState = (MutableAccount) blockchain.getSimpleWorld().get(from);
         BigInteger expectedNonce = BigInteger.valueOf(senderState.getNonce());
-        if (expectedNonce != null) {
+        if (expectedNonce != null && checkNonce) {
             if (getNonce().compareTo(expectedNonce) < 0) {
                 if (DEBUG_MODE == 1) {
                     System.out.println("TRANSACTION - DEBUG: Nonce too low (possible replay attack)");
@@ -145,7 +149,9 @@ public class Transaction {
             }
         }
 
-        senderState.incrementNonce();
+        if (checkNonce) {
+            senderState.incrementNonce();
+        }
         // System.out.println("Just incremented nonce of sender: " + senderState.getNonce());
         if (!CryptoUtils.verifySignature(this)) {
             if (DEBUG_MODE == 1) {
@@ -191,7 +197,6 @@ public class Transaction {
 
     
         // Additional checks if needed(signature verification)
-
         return true; // Transaction is valid
     }
 

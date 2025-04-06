@@ -33,6 +33,7 @@ public class BlockchainMember {
     // private Mempool mempool;
     private MempoolFifo mempoolFifo;
     private int DEBUG_MODE = 1;
+    private static final int LEADER_VALUE_TEST = 0;
     private ByzantineEpochConsensus bepBlock;
     private Timer consensusTimer;
 
@@ -73,7 +74,7 @@ public class BlockchainMember {
                 System.out.println("BLOCKCHAIN MEMBER - ERROR: Exception in deliverCallback:" + e);
             }
         });
-        this.bepBlock = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this);
+        this.bepBlock = new ByzantineEpochConsensus(systemMembership.getLeaderId(), 0, perfectLinks, systemMembership, id, this, blockchain);
     }
 
     public void start() throws Exception {
@@ -95,7 +96,7 @@ public class BlockchainMember {
             case Constants.MessageType.TX_REQUEST:
                 Transaction tx = deserializeTransactionJson(message);
                 tx.setClientId(senderId);
-                if (!tx.isValid(blockchain) ) {
+                if (!tx.isValid(blockchain, true)) {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + tx.computeTxHash() + "}");
                     tx.setResponse("Transaction not valid");
@@ -104,6 +105,13 @@ public class BlockchainMember {
                     break;
                 }
                 if(id == systemMembership.getLeaderId()) {
+                    // change the tx value
+                    if (LEADER_VALUE_TEST == 1 && isLeader()) {
+                        System.out.println("BLOCKCHAIN MEMBER - LEADER VALUE TEST: old tx value: " + tx.getValue() );
+                        // value = value.add(BigInteger.ONE);
+                        tx.setValue(tx.getValue().add(BigInteger.ONE));
+                        System.out.println("BLOCKCHAIN MEMBER - LEADER VALUE TEST: new tx value: " + tx.getValue() );
+                    }
                     mempoolFifo.addTransactionToMempool(tx);
                     startConsensusTimer();
                 }

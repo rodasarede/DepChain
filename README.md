@@ -55,3 +55,9 @@
    ```
    npm install @openzeppelin/contracts
    ```
+3. 
+   '''
+   ./compile_smart_contracts.sh
+   '''
+
+4. Create/Change Genesis.json with the compiled Bytecode and the wallets addresses generated before.

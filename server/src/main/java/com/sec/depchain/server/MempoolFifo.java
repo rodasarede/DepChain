@@ -22,7 +22,7 @@ public class MempoolFifo {
         }
     }
 
-    // Removes a specific transaction by iterating over the list
+    // remove transaction from the mempool
     public void removeTransactionFromMempool(Transaction tx) {
         // System.out.println("Transaction to remove: " );
         // tx.printTransaction();
@@ -41,7 +41,7 @@ public class MempoolFifo {
         }
     }
 
-    // Gets all transactions (still returns a reference)
+    // Gets all transactions 
     public List<Transaction> getTransactions() {
         return transactions;
     }

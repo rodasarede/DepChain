@@ -31,17 +31,13 @@ public class Formatter {
     }
 
     public static String formatAcceptMessage(Block v, long ets) {
-        JSONObject message = new JSONObject();
-        message.put("type", Constants.MessageType.ACCEPT);
-        message.put("ets", ets);
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.ACCEPT, ets));
         message.put("value", blockToJson(v)); // Serialize block
         return message.toString();
     }
 
     public static String formatWriteMessage(Block block, long ets) {
-        JSONObject message = new JSONObject();
-        message.put("type", Constants.MessageType.WRITE);
-        message.put("ets", ets);
+        JSONObject message = new JSONObject(formatBaseMessage(MessageType.WRITE, ets));
         message.put("value", blockToJson(block)); // Serialize block
         return message.toString();
     }
@@ -78,11 +74,12 @@ public class Formatter {
 
         return message;
     }
-    public static JSONObject formatTx_ResponseMessage(Transaction tx){
+    public static JSONObject formatTx_ResponseMessage(Transaction tx, Block block){
         JSONObject transactionMessage = serializeTransactionToJson(tx);
-        transactionMessage.put("type", "tx-response");
+        transactionMessage.put("type", Constants.MessageType.TX_RESPONSE);
         transactionMessage.put("success", tx.isSuccess());
         transactionMessage.put("response", tx.getResponse());
+        transactionMessage.put("position", block != null ? block.getHeight() : -1);  // Use -1 if error
         return transactionMessage;
     }
 

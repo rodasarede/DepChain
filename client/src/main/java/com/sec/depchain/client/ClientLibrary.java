@@ -24,7 +24,7 @@ public class ClientLibrary {
     private final Wallet wallet;
 
     public interface DeliverCallback {
-        void deliverAppendResponse(Transaction tx, String transaction, String position);
+        void deliverTransferResponse(Transaction tx, String transaction, int position);
     }
 
     public ClientLibrary(int clientId, Wallet wallet) throws Exception {
@@ -60,6 +60,8 @@ public class ClientLibrary {
         String type = jsonResponse.getString("type");
         boolean success = jsonResponse.getBoolean("success");
         String response = jsonResponse.getString("response");
+        int position = jsonResponse.getInt("position");
+
         Transaction tx = deserializeTransactionJson(message);
         tx.setStatus(success);
         tx.setResponse(response);
@@ -75,16 +77,17 @@ public class ClientLibrary {
             messageResponses.putIfAbsent(txHash, new HashMap<>());
             Map<String, Set<Integer>> positionResponses = messageResponses.get(txHash);
 
-            String position = "default";  // Or extract from JSON if available
-            positionResponses.putIfAbsent(position, new HashSet<>());
-            Set<Integer> respondingNodes = positionResponses.get(position);
+            String positionKey = String.valueOf(position); 
+            positionResponses.putIfAbsent(positionKey, new HashSet<>());
+            Set<Integer> respondingNodes = positionResponses.get(positionKey);
             respondingNodes.add(nodeId);
+        
 
             if (respondingNodes.size() >=  (f + 1)) {
                 if (deliverCallback != null) {
                     processedTransactions.add(txHash);
                     messageResponses.remove(txHash);
-                    deliverCallback.deliverAppendResponse(tx, txHash, position);
+                    deliverCallback.deliverTransferResponse(tx, txHash, position);
                 }
             }
         }

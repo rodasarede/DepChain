@@ -132,7 +132,7 @@ public class ConditionalCollect {
         }
         int N = systemMembership.getNumberOfNodes();
         int f = systemMembership.getMaximumNumberOfByzantineNodes();
-        if (getNumberOfMessages() >= N - f && outputPredicate.test(messages)) {
+        if (getNumberOfMessages() >= (2 * f + 1) && outputPredicate.test(messages)) {
             if (TAMPER_MESSAGE == 1) {
                 int index = 0;
                 messages.set(index, "1" + messages.get(index).substring(1));
@@ -180,7 +180,7 @@ public class ConditionalCollect {
         }
 
         if (!collected &&
-                getNumberOfMessagesDiffFromUNDEFINED(messageList.toArray(new String[0])) >= N - f &&
+                getNumberOfMessagesDiffFromUNDEFINED(messageList.toArray(new String[0])) >= (2*f + 1) &&
                 verifyAllSignatures(messageList.toArray(new String[0]),
                         collectedSignatures.toString().replaceAll("[\\[\\]\"]", "").split(","))
                 &&
@@ -209,7 +209,7 @@ public class ConditionalCollect {
             case Constants.MessageType.COLLECTED:
                 processCollected(senderId, messageObj);
                 break;
-            case "append-request":
+            case Constants.MessageType.TX_REQUEST:
                 // not supose to happen only for debug purposes
                 System.out.println("Received request in collect: " + message + " from Id: " + senderId);
                 break;

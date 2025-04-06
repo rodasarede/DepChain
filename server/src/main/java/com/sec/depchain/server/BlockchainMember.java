@@ -87,7 +87,7 @@ public class BlockchainMember {
                     "BLOCKCHAIN MEMBER - DEBUG: Received message from {" + senderId + "} -> {" + message + "}");
         }
 
-        JSONObject json = new JSONObject(message.trim()); // trim() removes whitespace
+        JSONObject json = new JSONObject(message.trim()); 
         String messageType = "";
         if (json.has("type")) {
             messageType = json.getString("type"); // Returns "tx-request"
@@ -100,7 +100,7 @@ public class BlockchainMember {
                     System.out.println("BLOCKCHAIN MEMBER - ERROR: Invalid transaction signature from client {"
                             + senderId + "}: {" + tx.computeTxHash() + "}");
                     tx.setResponse("Transaction not valid");
-                    JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx);
+                    JSONObject responseMessage = Formatter.formatTx_ResponseMessage(tx, null);
                     perfectLinks.send(senderId, responseMessage.toString());
                     break;
                 }
@@ -178,7 +178,7 @@ public class BlockchainMember {
         Block newBlock = new Block(
                 blockchain.getLatestBlock().getBlockHash(),
                 transactions,
-                blockchain.getLatestBlock().getHeight());
+                blockchain.getLatestBlock().getHeight() + 1);
 
         if (DEBUG_MODE == 1) {
             System.out.println("BLOCKCHAIN MEMBER - DEBUG: Proposing block {" + newBlock.getBlockHash() + "}");
@@ -200,12 +200,15 @@ public class BlockchainMember {
 
         if (block.getTimestamp() > blockchain.getLatestBlock().getTimestamp()) {
             blockchain.getChain().add(block);
-
+            String blockname = block.getHeight()+ ".json";
+            String blockPath = Constants.BLOCKS_DIR + "/blockchain_" + id;
+            block.writeBlockToJson( blockPath, blockname);
+            
             // 2. Execute transactions to update the world state
             for (Transaction transaction : block.getTransactions()) {
                 transaction.execute(blockchain);
                 int clientId = transaction.getClientId();
-                JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction);
+                JSONObject responseMessage = Formatter.formatTx_ResponseMessage(transaction, block);
 
                 if(DEBUG_MODE == 1) {
                     System.out.println("BLOCKCHAIN MEMBER - DEBUG: Sending response to client {" + clientId + "}: {"

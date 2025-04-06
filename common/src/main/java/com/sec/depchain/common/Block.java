@@ -1,24 +1,39 @@
 package com.sec.depchain.common;
 
 import java.security.MessageDigest;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.Expose;
+import com.sec.depchain.common.util.CryptoUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Block {
+    @Expose
     private String blockHash;
+    @Expose
     private String previousBlockHash;
+    @Expose
     private List<Transaction> transactions;
+
+
     private Map<Address, AccountState> state;
     private int height;
     private long timestamp;
-    // private int nonce;
 
     public Block(String genesisFilename) {
         // Load the genesis block from the json file
@@ -34,7 +49,6 @@ public class Block {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
         this.state = state;
-        // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
         this.timestamp = System.currentTimeMillis();
@@ -43,40 +57,13 @@ public class Block {
     public Block(String previousBlockHash, List<Transaction> transactions, int height) {
         this.previousBlockHash = previousBlockHash;
         this.transactions = transactions;
-        // this.timestamp = System.currentTimeMillis();
         this.blockHash = calculateHash();
         this.height = height;
         this.timestamp = System.currentTimeMillis();
     }
 
     public String calculateHash() {
-        try {
-            // Handle null previousHash according to JSON standard
-            String prevHashStr = (previousBlockHash == null) ? "null" : previousBlockHash;
-
-            // Serialize transactions (empty array if null)
-            String txStr = transactionsToString();
-
-            // Combine all components
-            String dataToHash = prevHashStr + height + txStr;
-
-            // Calculate SHA-256 hash
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(dataToHash.getBytes());
-
-            // Convert to hex string
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hashBytes) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1)
-                    hexString.append('0');
-                hexString.append(hex);
-            }
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
-        }
+        return CryptoUtils.calculateHash(previousBlockHash, height, transactions);
     }
 
     public String getBlockHash() {
@@ -155,17 +142,37 @@ public class Block {
         */
     }
 
-    private String transactionsToString() {
-        if (transactions == null)
-            return "";
-        StringBuilder sb = new StringBuilder();
-        for (Transaction tx : transactions) {
-            sb.append(tx.toString()); // Assumes Transaction has a proper toString()
-        }
-        return sb.toString();
-    }
-
     public long getTimestamp() {
         return timestamp;
+    }
+     
+    public  void writeBlockToJson( String filePath, String fileName) {
+        Gson gson = new GsonBuilder()
+                .excludeFieldsWithoutExposeAnnotation()
+                .registerTypeAdapter(Address.class, (JsonSerializer<Address>) (address, type, context) ->
+                    context.serialize(address.toString())  // or customize as needed
+                )
+                .registerTypeAdapter(BigInteger.class, (JsonSerializer<BigInteger>) (bigInt, t, ctx) -> ctx.serialize(bigInt.toString()))
+                .setPrettyPrinting()
+                .create();
+
+        File directory = new File(filePath);
+        if (!directory.exists()) {
+            if (directory.mkdirs()) {
+                // System.out.println("Created directory: " + filePath);
+            } else {
+                System.err.println("Failed to create directory: " + filePath);
+                return;
+            }
+        }
+
+        String fullPath = filePath.endsWith("/") ? filePath + fileName : filePath + "/" + fileName;
+
+        try (FileWriter writer = new FileWriter(fullPath)) {
+            gson.toJson(this, writer);
+            // System.out.println("Block written to " + fullPath);
+        } catch (IOException e) {
+            System.err.println("Failed to write block to JSON: " + e.getMessage());
+        }
     }
 }

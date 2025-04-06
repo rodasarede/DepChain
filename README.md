@@ -38,10 +38,6 @@
    3. Run 2 clients using Step 4 and start them with id 10 and 11
 
 
-6. **Testing**
-
-   Testing currently can be done by using the Clients and sending appending strings requests.
-
 
 ## Smart Contract Instructions 
 
@@ -62,7 +58,24 @@
 
 4. Create/Change Genesis.json with the compiled Bytecode and the wallets addresses generated before.
 
-5. **Smart Contract Client Command Examples**
+## Native DepCoin Commads
+
+### 🔁 Transfer Commands
+
+```bash
+transfer 0xb8124c42749e5f1908ab8c5afde9358005320306 100
+transfer 0x336f5f589a81811b47d582d4853af252bfb7c5e2 100
+```
+
+---
+### 💰 BalanceOf Queries
+
+```bash
+getbalance
+```
+
+
+## Smart Contract Client Command Examples
 
 
 - `0xb8124c42749e5f1908ab8c5afde9358005320306` → **EOT Client (creator of ISTCoin, holds full supply)**
